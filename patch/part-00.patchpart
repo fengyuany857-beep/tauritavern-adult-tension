@@ -1,0 +1,276 @@
+diff --git a/.github/workflows/personal-ios-unsigned.yml b/.github/workflows/personal-ios-unsigned.yml
+new file mode 100644
+index 0000000..eb743db
+--- /dev/null
++++ b/.github/workflows/personal-ios-unsigned.yml
+@@ -0,0 +1,101 @@
++name: Personal iOS Unsigned Build
++
++on:
++  workflow_dispatch:
++    inputs:
++      run_quality_gate:
++        description: 'Run the full repository quality gate before building'
++        required: false
++        type: boolean
++        default: true
++
++permissions:
++  contents: read
++
++concurrency:
++  group: personal-ios-unsigned-${{ github.ref }}
++  cancel-in-progress: true
++
++jobs:
++  quality:
++    if: ${{ inputs.run_quality_gate }}
++    runs-on: macos-latest
++    steps:
++      - uses: actions/checkout@v4
++
++      - uses: dtolnay/rust-toolchain@stable
++        with:
++          targets: aarch64-apple-ios
++
++      - uses: swatinem/rust-cache@v2
++        with:
++          workspaces: 'src-tauri -> target'
++
++      - uses: pnpm/action-setup@v4
++        with:
++          version: 10
++          run_install: false
++
++      - uses: actions/setup-node@v4
++        with:
++          node-version: 22
++          cache: pnpm
++
++      - run: pnpm install --frozen-lockfile
++      - run: pnpm run check
++
++  build:
++    needs: [quality]
++    if: ${{ always() && (needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
++    runs-on: macos-latest
++    env:
++      TAURITAVERN_BUILD_BRANCH: ${{ github.ref_name }}
++      TAURITAVERN_BUILD_REVISION: ${{ github.sha }}
++      TAURITAVERN_IOS_POLICY_PROFILE: full
++    steps:
++      - uses: actions/checkout@v4
++
++      - uses: dtolnay/rust-toolchain@stable
++        with:
++          targets: aarch64-apple-ios
++
++      - uses: swatinem/rust-cache@v2
++        with:
++          workspaces: 'src-tauri -> target'
++
++      - uses: pnpm/action-setup@v4
++        with:
++          version: 10
++          run_install: false
++
++      - uses: actions/setup-node@v4
++        with:
++          node-version: 22
++          cache: pnpm
++
++      - run: pnpm install --frozen-lockfile
++
++      - name: Build frontend
++        run: pnpm run web:build
++
++      - name: Enable standard mobile HTTP compatibility
++        run: ./scripts/ci/configure-mobile-http.sh enable ios
++
++      - name: Build unsigned iOS application
++        shell: bash
++        run: ./scripts/ci/build-ios-unsigned.sh
++
++      - name: Inspect unsigned artifact
++        shell: bash
++        run: ./scripts/ci/verify-ios-unsigned.sh dist/ios-unsigned/TauriTavern-unsigned.ipa
++
++      - uses: actions/upload-artifact@v4
++        with:
++          name: TauriTavern-personal-ios-unsigned-${{ github.run_number }}
++          path: |
++            dist/ios-unsigned/TauriTavern-unsigned.ipa
++            dist/ios-unsigned/TauriTavern.app.zip
++            dist/ios-unsigned/build-info.json
++            dist/ios-unsigned/SHA256SUMS.txt
++          if-no-files-found: error
++          retention-days: 30
+diff --git a/docs/API/Agent.md b/docs/API/Agent.md
+index 8d3a792..bb9ba3b 100644
+--- a/docs/API/Agent.md
++++ b/docs/API/Agent.md
+@@ -788,6 +788,9 @@ Agent Mode on：
+ | `chat.read_messages` | `chat_read_messages` | 按 0-based message index 读取当前聊天消息；每项可选 `start_char`、`max_chars` 读取长消息片段。 |
+ | `worldinfo.read_activated` | `worldinfo_read_activated` | 读取本次 run 的最终激活世界书条目；模型可读文本只包含条目名、世界书名、条目内容。 |
+ | `dice.roll` | `dice_roll` | 为明确的随机、跑团或 roleplay 检定投骰；支持 `d6`、`1d20`、`3d6+4` 与纯数字。默认 Profile 不启用。 |
++| `rp.state` | `rp_state` | 读取当前 run 继承的 branch-local RP runtime / Living World state。 |
++| `rp.recall` | `rp_recall` | 搜索当前 branch 已接受的 continuity facts、knowledge、commitments、threads 与 recent beats。 |
++| `rp.stage_turn` | `rp_stage_turn` | 结构化更新本 run 的隐藏 RP persistent projection；不会直接写 chat，Adult Tension RP Profile 在 `workspace.commit` 前要求成功 stage。 |
+ | `skill.list` | `skill_list` | 列出当前 Profile 可见的已安装 Skill 索引摘要。 |
+ | `skill.search` | `skill_search` | 搜索当前 Profile 可见的单个 Skill 内 UTF-8 文本文件，返回 snippet/ref。 |
+ | `skill.read` | `skill_read` | 读取已安装 Skill 内的 UTF-8 文本文件或范围；默认 `SKILL.md`，支持 `path`、行范围、字符范围与 `max_chars`。 |
+diff --git a/docs/AdultTensionRP.md b/docs/AdultTensionRP.md
+new file mode 100644
+index 0000000..ecc129e
+--- /dev/null
++++ b/docs/AdultTensionRP.md
+@@ -0,0 +1,113 @@
++# Adult Tension RP — Native TauriTavern Integration
++
++## Status
++
++This source tree contains the native V1 integration for the existing
++`adult-tension` + `adult-tension-continuity` Skills.
++
++It intentionally reuses TauriTavern's Agent persistent-state branch model instead
++of embedding Python or creating a second swipe/acceptance database.
++
++## Built-in Agent Profile
++
++Select:
++
++`Adult Tension RP`
++
++Profile id:
++
++`adult-tension-rp`
++
++The profile:
++
++- exposes `rp.state`, `rp.recall`, `rp.stage_turn`;
++- allows ordinary chat/world-info/Skill reads;
++- allows output/scratch/plan/summaries workspace roots;
++- hides and denies direct model writes to `persist/`;
++- requires `rp.stage_turn` before `workspace.commit`;
++- permits up to three `rp.stage_turn` attempts so a model can correct recoverable validation errors, but allows only one successful stage per run.
++
++## Why swipe/regenerate works without another transaction layer
++
++TauriTavern already resolves `persistBaseStateId` from visible chat history before
++a run. For `swipe` and `regenerate`, the current assistant response is excluded
++from run input, so the new run begins from the earlier selected base.
++
++At `workspace.finish`, the run's persistent projection is committed to a new
++persistent state and that `persistStateId` is written into the concrete assistant
++message/swipe metadata.
++
++This gives the desired property:
++
++> each generated assistant variant owns its own RP state; the next user turn
++> naturally continues from the state attached to the selected variant.
++
++
++## Current authority parity
++
++The native branch state persists current safety/boundary/grant authority separately from historical continuity:
++
++- `safetyState`
++- `activeBoundaries`
++- current-scene `activeGrants`
++- `sceneId`, location and participants
++
++`rp.stage_turn.authority` is the only mutation path. Continuity facts cannot create or infer these values. Any scene/location/participant change conservatively withdraws the previous scene's current grants. A paused state blocks story advancement until an explicit current user turn resumes it.
++
++This V1 intentionally uses a more conservative scene-grant rule than the vendor Python runtime: it does not auto-inherit grants across adjacent private locations. Users can explicitly re-grant in the new scene.
++
++## Install/use
++
++1. Build this TauriTavern fork normally for the target platform.
++2. Import the original `adult-tension` Skill.
++3. Import the final `adult-tension-continuity` Skill.
++4. Import `extras/adult-tension-tauritavern-adapter` as a Skill ZIP.
++5. Enable Agent System.
++6. Choose `Adult Tension RP` as the active Agent Profile.
++7. Use the character/world/scenario you authored. Fixed Canon mode is the default.
++
++## Personal cloud build without signing
++
++For users without a Mac, this fork also includes a manual GitHub Actions workflow:
++
++`Personal iOS Unsigned Build`
++
++It runs on a GitHub-hosted macOS runner, can run the repository quality gate, builds the full iOS app with Apple code signing disabled, and uploads:
++
++- `TauriTavern-unsigned.ipa`
++- `TauriTavern.app.zip`
++- `build-info.json`
++- `SHA256SUMS.txt`
++
++This step deliberately does not configure certificates, provisioning profiles, App Store Connect or TestFlight. Signing/installation can be decided later without changing the RP runtime. See `docs/CurrentState/PersonalUnsignedIOSBuild.md`.
++
++## No Python runtime requirement
++
++The native profile does not execute Skill Python scripts on iOS.
++The original Python implementation remains a semantic/reference oracle only.
++
++## Data location
++
++RP state lives inside TauriTavern's existing per-chat Agent persistent-state
++snapshots under the Agent workspace storage. The run-visible logical path is:
++
++`persist/rp/state.json`
++
++Do not manually edit this file while a run is active.
++
++## Export/backup
++
++Because state is part of Agent persistent snapshots linked to chat messages, chat
++and Agent workspace backup/retention policies matter. Do not prune all persistent
++states if you need historical branch continuation.
++
++## V1 limitations
++
++- Explicit multi-branch UI and manual branch merge are not added. Existing swipe
++  selection is the branch selector.
++- Rewriting old accepted chat history can intentionally change which persistent
++  state is visible. The integration never invents state that is no longer linked.
++- The native V1 uses bounded structured continuity state, not the frozen Python
++  SQLite/JSONL implementation byte-for-byte.
++- The semantic invariants retained are authority isolation, player sovereignty,
++  knowledge separation, stable threads/commitments and fail-closed state writes.
+diff --git a/docs/Agent/ToolSystem.md b/docs/Agent/ToolSystem.md
+index f74cf1e..eb48922 100644
+--- a/docs/Agent/ToolSystem.md
++++ b/docs/Agent/ToolSystem.md
+@@ -159,6 +159,9 @@ Agent-facing 文案必须从调用或执行 Agent 的角度描述可操作路径
+ | `chat.read_messages` | `chat_read_messages` | 只读按 message index 读取当前聊天消息，可读取字符范围 | 已落地 |
+ | `worldinfo.read_activated` | `worldinfo_read_activated` | 只读读取本轮 run 捕获的最终激活世界书条目 | 已落地 |
+ | `dice.roll` | `dice_roll` | 只读随机投骰；支持 `d6`、`1d20`、`3d6+4` 等轻量 dice notation，默认 Profile 不启用 | 已落地 |
++| `rp.state` | `rp_state` | 读取当前 Agent 分支的原生 RP runtime/Living World 状态；历史记录不提供当前许可 | 已落地 |
++| `rp.recall` | `rp_recall` | 检索当前分支已接受的 continuity facts / knowledge / commitments / threads / beats | 已落地 |
++| `rp.stage_turn` | `rp_stage_turn` | 通过结构化、fail-closed 校验更新本 run 的 `persist/rp/state.json`；不直接写 chat | 已落地 |
+ | `skill.list` | `skill_list` | 只读列出已安装 Skill 索引摘要 | 已落地 |
+ | `skill.search` | `skill_search` | 只读搜索单个可见 Skill 内的 UTF-8 文本文件，返回 snippet 与 ref | 已落地 |
+ | `skill.read` | `skill_read` | 只读读取已安装 Skill 内的 UTF-8 文本文件或范围 | 已落地 |
+diff --git a/docs/AgentArchitecture.md b/docs/AgentArchitecture.md
+index baf0018..1d58c39 100644
+--- a/docs/AgentArchitecture.md
++++ b/docs/AgentArchitecture.md
+@@ -147,7 +147,7 @@ LLM Gateway / provider adapter
+ - Public Host ABI 入口为 `api.agent.startRunFromLegacyGenerate()` 与 `api.agent.startRunWithPromptSnapshot()`，没有 `startRun()` alias。
+ - `startRunFromLegacyGenerate()` 是当前推荐的兼容桥；它捕获 Legacy prompt 语义与本轮最终 `worldInfoActivation`，同时禁用 Legacy ToolManager tools。
+ - `startRunWithPromptSnapshot()` 是低层测试/集成入口；调用方必须提供不含 external tools/tool turns 的 chat completion payload。
+-- 后端当前开放 `chat.search`、`chat.read_messages`、`worldinfo.read_activated`、`dice.roll`、`skill.list`、`skill.search`、`skill.read`、`workspace.list_files`、`workspace.search_files`、`workspace.read_file`、`workspace.write_file`、`workspace.apply_patch`、`workspace.commit`、`workspace.finish` 十四个非 delegation 内建工具，对模型暴露为 provider-safe alias；`dice.roll` 默认不在 Agent Profile 中启用。
++- 后端当前开放 `chat.search`、`chat.read_messages`、`worldinfo.read_activated`、`dice.roll`、`rp.state`、`rp.recall`、`rp.stage_turn`、`skill.list`、`skill.search`、`skill.read`、`workspace.list_files`、`workspace.search_files`、`workspace.read_file`、`workspace.write_file`、`workspace.apply_patch`、`workspace.commit`、`workspace.finish` 十七个非 delegation 内建工具，对模型暴露为 provider-safe alias；`dice.roll` 默认不在 Agent Profile 中启用。
+ - Agent runtime 当前使用 `AgentModelRequest` / `AgentModelResponse` / `AgentModelContentPart` 作为内部模型语义，不再直接读写 OpenAI-compatible raw JSON。
+ - `AgentModelGateway` 仍复用 `ChatCompletionService::generate_exchange_with_cancel()`，在 canonical IR 与现有 provider payload pipeline 之间转换。
+ - Claude / Gemini / OpenAI Responses / Gemini Interactions 的 native metadata 以 opaque `Native` part 保存和回放；tool call id 缺失会 fail-fast。
+diff --git a/docs/CurrentState/AgentFramework.md b/docs/CurrentState/AgentFramework.md
+index cb81de0..f2b50e0 100644
+--- a/docs/CurrentState/AgentFramework.md
++++ b/docs/CurrentState/AgentFramework.md
+@@ -16,6 +16,7 @@
+ - `AgentModelGateway` 在 Agent canonical IR 与现有 `ChatCompletionGenerateRequestDto` 之间转换；provider-native metadata 作为 opaque `Native` part 保留。
+ - `provider_state` 已是 run-owned、invocation-scoped continuation contract；OpenAI Responses 使用它驱动 persistent WebSocket、incremental input 与 `previous_response_id`。
+ - Agent Skill 管理、导入导出、embedded skill 提示导入、`skill.list` / `skill.search` / `skill.read` 已落地。
++- 原生 `adult-tension-rp` Profile 与 `rp.state` / `rp.recall` / `rp.stage_turn` 已落地：RP 状态复用 Agent persistent branch，模型不能直接读写 `persist/`，regenerate/overswipe 通过现有 `persistStateId` 分支语义隔离。
