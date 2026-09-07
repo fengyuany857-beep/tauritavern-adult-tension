@@ -1,0 +1,134 @@
+name: Build Adult Tension Native iOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_quality_gate:
+        description: Run the full repository quality gate before building
+        required: false
+        type: boolean
+        default: true
+  push:
+    branches: [main]
+    paths:
+      - BUILD_TRIGGER
+
+permissions:
+  contents: read
+
+concurrency:
+  group: adult-tension-native-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 120
+    env:
+      UPSTREAM_SHA: 3a8c5401c859ac15ac11f3339846360615232896
+      PATCH_SHA256: ab08a021d5ff0158b283ef25bfc6aa7f0efec05328ca99e489eea130d566fe10
+      TAURITAVERN_IOS_POLICY_PROFILE: full
+    steps:
+      - name: Checkout build control repository
+        uses: actions/checkout@v4
+        with:
+          path: control
+
+      - name: Checkout exact TauriTavern baseline
+        uses: actions/checkout@v4
+        with:
+          repository: Darkatse/TauriTavern
+          ref: 3a8c5401c859ac15ac11f3339846360615232896
+          path: source
+
+      - name: Reconstruct and verify native patch
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, gzip, hashlib
+          parts = sorted(Path('control/patch64').glob('p*.txt'))
+          assert len(parts) == 12, f'expected 12 patch chunks, found {len(parts)}'
+          encoded = ''.join(p.read_text().strip() for p in parts)
+          patch = gzip.decompress(base64.b64decode(encoded))
+          Path('/tmp/native.patch').write_bytes(patch)
+          digest = hashlib.sha256(patch).hexdigest()
+          print('patch sha256:', digest)
+          assert digest == 'ab08a021d5ff0158b283ef25bfc6aa7f0efec05328ca99e489eea130d566fe10', digest
+          PY
+
+      - name: Apply native RP patch
+        working-directory: source
+        shell: bash
+        run: |
+          git apply --check /tmp/native.patch
+          git apply /tmp/native.patch
+          git diff --check
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: source/src-tauri -> target
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: source/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: source
+        run: pnpm install --frozen-lockfile
+
+      - name: Native RP contract tests
+        working-directory: source
+        run: node --test tests/agent-rp-native-contract.test.mjs tests/agent-api-contract.test.mjs tests/personal-ios-unsigned-build.test.mjs
+
+      - name: Repository quality gate
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_quality_gate }}
+        working-directory: source
+        run: pnpm run check
+
+      - name: Build frontend
+        working-directory: source
+        run: pnpm run web:build
+
+      - name: Enable standard mobile HTTP compatibility
+        working-directory: source
+        run: ./scripts/ci/configure-mobile-http.sh enable ios
+
+      - name: Build unsigned iOS IPA
+        working-directory: source
+        env:
+          TAURITAVERN_BUILD_BRANCH: adult-tension-native-v1.1
+          TAURITAVERN_BUILD_REVISION: 3a8c5401c859ac15ac11f3339846360615232896+adult-tension-native-v1.1
+          TAURITAVERN_IOS_POLICY_PROFILE: full
+        run: ./scripts/ci/build-ios-unsigned.sh
+
+      - name: Verify unsigned IPA
+        working-directory: source
+        run: ./scripts/ci/verify-ios-unsigned.sh dist/ios-unsigned/TauriTavern-unsigned.ipa
+
+      - name: Upload unsigned iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TauriTavern-Adult-Tension-Native-iOS-${{ github.run_number }}
+          path: |
+            source/dist/ios-unsigned/TauriTavern-unsigned.ipa
+            source/dist/ios-unsigned/TauriTavern.app.zip
+            source/dist/ios-unsigned/build-info.json
+            source/dist/ios-unsigned/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
