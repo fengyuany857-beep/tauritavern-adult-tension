@@ -1,0 +1,8 @@
+# Diagnostic matches
+
+# Tail
+
+> tauritavern@2.2.0 check:frontend /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> node scripts/check-frontend-guardrails.mjs
+
+[guardrails] OK
