@@ -84,6 +84,11 @@ jobs:
             git apply --check "$patch"
             git apply "$patch"
           done
+          for patch in ../control/build14-post/*.patch; do
+            echo "Applying Build 14 architecture patch: $patch"
+            git apply --check "$patch"
+            git apply "$patch"
+          done
           git diff --check
 
       - name: Install Rust toolchain
