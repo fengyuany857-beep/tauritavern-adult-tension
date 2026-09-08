@@ -66,6 +66,10 @@ jobs:
           done
           git apply --check /tmp/build11.patch
           git apply /tmp/build11.patch
+          for patch in ../control/build11-post/*.patch; do
+            git apply --check "$patch"
+            git apply "$patch"
+          done
           git diff --check
           test -f extras/adult-tension-tauritavern-adapter/SKILL.md
 
