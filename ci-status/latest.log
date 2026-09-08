@@ -7,15 +7,6 @@
 688:[1m[92m   Compiling[0m serde_path_to_error v0.1.20
 
 # Tail
-[1m[92m   Compiling[0m hashbrown v0.17.1
-[1m[92m   Compiling[0m rustix v1.1.4
-[1m[92m   Compiling[0m ipnet v2.12.0
-[1m[92m   Compiling[0m hyper-util v0.1.20
-[1m[92m   Compiling[0m gix-hashtable v0.15.2
-[1m[92m   Compiling[0m security-framework v3.7.0
-[1m[92m   Compiling[0m objc2-foundation v0.3.2
-[1m[92m   Compiling[0m gix-actor v0.41.1
-[1m[92m   Compiling[0m sync_wrapper v1.0.2
 [1m[92m   Compiling[0m hybrid-array v0.4.13
 [1m[92m   Compiling[0m zstd-safe v7.2.4
 [1m[92m   Compiling[0m tower-layer v0.3.3
@@ -267,3 +258,12 @@
 [1m[92m   Compiling[0m notify-rust v4.12.0
 [1m[92m   Compiling[0m tt-adapter-extension v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-extension)
 [1m[92m   Compiling[0m tt-adapter-sync v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-sync)
+[1m[92m   Compiling[0m tt-adapter-archive v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-archive)
+[1m[92m   Compiling[0m tt-adapter-provider-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-provider-http)
+[1m[92m   Compiling[0m tt-adapter-tokenization v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-tokenization)
+[1m[92m   Compiling[0m tt-adapter-storage-userdata v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-userdata)
+[1m[92m   Compiling[0m tt-adapter-media v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-media)
+[1m[92m   Compiling[0m tauritavern v2.2.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern)
+[1m[92m   Compiling[0m tracing-appender v0.2.4
+[1m[92m   Compiling[0m tauri-plugin-single-instance v2.4.3
+[1m[92m   Compiling[0m qrcode v0.14.1
