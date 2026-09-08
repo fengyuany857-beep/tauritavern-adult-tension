@@ -6,8 +6,8 @@
   "trigger_sha": "8be80db04e5d7bab4dbc0bc992681661e966ce6f",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
   "stage": "Publish self-sign IPA release",
-  "state": "RUNNING",
+  "state": "PASS",
   "exit_code": 0,
-  "updated_at": "2026-09-08T15:54:18Z",
+  "updated_at": "2026-09-08T15:54:26Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-10-a1"
 }
