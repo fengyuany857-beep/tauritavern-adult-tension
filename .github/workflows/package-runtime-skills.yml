@@ -32,13 +32,14 @@ jobs:
           ref: 3a8c5401c859ac15ac11f3339846360615232896
           path: source
 
-      - name: Reconstruct and apply Build 8 native patch stack
+      - name: Reconstruct and apply Build 11 native patch stack
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
           import base64, gzip, hashlib
+
           parts = sorted(Path('control/patch64').glob('p*.txt'))
           assert len(parts) == 12, len(parts)
           encoded = ''.join(p.read_text().strip() for p in parts)
@@ -46,6 +47,14 @@ jobs:
           digest = hashlib.sha256(patch).hexdigest()
           assert digest == 'ab08a021d5ff0158b283ef25bfc6aa7f0efec05328ca99e489eea130d566fe10', digest
           Path('/tmp/native.patch').write_bytes(patch)
+
+          parts = sorted(Path('control/build11patch64').glob('p*.txt'))
+          assert len(parts) == 5, len(parts)
+          encoded = ''.join(p.read_text().strip() for p in parts)
+          patch = gzip.decompress(base64.b64decode(encoded))
+          digest = hashlib.sha256(patch).hexdigest()
+          assert digest == 'f32fced72ac46136d17ef0e4a916d0285bff178aaaccdd1e6ef17aa7e33f36c7', digest
+          Path('/tmp/build11.patch').write_bytes(patch)
           PY
           cd source
           git apply --check /tmp/native.patch
@@ -55,6 +64,9 @@ jobs:
             git apply --check "$patch"
             git apply "$patch"
           done
+          git apply --check /tmp/build11.patch
+          git apply /tmp/build11.patch
+          git diff --check
           test -f extras/adult-tension-tauritavern-adapter/SKILL.md
 
       - name: Create importable Skill ZIPs
@@ -69,15 +81,15 @@ jobs:
           test -f /tmp/adult-tension-package/SKILL.md
           test -f /tmp/adapter-package/SKILL.md
           (cd /tmp/adult-tension-package && zip -qr "$GITHUB_WORKSPACE/out/adult-tension-cbfdc623.zip" .)
-          (cd /tmp/adapter-package && zip -qr "$GITHUB_WORKSPACE/out/adult-tension-tauritavern-adapter-build8.zip" .)
+          (cd /tmp/adapter-package && zip -qr "$GITHUB_WORKSPACE/out/adult-tension-tauritavern-adapter-build11.zip" .)
           sha256sum out/*.zip | tee out/SHA256SUMS.txt
           unzip -t out/adult-tension-cbfdc623.zip >/dev/null
-          unzip -t out/adult-tension-tauritavern-adapter-build8.zip >/dev/null
+          unzip -t out/adult-tension-tauritavern-adapter-build11.zip >/dev/null
 
       - name: Upload Skill packages
         uses: actions/upload-artifact@v4
         with:
-          name: Adult-Tension-Runtime-Skills-Build8
+          name: Adult-Tension-Runtime-Skills-Build11
           path: out/
           if-no-files-found: error
           retention-days: 30
