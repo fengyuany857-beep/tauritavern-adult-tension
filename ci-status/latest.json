@@ -5,8 +5,9 @@
   "repository": "fengyuany857-beep/tauritavern-adult-tension",
   "trigger_sha": "6f2834af0b44f490ea86aee0fa10363c978eb226",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
-  "stage": "Publish self-sign IPA release",
-  "state": "PASS",
+  "stage": "Complete: self-sign IPA ready",
+  "state": "COMPLETE",
   "exit_code": 0,
-  "updated_at": "2026-09-08T03:16:15Z"
+  "updated_at": "2026-09-08T03:16:17Z",
+  "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-8-a1"
 }
