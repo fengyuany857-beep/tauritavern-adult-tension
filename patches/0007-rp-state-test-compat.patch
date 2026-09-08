@@ -1,0 +1,34 @@
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -1013,7 +1296,7 @@
+     use super::*;
+ 
+     fn input(predicate: &str, subject: &str) -> StageTurnArgs {
+-        StageTurnArgs { beat_summary:"one beat".to_string(), advances_story:None, clock:None, scene:None, location:None, participants:None, npc_updates:None, events:None, facts:Some(vec![FactInput{id:None,subject:subject.to_string(),predicate:predicate.to_string(),value:json!(true),supersedes:None,plane:None,classification:None}]), knowledge:None, commitments:None, threads:None, living_world:None, authority:None }
++        StageTurnArgs { beat_summary:"one beat".to_string(), advances_story:None, retract_turns:None, retraction_reason:None, clock:None, scene:None, location:None, participants:None, npc_updates:None, events:None, facts:Some(vec![FactInput{id:None,subject:subject.to_string(),predicate:predicate.to_string(),value:json!(true),supersedes:None,knowledge_refs:None,plane:None,classification:None}]), knowledge:None, commitments:None, threads:None, living_world:None, authority:None }
+     }
+ 
+     #[test]
+@@ -1038,7 +1321,7 @@
+     #[test]
+     fn npc_updates_cannot_target_player() {
+         let mut value = input("met_at_station", "npc-a");
+-        value.npc_updates = Some(vec![NpcUpdate{id:"player".to_string(),emotion:Some("happy".to_string()),goal:None,autonomy:None,relationship:None,trust:None}]);
++        value.npc_updates = Some(vec![NpcUpdate{id:"player".to_string(),knowledge_refs:None,emotion:Some("happy".to_string()),goal:None,autonomy:None,relationship:None,trust:None}]);
+         assert!(validate_stage_input(&value).is_err());
+     }
+ 
+@@ -1046,6 +1329,7 @@
+         StageTurnArgs {
+             beat_summary: "authority update".to_string(),
+             advances_story: Some(false),
++            retract_turns: None, retraction_reason: None,
+             clock: None, scene: None, location: None, participants: None, npc_updates: None,
+             events: None, facts: None, knowledge: None, commitments: None, threads: None,
+             living_world: None,
+@@ -1098,4 +1382,5 @@
+         assert!(validate_stage_input(&value).is_ok());
+         assert!(validate_stage_against_state(&RpState::default(), &value).is_ok());
+     }
++
+ }
