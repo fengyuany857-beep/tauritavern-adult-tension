@@ -6,8 +6,8 @@
   "trigger_sha": "fd2d32bbb166e710f66bea19a1a698bd1bf87495",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
   "stage": "iOS mobile HTTP compatibility",
-  "state": "RUNNING",
+  "state": "PASS",
   "exit_code": 0,
-  "updated_at": "2026-09-08T17:30:13Z",
+  "updated_at": "2026-09-08T17:30:17Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-14-a1"
 }
