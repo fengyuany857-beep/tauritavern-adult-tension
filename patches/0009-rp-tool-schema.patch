@@ -1,0 +1,55 @@
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs
+@@ -40,13 +40,15 @@
+     ToolDescriptor {
+         id: ToolId::builtin(RP_STAGE_TURN).expect("builtin tool name must be valid"),
+         title: Some("RP Stage Turn".to_string()),
+-        description: Some("Stage the structured consequences of exactly one roleplay beat into this run's branch-local persistent RP state. This does not directly edit chat. Use once after deciding the beat and before workspace.commit. Fixed Canon cannot be overwritten. Current boundaries/grants/safety live only in the runtime authority section and must be grounded in the explicit current user turn; continuity facts cannot create them. Player feelings/intentions/internal state are rejected.".to_string()),
++        description: Some("Stage the structured consequences of exactly one roleplay beat into this run's branch-local persistent RP state. This does not directly edit chat. Use once after deciding the beat and before workspace.commit. Fixed Canon cannot be overwritten. Positive NPC knowledge requires explicit provenance. When the user says a prior accepted story turn never happened, retract that turn with retract_turns + retraction_reason so its derived continuity is removed instead of merely marking an event cancelled. Current boundaries/grants/safety live only in the runtime authority section and must be grounded in the explicit current user turn; continuity facts cannot create them. Player feelings/intentions/internal state are rejected.".to_string()),
+         input_schema: json!({
+             "type": "object",
+             "additionalProperties": false,
+             "properties": {
+                 "beat_summary": { "type": "string", "description": "Short factual summary of what actually happens in this assistant beat, or why this is a non-advancing OOC/meta reply." },
+-                "advances_story": { "type": ["boolean", "null"], "description": "Default true. Set false for genuinely non-advancing OOC/meta or explicit runtime-authority configuration. Scene/world/NPC/continuity history mutations cannot accompany false; boundary/grant/pause/resume authority changes and Living World preference settings may." },
++                "advances_story": { "type": ["boolean", "null"], "description": "Default true. Set false for genuinely non-advancing OOC/meta, explicit runtime-authority configuration, or a pure retraction of prior invalid story turns. Scene/world/NPC/new continuity mutations cannot accompany false; retract_turns, boundary/grant/pause/resume authority changes and Living World preference settings may." },
++                "retract_turns": { "type": ["array", "null"], "items": { "type": "integer", "minimum": 1 }, "maxItems": 16, "description": "Prior accepted story turn numbers that the current explicit user correction says never happened. Cascades removal of facts, knowledge, events, commitments, threads, agendas, recent beats and NPC runtime updates originating in those turns." },
++                "retraction_reason": { "type": ["string", "null"], "description": "Required when retract_turns is non-empty. Concise user-grounded reason for the historical correction." },
+                 "clock": { "type": ["string", "null"], "description": "Current story/world clock label when it actually changes." },
+                 "scene": { "type": ["string", "null"] },
+                 "location": { "type": ["string", "null"] },
+@@ -57,6 +59,7 @@
+                         "type": "object", "additionalProperties": false,
+                         "properties": {
+                             "id": { "type": "string" },
++                            "knowledge_refs": { "type": ["array", "null"], "items": { "type": "string" }, "maxItems": 32, "description": "Accepted fact ids this NPC runtime update relies on. Newly introduced NPCs may reference accepted continuity facts only when matching knowledge rows with explicit provenance are staged in the same call." },
+                             "emotion": { "type": ["string", "null"] },
+                             "goal": { "type": ["string", "null"] },
+                             "autonomy": { "type": ["string", "null"] },
+@@ -88,6 +91,7 @@
+                             "predicate": { "type": "string" },
+                             "value": {},
+                             "supersedes": { "type": ["string", "null"], "description": "Optional prior fact id superseded by this accepted fact." },
++                            "knowledge_refs": { "type": ["array", "null"], "items": { "type": "string" }, "maxItems": 32, "description": "Accepted fact ids whose contents are relied on by this NPC-authored historical fact. Use with matching knowledge provenance when an NPC mentions/acts on prior continuity." },
+                             "plane": { "type": ["string", "null"], "enum": ["OBJECTIVE", "PLAYER_VISIBLE", "CHARACTER", "PRESENTATION", null] },
+                             "classification": { "type": ["string", "null"], "enum": ["HISTORICAL", "INTERPRETATION", "UNRESOLVED", null] }
+                         },
+@@ -102,7 +106,17 @@
+                             "character_id": { "type": "string" },
+                             "subject": { "type": "string" },
+                             "predicate": { "type": "string" },
+-                            "state": { "type": "string", "enum": ["does_not_know", "partial", "suspects", "knows", "false_belief"] }
++                            "state": { "type": "string", "enum": ["does_not_know", "partial", "suspects", "knows", "false_belief"] },
++                            "fact_id": { "type": ["string", "null"], "description": "Optional accepted/staged fact id this knowledge is about. Required by new-NPC knowledge_refs checks when the NPC relies on prior continuity." },
++                            "source": {
++                                "type": ["object", "null"], "additionalProperties": false,
++                                "description": "Required for every positive knowledge state. Historical continuity is not automatically known by an NPC.",
++                                "properties": {
++                                    "kind": { "type": "string", "enum": ["user_asserted", "observed", "told_by", "public", "inferred", "existing"] },
++                                    "reference": { "type": ["string", "null"], "description": "Evidence/source label. Required for told_by; useful for observed/user_asserted/public evidence." }
++                                },
++                                "required": ["kind"]
++                            }
+                         },
+                         "required": ["character_id", "subject", "predicate", "state"]
+                     }
