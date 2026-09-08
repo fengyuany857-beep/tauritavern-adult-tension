@@ -1,0 +1,8 @@
+# Diagnostic matches
+
+# Tail
+
+> tauritavern@2.2.0 check:rust-boundaries /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> node scripts/check-rust-crate-boundaries.mjs
+
+[rust-crate-boundaries] clean (tt-domain, tt-contracts, tt-ports, tt-application, tt-adapter-http, tt-adapter-tokenization, tt-adapter-sync, tt-adapter-archive, tt-adapter-provider-http, tt-adapter-extension, tt-adapter-storage-core, tt-adapter-storage-userdata, tt-adapter-media)
