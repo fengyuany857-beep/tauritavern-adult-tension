@@ -96,10 +96,40 @@ jobs:
         working-directory: source
         run: node --test tests/agent-rp-native-contract.test.mjs tests/agent-api-contract.test.mjs tests/personal-ios-unsigned-build.test.mjs
 
-      - name: Repository quality gate
+      - name: Quality gate - frontend guardrails
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_quality_gate }}
         working-directory: source
-        run: pnpm run check
+        run: pnpm run check:frontend
+
+      - name: Quality gate - TypeScript
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_quality_gate }}
+        working-directory: source
+        run: pnpm run check:types
+
+      - name: Quality gate - logging boundaries
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_quality_gate }}
+        working-directory: source
+        run: pnpm run check:logging-boundaries
+
+      - name: Quality gate - Rust crate boundaries
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_quality_gate }}
+        working-directory: source
+        run: pnpm run check:rust-boundaries
+
+      - name: Quality gate - contract tests
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_quality_gate }}
+        working-directory: source
+        run: pnpm run test:contracts
+
+      - name: Quality gate - Rust tests
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_quality_gate }}
+        working-directory: source
+        run: pnpm run test:rust
+
+      - name: Quality gate - Rust clippy
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_quality_gate }}
+        working-directory: source
+        run: pnpm run check:rust:clippy
 
       - name: Build frontend
         working-directory: source
