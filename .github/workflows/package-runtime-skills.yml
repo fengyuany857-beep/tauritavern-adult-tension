@@ -32,7 +32,7 @@ jobs:
           ref: 3a8c5401c859ac15ac11f3339846360615232896
           path: source
 
-      - name: Reconstruct and apply Build 11 native patch stack
+      - name: Reconstruct and apply Build 14 native patch stack
         shell: bash
         run: |
           set -euo pipefail
@@ -70,6 +70,10 @@ jobs:
             git apply --check "$patch"
             git apply "$patch"
           done
+          for patch in ../control/build14-post/*.patch; do
+            git apply --check "$patch"
+            git apply "$patch"
+          done
           git diff --check
           test -f extras/adult-tension-tauritavern-adapter/SKILL.md
 
@@ -85,15 +89,15 @@ jobs:
           test -f /tmp/adult-tension-package/SKILL.md
           test -f /tmp/adapter-package/SKILL.md
           (cd /tmp/adult-tension-package && zip -qr "$GITHUB_WORKSPACE/out/adult-tension-cbfdc623.zip" .)
-          (cd /tmp/adapter-package && zip -qr "$GITHUB_WORKSPACE/out/adult-tension-tauritavern-adapter-build11.zip" .)
+          (cd /tmp/adapter-package && zip -qr "$GITHUB_WORKSPACE/out/adult-tension-tauritavern-adapter-build14.zip" .)
           sha256sum out/*.zip | tee out/SHA256SUMS.txt
           unzip -t out/adult-tension-cbfdc623.zip >/dev/null
-          unzip -t out/adult-tension-tauritavern-adapter-build11.zip >/dev/null
+          unzip -t out/adult-tension-tauritavern-adapter-build14.zip >/dev/null
 
       - name: Upload Skill packages
         uses: actions/upload-artifact@v4
         with:
-          name: Adult-Tension-Runtime-Skills-Build11
+          name: Adult-Tension-Runtime-Skills-Build14
           path: out/
           if-no-files-found: error
           retention-days: 30
