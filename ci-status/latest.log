@@ -118,31 +118,12 @@
 2469:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 2475:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 2481:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2487:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2493:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2499:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2505:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 # Tail
-test services::settings_service::tests::clear_cache_drops_settings_aggregate_cache_even_when_signature_is_stable ... ok
-test services::settings_service::tests::chat_backup_cleanup_failure_does_not_fail_settings_update ... ok
-test services::settings_service::tests::compression_only_update_applies_and_schedules_format_reconciliation ... ok
-test services::settings_service::tests::save_user_settings_clears_settings_aggregate_cache_when_payload_changes ... ok
-test services::settings_service::tests::save_user_settings_patch_applies_set_and_delete ... ok
-test services::settings_service::tests::save_user_settings_patch_rejects_stale_base_hash ... ok
-test services::settings_service::tests::save_user_settings_patch_persists_repaired_noop ... ok
-test services::settings_service::tests::save_user_settings_skips_disk_read_when_revision_cache_matches ... ok
-test services::settings_service::tests::save_user_settings_skips_unchanged_payload ... ok
-test services::settings_service::tests::tauritavern_settings_update_applies_request_proxy_runtime ... ok
-test services::settings_service::tests::sillytavern_settings_aggregate_uses_cache_until_signature_changes ... ok
-test services::settings_service::tests::tauritavern_settings_update_persists_and_applies_chat_backup_policy ... ok
-test services::settings_service::tests::tauritavern_settings_update_persists_chat_virtualization_switch ... ok
-test services::settings_service::tests::unavailable_chat_backup_storage_stats_do_not_block_settings ... ok
-test services::settings_service::tests::user_settings_hash_is_stable_for_object_key_order ... ok
-test services::skill_service::tests::resolve_effective_skills_fails_when_explicit_visible_skill_is_missing ... ok
-test services::skill_service::tests::download_import_url_fetches_skill_md_with_limit_and_sanitized_source ... ok
-test services::skill_service::tests::resolve_effective_skills_prefers_later_scopes ... ok
-test services::skill_service::tests::sanitized_source_url_drops_secret_parts ... ok
-test services::skill_service::tests::skill_import_url_requires_https_skill_md ... ok
-test services::sync_automation_service::tests::completed_transfer_updates_last_success ... ok
-test services::sync_automation_service::tests::lan_request_acceptance_does_not_count_as_success ... ok
-test services::sync_automation_service::tests::legacy_rule_migration_keeps_existing_lan_auto_start ... ok
 test services::sync_automation_service::tests::legacy_rule_migration_moves_auto_start_and_manual_mode ... ok
 test services::sync_automation_service::tests::scheduled_job_uses_current_global_overwrite_policy ... ok
 test services::sync_job_coordinator::tests::active_guard_only_clears_its_own_job ... ok
@@ -380,3 +361,26 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 [1m[92m   Doc-tests[0m tt_application
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_contracts
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_domain
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_ports
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
