@@ -1,8 +1,8 @@
 # TauriTavern Adult Tension iOS build status
 
-- State: **RUNNING**
+- State: **FAIL**
 - Stage: **Rust Clippy**
-- Exit code: **0**
+- Exit code: **101**
 - Run: **6 / attempt 1**
 - Upstream: `3a8c5401c859ac15ac11f3339846360615232896`
-- Updated: **2026-09-08T02:16:37Z**
+- Updated: **2026-09-08T02:17:05Z**
