@@ -2,19 +2,13 @@ name: Build Adult Tension Native iOS
 
 on:
   workflow_dispatch:
-    inputs:
-      run_quality_gate:
-        description: Run the full repository quality gate before building
-        required: false
-        type: boolean
-        default: true
   push:
     branches: [main]
     paths:
       - BUILD_TRIGGER
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: adult-tension-native-ios-${{ github.ref }}
@@ -28,6 +22,7 @@ jobs:
       UPSTREAM_SHA: 3a8c5401c859ac15ac11f3339846360615232896
       PATCH_SHA256: ab08a021d5ff0158b283ef25bfc6aa7f0efec05328ca99e489eea130d566fe10
       TAURITAVERN_IOS_POLICY_PROFILE: full
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout build control repository
         uses: actions/checkout@v4
@@ -92,78 +87,12 @@ jobs:
         working-directory: source
         run: pnpm install --frozen-lockfile
 
-      - name: Native RP contract tests
-        working-directory: source
-        run: node --test tests/agent-rp-native-contract.test.mjs tests/agent-api-contract.test.mjs tests/personal-ios-unsigned-build.test.mjs
-
-      - name: Quality gate - frontend guardrails
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_quality_gate }}
-        working-directory: source
-        run: pnpm run check:frontend
-
-      - name: Quality gate - TypeScript
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_quality_gate }}
-        working-directory: source
-        run: pnpm run check:types
-
-      - name: Quality gate - logging boundaries
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_quality_gate }}
-        working-directory: source
-        run: pnpm run check:logging-boundaries
-
-      - name: Quality gate - Rust crate boundaries
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_quality_gate }}
-        working-directory: source
-        run: pnpm run check:rust-boundaries
-
-      - name: Quality gate - contract tests
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_quality_gate }}
-        working-directory: source
-        run: pnpm run test:contracts
-
-      - name: Quality gate - Rust tests
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_quality_gate }}
-        working-directory: source
-        run: pnpm run test:rust
-
-      - name: Quality gate - Rust clippy
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_quality_gate }}
-        working-directory: source
+      - name: Run quality gates, build iPhone app, verify IPA, publish self-sign release
         shell: bash
-        run: |
-          set -o pipefail
-          pnpm run check:rust:clippy 2>&1 | tee "$GITHUB_WORKSPACE/clippy.log"
+        run: bash control/ci/build-with-status.sh
 
-      - name: Upload Clippy diagnostics
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: clippy-diagnostics-${{ github.run_number }}
-          path: clippy.log
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Build frontend
-        working-directory: source
-        run: pnpm run web:build
-
-      - name: Enable standard mobile HTTP compatibility
-        working-directory: source
-        run: ./scripts/ci/configure-mobile-http.sh enable ios
-
-      - name: Build unsigned iOS IPA
-        working-directory: source
-        env:
-          TAURITAVERN_BUILD_BRANCH: adult-tension-native-v1.1
-          TAURITAVERN_BUILD_REVISION: 3a8c5401c859ac15ac11f3339846360615232896+adult-tension-native-v1.1
-          TAURITAVERN_IOS_POLICY_PROFILE: full
-        run: ./scripts/ci/build-ios-unsigned.sh
-
-      - name: Verify unsigned IPA
-        working-directory: source
-        run: ./scripts/ci/verify-ios-unsigned.sh dist/ios-unsigned/TauriTavern-unsigned.ipa
-
-      - name: Upload unsigned iOS artifact
+      - name: Upload unsigned iOS artifact backup
+        if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
           name: TauriTavern-Adult-Tension-Native-iOS-${{ github.run_number }}
