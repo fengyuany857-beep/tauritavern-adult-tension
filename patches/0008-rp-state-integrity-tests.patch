@@ -1,0 +1,160 @@
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -1382,5 +1382,157 @@
+         assert!(validate_stage_input(&value).is_ok());
+         assert!(validate_stage_against_state(&RpState::default(), &value).is_ok());
+     }
++    #[test]
++    fn positive_knowledge_requires_explicit_provenance() {
++        let mut value = authority_only();
++        value.knowledge = Some(vec![KnowledgeInput {
++            character_id: "npc-a".to_string(),
++            subject: "secret".to_string(),
++            predicate: "content".to_string(),
++            state: "knows".to_string(),
++            fact_id: None,
++            source: None,
++        }]);
++        assert!(validate_knowledge_provenance(&RpState::default(), &value).is_err());
++    }
++
++    #[test]
++    fn new_npc_cannot_reference_existing_fact_without_bound_provenance() {
++        let state = RpState {
++            facts: vec![RpFact {
++                id: "fact-key".to_string(),
++                subject: "blue key".to_string(),
++                predicate: "serial".to_string(),
++                value: json!("KT-71839"),
++                plane: "OBJECTIVE".to_string(),
++                classification: "HISTORICAL".to_string(),
++                truth_status: "HISTORICAL_FACT".to_string(),
++                admission_state: "COMMITTED".to_string(),
++                valid_from_turn: 1,
++                invalid_at_turn: None,
++                recorded_at_turn: 1,
++            }],
++            turn: 1,
++            ..RpState::default()
++        };
++        let mut value = authority_only();
++        value.advances_story = Some(true);
++        value.beat_summary = "Rain mentions KT-71839 immediately after arriving.".to_string();
++        value.npc_updates = Some(vec![NpcUpdate {
++            id: "Rain".to_string(),
++            knowledge_refs: None,
++            emotion: None,
++            goal: Some("Investigate KT-71839".to_string()),
++            autonomy: None,
++            relationship: None,
++            trust: None,
++        }]);
++        assert!(validate_knowledge_provenance(&state, &value).is_err());
++    }
++
++    #[test]
++    fn new_npc_can_reference_existing_fact_with_observed_provenance() {
++        let state = RpState {
++            facts: vec![RpFact {
++                id: "fact-key".to_string(),
++                subject: "blue key".to_string(),
++                predicate: "serial".to_string(),
++                value: json!("KT-71839"),
++                plane: "OBJECTIVE".to_string(),
++                classification: "HISTORICAL".to_string(),
++                truth_status: "HISTORICAL_FACT".to_string(),
++                admission_state: "COMMITTED".to_string(),
++                valid_from_turn: 1,
++                invalid_at_turn: None,
++                recorded_at_turn: 1,
++            }],
++            turn: 1,
++            ..RpState::default()
++        };
++        let mut value = authority_only();
++        value.advances_story = Some(true);
++        value.beat_summary = "Rain observes the blue key and reads KT-71839.".to_string();
++        value.npc_updates = Some(vec![NpcUpdate {
++            id: "Rain".to_string(),
++            knowledge_refs: Some(vec!["fact-key".to_string()]),
++            emotion: None,
++            goal: Some("Investigate KT-71839".to_string()),
++            autonomy: None,
++            relationship: None,
++            trust: None,
++        }]);
++        value.knowledge = Some(vec![KnowledgeInput {
++            character_id: "Rain".to_string(),
++            subject: "blue key".to_string(),
++            predicate: "serial".to_string(),
++            state: "knows".to_string(),
++            fact_id: Some("fact-key".to_string()),
++            source: Some(KnowledgeSourceInput { kind: "observed".to_string(), reference: Some("current beat".to_string()) }),
++        }]);
++        assert!(validate_knowledge_provenance(&state, &value).is_ok());
++    }
++
++    #[test]
++    fn retraction_cascades_turn_derived_continuity() {
++        let mut state = RpState {
++            runtime_revision: 6,
++            turn: 6,
++            npcs: BTreeMap::from([(
++                "Eve".to_string(),
++                RpNpcState { last_updated_turn: Some(6), goal: Some("read invalid letter".to_string()), ..RpNpcState::default() },
++            )]),
++            events: vec![RpEvent { id: "event-6".to_string(), summary: "invalid letter event".to_string(), status: "resolved".to_string(), turn: 6 }],
++            facts: vec![RpFact {
++                id: "fact-6".to_string(),
++                subject: "letter".to_string(),
++                predicate: "exists".to_string(),
++                value: json!(true),
++                plane: "OBJECTIVE".to_string(),
++                classification: "HISTORICAL".to_string(),
++                truth_status: "HISTORICAL_FACT".to_string(),
++                admission_state: "COMMITTED".to_string(),
++                valid_from_turn: 6,
++                invalid_at_turn: None,
++                recorded_at_turn: 6,
++            }],
++            knowledge: vec![RpKnowledge {
++                character_id: "Eve".to_string(),
++                subject: "letter".to_string(),
++                predicate: "content".to_string(),
++                state: "knows".to_string(),
++                fact_id: Some("fact-6".to_string()),
++                source: Some(RpKnowledgeSource { kind: "observed".to_string(), reference: None }),
++                turn: 6,
++            }],
++            threads: vec![RpThread {
++                id: "thread-later".to_string(),
++                summary: "depends on invalid letter".to_string(),
++                status: "open".to_string(),
++                requires: vec!["fact-6".to_string()],
++                reveal_gate: None, presentation_gate: None, anti_merge: vec![], turn: 7,
++            }],
++            recent_beats: vec![RpBeat { turn: 6, summary: "invalid beat".to_string(), run_id: "run-6".to_string() }],
++            ..RpState::default()
++        };
++        apply_retractions(&mut state, &[6], "user corrected the prior beat", 6);
++        assert!(state.events.is_empty());
++        assert!(state.facts.is_empty());
++        assert!(state.knowledge.is_empty());
++        assert!(state.npcs.is_empty());
++        assert!(state.threads.is_empty());
++        assert!(state.recent_beats.is_empty());
++        assert_eq!(state.retractions.len(), 1);
++        assert_eq!(state.retractions[0].target_turn, 6);
++    }
++
++    #[test]
++    fn non_advancing_retraction_is_allowed() {
++        let mut value = authority_only();
++        value.retract_turns = Some(vec![1]);
++        value.retraction_reason = Some("user says the prior beat never happened".to_string());
++        assert!(validate_stage_input(&value).is_ok());
++        let state = RpState { turn: 1, ..RpState::default() };
++        assert!(validate_stage_against_state(&state, &value).is_ok());
++    }
+ 
+ }
