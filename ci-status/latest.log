@@ -17,239 +17,11 @@
 681:    export VALIDATE_DEVELOPMENT_ASSET_PATHS\=YES_ERROR
 823:[1m[92m   Compiling[0m thiserror v2.0.18
 839:[1m[92m   Compiling[0m thiserror-impl v2.0.18
+895:[1m[92m   Compiling[0m thiserror v1.0.69
+901:[1m[92m   Compiling[0m thiserror-impl v1.0.69
+927:[1m[92m   Compiling[0m gix-error v0.2.4
 
 # Tail
-    export STRINGS_FILE_OUTPUT_ENCODING\=binary
-    export STRING_CATALOG_GENERATE_SYMBOLS\=NO
-    export STRIP_BITCODE_FROM_COPIED_FILES\=YES
-    export STRIP_INSTALLED_PRODUCT\=YES
-    export STRIP_STYLE\=all
-    export STRIP_SWIFT_SYMBOLS\=YES
-    export SUPPORTED_DEVICE_FAMILIES\=1,2
-    export SUPPORTED_PLATFORMS\=iphoneos\ iphonesimulator
-    export SUPPORTS_MACCATALYST\=NO
-    export SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD\=YES
-    export SUPPORTS_ON_DEMAND_RESOURCES\=YES
-    export SUPPORTS_TEXT_BASED_API\=NO
-    export SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD\=YES
-    export SUPPRESS_WARNINGS\=NO
-    export SWIFT_COMPILATION_MODE\=wholemodule
-    export SWIFT_EMIT_CONST_VALUE_PROTOCOLS\=AnyResolverProviding\ AppEntity\ AppEnum\ AppExtension\ AppIntent\ AppIntentsPackage\ AppShortcutProviding\ AppShortcutsProvider\ DynamicOptionsProvider\ EntityQuery\ ExtensionPointDefining\ IntentValueQuery\ Resolver\ TransientEntity\ _AssistantIntentsProvider\ _GenerativeFunctionExtractable\ _IntentValueRepresentable
-    export SWIFT_EMIT_LOC_STRINGS\=NO
-    export SWIFT_ENABLE_EXPLICIT_MODULES\=YES
-    export SWIFT_OPTIMIZATION_LEVEL\=-O
-    export SWIFT_PLATFORM_TARGET_PREFIX\=ios
-    export SWIFT_RESPONSE_FILE_PATH_normal_arm64\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/TauriTavern.SwiftFileList
-    export SWIFT_VERSION\=5.0
-    export SYMROOT\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products
-    export SYSTEM_ADMIN_APPS_DIR\=/Applications/Utilities
-    export SYSTEM_APPS_DIR\=/Applications
-    export SYSTEM_CORE_SERVICES_DIR\=/System/Library/CoreServices
-    export SYSTEM_DEMOS_DIR\=/Applications/Extras
-    export SYSTEM_DEVELOPER_APPS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications
-    export SYSTEM_DEVELOPER_BIN_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/usr/bin
-    export SYSTEM_DEVELOPER_DEMOS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Utilities/Built\ Examples
-    export SYSTEM_DEVELOPER_DIR\=/Applications/Xcode_26.6.app/Contents/Developer
-    export SYSTEM_DEVELOPER_DOC_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library
-    export SYSTEM_DEVELOPER_GRAPHICS_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Graphics\ Tools
-    export SYSTEM_DEVELOPER_JAVA_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Java\ Tools
-    export SYSTEM_DEVELOPER_PERFORMANCE_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Performance\ Tools
-    export SYSTEM_DEVELOPER_RELEASENOTES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/releasenotes
-    export SYSTEM_DEVELOPER_TOOLS\=/Applications/Xcode_26.6.app/Contents/Developer/Tools
-    export SYSTEM_DEVELOPER_TOOLS_DOC_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/documentation/DeveloperTools
-    export SYSTEM_DEVELOPER_TOOLS_RELEASENOTES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/releasenotes/DeveloperTools
-    export SYSTEM_DEVELOPER_USR_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/usr
-    export SYSTEM_DEVELOPER_UTILITIES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Utilities
-    export SYSTEM_DEXT_INSTALL_PATH\=/System/Library/DriverExtensions
-    export SYSTEM_DOCUMENTATION_DIR\=/Library/Documentation
-    export SYSTEM_EXTENSIONS_FOLDER_PATH\=TauriTavern.app/SystemExtensions
-    export SYSTEM_EXTENSIONS_FOLDER_PATH_SHALLOW_BUNDLE_NO\=TauriTavern.app/Library/SystemExtensions
-    export SYSTEM_EXTENSIONS_FOLDER_PATH_SHALLOW_BUNDLE_YES\=TauriTavern.app/SystemExtensions
-    export SYSTEM_KEXT_INSTALL_PATH\=/System/Library/Extensions
-    export SYSTEM_LIBRARY_DIR\=/System/Library
-    export TAPI_DEMANGLE\=YES
-    export TAPI_ENABLE_PROJECT_HEADERS\=NO
-    export TAPI_LANGUAGE\=objective-c
-    export TAPI_LANGUAGE_STANDARD\=compiler-default
-    export TAPI_USE_SRCROOT\=YES
-    export TAPI_VERIFY_MODE\=Pedantic
-    export TARGETED_DEVICE_FAMILY\=1,2
-    export TARGETNAME\=tauritavern_iOS
-    export TARGET_BUILD_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos
-    export TARGET_NAME\=tauritavern_iOS
-    export TARGET_TEMP_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build
-    export TEMP_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build
-    export TEMP_FILES_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build
-    export TEMP_FILE_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build
-    export TEMP_ROOT\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex
-    export TEMP_SANDBOX_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/TemporaryTaskSandboxes
-    export TEST_FRAMEWORK_SEARCH_PATHS\=\ /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/Frameworks\ /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/Developer/Library/Frameworks
-    export TEST_LIBRARY_SEARCH_PATHS\=\ /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib
-    export TOOLCHAINS\=com.apple.dt.toolchain.Metal.32023.883\ com.apple.dt.toolchain.XcodeDefault
-    export TOOLCHAIN_DIR\=/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.2KgBUe/Metal.xctoolchain
-    export TOOLCHAIN_VERSION\=32023.883
-    export TREAT_MISSING_BASELINES_AS_TEST_FAILURES\=NO
-    export TREAT_MISSING_SCRIPT_PHASE_OUTPUTS_AS_ERRORS\=NO
-    export UID\=501
-    export UNINSTALLED_PRODUCTS_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/UninstalledProducts
-    export UNLOCALIZED_RESOURCES_FOLDER_PATH\=TauriTavern.app
-    export UNLOCALIZED_RESOURCES_FOLDER_PATH_SHALLOW_BUNDLE_NO\=TauriTavern.app/Resources
-    export UNLOCALIZED_RESOURCES_FOLDER_PATH_SHALLOW_BUNDLE_YES\=TauriTavern.app
-    export UNSTRIPPED_PRODUCT\=NO
-    export USER\=runner
-    export USER_APPS_DIR\=/Users/runner/Applications
-    export USER_LIBRARY_DIR\=/Users/runner/Library
-    export USE_DYNAMIC_NO_PIC\=YES
-    export USE_HEADERMAP\=YES
-    export USE_HEADER_SYMLINKS\=NO
-    export VALIDATE_DEVELOPMENT_ASSET_PATHS\=YES_ERROR
-    export VALIDATE_PRODUCT\=NO
-    export VALID_ARCHS\=arm64
-    export VERBOSE_PBXCP\=NO
-    export VERSIONPLIST_PATH\=TauriTavern.app/version.plist
-    export VERSION_INFO_BUILDER\=runner
-    export VERSION_INFO_FILE\=TauriTavern_vers.c
-    export VERSION_INFO_STRING\=\"@\(\#\)PROGRAM:TauriTavern\ \ PROJECT:tauritavern-\"
-    export WORKSPACE_DIR\=/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/tauritavern.xcodeproj
-    export WRAPPER_EXTENSION\=app
-    export WRAPPER_NAME\=TauriTavern.app
-    export WRAPPER_SUFFIX\=.app
-    export WRAP_ASSET_PACKS_IN_SEPARATE_DIRECTORIES\=NO
-    export XCODE_APP_SUPPORT_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Library/Xcode
-    export XCODE_PRODUCT_BUILD_VERSION\=17F113
-    export XCODE_VERSION_ACTUAL\=2660
-    export XCODE_VERSION_MAJOR\=2600
-    export XCODE_VERSION_MINOR\=2660
-    export XPCSERVICES_FOLDER_PATH\=TauriTavern.app/XPCServices
-    export YACC\=yacc
-    export _DISCOVER_COMMAND_LINE_LINKER_INPUTS\=YES
-    export _DISCOVER_COMMAND_LINE_LINKER_INPUTS_INCLUDE_WL\=YES
-    export _LD_MULTIARCH\=YES
-    export _WRAPPER_CONTENTS_DIR_SHALLOW_BUNDLE_NO\=/Contents
-    export _WRAPPER_PARENT_PATH_SHALLOW_BUNDLE_NO\=/..
-    export _WRAPPER_RESOURCES_DIR_SHALLOW_BUNDLE_NO\=/Resources
-    export __DIAGNOSE_DEPRECATED_ARCHS\=YES
-    export __IS_NOT_MACOS\=YES
-    export __IS_NOT_MACOS_macosx\=NO
-    export __IS_NOT_SIMULATOR\=YES
-    export __IS_NOT_SIMULATOR_simulator\=NO
-    export __ORIGINAL_SDK_DEFINED_LLVM_TARGET_TRIPLE_SYS\=ios
-    export arch\=undefined_arch
-    export variant\=normal
-    /bin/sh -c /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Script-95C7284793BDA95D8927B3DA.sh
-
-> tauritavern@2.2.0 tauri /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
-> node scripts/tauri-app.mjs --prepare-frontend ios xcode-script -v --platform iOS --sdk-root /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk --framework-search-paths '/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos  "."' --header-search-paths '/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/include ' --gcc-preprocessor-definitions '' --configuration release arm64
-
-
-> tauritavern@2.2.0 web:build /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
-> rspack build --config rspack.config.js
-
-vendor-libs:
-  asset [1m[32mlib.optional.bundle.js[39m[22m 934 KiB [1m[32m[emitted][39m[22m [javascript module] (name: lib.optional)
-  asset [1m[32mlib.core.bundle.js[39m[22m 781 KiB [1m[32m[emitted][39m[22m [javascript module] (name: lib.core)
-  Entrypoint [1mlib.core[39m[22m 781 KiB = [1m[32mlib.core.bundle.js[39m[22m
-  Entrypoint [1mlib.optional[39m[22m 934 KiB = [1m[32mlib.optional.bundle.js[39m[22m
-  chunk (runtime: lib.core) [1m[32mlib.core.bundle.js[39m[22m (lib.core) 3.01 MiB (javascript) 1.02 KiB (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
-  chunk (runtime: lib.optional) [1m[32mlib.optional.bundle.js[39m[22m (lib.optional) 1.5 MiB (javascript) 431 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
-  cached modules 1.15 MiB [1m[32m[cached][39m[22m 435 modules
-  runtime modules 1.44 KiB 7 modules
-  cacheable modules 4.51 MiB
-    modules by path [1m./node_modules/.pnpm/highlight.js@11.11.1/node_modules/highlight.js/lib/[39m[22m 1.5 MiB 194 modules
-    modules by path [1m./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/dist/cjs/[39m[22m 591 KiB 30 modules
-    modules by path [1m./node_modules/.pnpm/source-map@0.6.1/node_modules/source-map/[39m[22m 99.4 KiB 11 modules
-    modules by path [1m./node_modules/.pnpm/seedrandom@3.0.5/node_modules/seedrandom/[39m[22m 26.5 KiB 8 modules
-    modules by path [1m./node_modules/.pnpm/@mozilla+readability@0.6.0/node_modules/@mozilla/readability/*.js[39m[22m 92.2 KiB
-      [1m./node_modules/.pnpm/@mozilla+readability@0.6.0/node_modules/@mozilla/readability/Readability.js[39m[22m 87.9 KiB [1m[33m[code generated][39m[22m
-      + 2 modules
-    modules by path [1m./src/*.js[39m[22m 1.13 MiB
-      [1m./src/lib-bundle-core.js + 427 modules[39m[22m 1.13 MiB [1m[33m[code generated][39m[22m
-      [1m./src/lib-bundle-optional.js + 1 modules[39m[22m 485 bytes [1m[33m[code generated][39m[22m
-    modules by path [1m./node_modules/.pnpm/moment@2.30.1/node_modules/[39m[22m 172 KiB
-      [1m./node_modules/.pnpm/moment@2.30.1/node_modules/moment/moment.js[39m[22m 172 KiB [1m[33m[code generated][39m[22m
-      [1m./node_modules/.pnpm/moment@2.30.1/node_modules/moment|sync[39m[22m 160 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
-    modules by path [1m./node_modules/.pnpm/localforage@1.10.0/node_modules/localforage/[39m[22m 91.7 KiB
-      [1m./node_modules/.pnpm/localforage@1.10.0/node_modules/localforage/dist/localforage.js[39m[22m 91.6 KiB [1m[33m[code generated][39m[22m
-      [1m./node_modules/.pnpm/localforage@1.10.0/node_modules/localforage/dist|sync[39m[22m 160 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
-    + 10 modules
-  2026-09-08 [1m03:07:42[39m[22m: [1mvendor-libs[39m[22m (Rspack 2.0.8) compiled [1m[32msuccessfully[39m[22m in 1.63 s
-
-agent-system:
-  asset [1m[32mindex.bundle.js[39m[22m 477 KiB [1m[32m[emitted][39m[22m [javascript module] (name: index)
-  Entrypoint [1mindex[39m[22m 477 KiB = [1m[32mindex.bundle.js[39m[22m
-  chunk (runtime: index) [1m[32mindex.bundle.js[39m[22m (index) 1.11 MiB (javascript) 921 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
-  cached modules 1.12 MiB [1m[32m[cached][39m[22m 64 modules
-  runtime modules 921 bytes 4 modules
-  [1m./src/scripts/extensions/agent-system/src/index.js + 62 modules[39m[22m 1.11 MiB [1m[33m[code generated][39m[22m
-  2026-09-08 [1m03:07:43[39m[22m: [1magent-system[39m[22m (Rspack 2.0.8) compiled [1m[32msuccessfully[39m[22m in 485 ms
-
-tauritavern-settings:
-  asset [1m[32msync.bundle.js[39m[22m 210 KiB [1m[32m[emitted][39m[22m [javascript module] (name: sync)
-  asset [1m[32msettings.bundle.js[39m[22m 196 KiB [1m[32m[emitted][39m[22m [javascript module] (name: settings)
-  asset [1m[32mdev-logs.bundle.js[39m[22m 185 KiB [1m[32m[emitted][39m[22m [javascript module] (name: dev-logs)
-  Entrypoint [1msettings[39m[22m 196 KiB = [1m[32msettings.bundle.js[39m[22m
-  Entrypoint [1mdev-logs[39m[22m 185 KiB = [1m[32mdev-logs.bundle.js[39m[22m
-  Entrypoint [1msync[39m[22m 210 KiB = [1m[32msync.bundle.js[39m[22m
-  chunk (runtime: sync) [1m[32msync.bundle.js[39m[22m (sync) 657 KiB (javascript) 921 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
-  chunk (runtime: dev-logs) [1m[32mdev-logs.bundle.js[39m[22m (dev-logs) 622 KiB (javascript) 921 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
-  chunk (runtime: settings) [1m[32msettings.bundle.js[39m[22m (settings) 633 KiB (javascript) 921 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
-  cached modules 723 KiB [1m[32m[cached][39m[22m 23 modules
-  runtime modules 2.7 KiB 12 modules
-  cacheable modules 1.87 MiB
-    [1m./src/scripts/tauri/setting/sync-app/index.js + 12 modules[39m[22m 657 KiB [1m[33m[code generated][39m[22m
-    [1m./src/scripts/tauri/setting/settings-app/index.js + 10 modules[39m[22m 633 KiB [1m[33m[code generated][39m[22m
-    [1m./src/scripts/tauri/setting/dev-logs-app/index.js + 12 modules[39m[22m 622 KiB [1m[33m[code generated][39m[22m
-  2026-09-08 [1m03:07:43[39m[22m: [1mtauritavern-settings[39m[22m (Rspack 2.0.8) compiled [1m[32msuccessfully[39m[22m in 558 ms
-       Debug [tauri_cli::helpers::app_paths] Found Tauri project inside /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern on early lookup
-       Debug [jsonrpsee-client] Connecting to target: Target { host: "127.0.0.1", host_header: "127.0.0.1:49400", _mode: Plain, path_and_query: "/", basic_auth: None }
-       Debug [jsonrpsee-client] Connection established to target: Target { host: "127.0.0.1", host_header: "127.0.0.1:49400", _mode: Plain, path_and_query: "/", basic_auth: None }
-[1m[92m Downloading[0m crates ...
-[1m[92m  Downloaded[0m async-channel v2.5.0
-[1m[92m  Downloaded[0m async-executor v1.14.0
-[1m[92m  Downloaded[0m async-broadcast v0.7.2
-[1m[92m  Downloaded[0m async-recursion v1.1.1
-[1m[92m  Downloaded[0m async-lock v3.4.2
-[1m[92m  Downloaded[0m async-process v2.5.0
-[1m[92m  Downloaded[0m async-signal v0.2.13
-[1m[92m  Downloaded[0m async-task v4.7.1
-[1m[92m  Downloaded[0m async-io v2.6.0
-[1m[92m  Downloaded[0m blocking v1.6.2
-[1m[92m  Downloaded[0m concurrent-queue v2.5.0
-[1m[92m  Downloaded[0m endi v1.1.1
-[1m[92m  Downloaded[0m event-listener-strategy v0.5.4
-[1m[92m  Downloaded[0m enumflags2 v0.7.12
-[1m[92m  Downloaded[0m enumflags2_derive v0.7.12
-[1m[92m  Downloaded[0m event-listener v5.4.1
-[1m[92m  Downloaded[0m objc2-uniform-type-identifiers v0.3.2
-[1m[92m  Downloaded[0m objc2-ui-kit v0.3.2
-[1m[92m  Downloaded[0m ordered-stream v0.2.0
-[1m[92m  Downloaded[0m piper v0.2.5
-[1m[92m  Downloaded[0m proc-macro-crate v3.4.0
-[1m[92m  Downloaded[0m polling v3.11.0
-[1m[92m  Downloaded[0m tauri-plugin-barcode-scanner v2.4.4
-[1m[92m  Downloaded[0m toml_edit v0.23.10+spec-1.0.0
-[1m[92m  Downloaded[0m zbus v5.14.0
-[1m[92m  Downloaded[0m zbus_names v4.3.1
-[1m[92m  Downloaded[0m zvariant_utils v3.3.0
-[1m[92m  Downloaded[0m zvariant_derive v5.10.0
-[1m[92m  Downloaded[0m zvariant v5.10.0
-[1m[92m  Downloaded[0m zbus_macros v5.14.0
-[1m[92m   Compiling[0m proc-macro2 v1.0.106
-[1m[92m   Compiling[0m unicode-ident v1.0.24
-[1m[92m   Compiling[0m quote v1.0.44
-[1m[92m   Compiling[0m libc v0.2.186
-[1m[92m   Compiling[0m serde_core v1.0.228
-[1m[92m   Compiling[0m cfg-if v1.0.4
-[1m[92m   Compiling[0m syn v2.0.117
-[1m[92m   Compiling[0m memchr v2.8.0
-[1m[92m   Compiling[0m serde v1.0.228
-[1m[92m   Compiling[0m parking_lot_core v0.9.12
-[1m[92m   Compiling[0m thiserror v2.0.18
-[1m[92m   Compiling[0m smallvec v1.15.1
-[1m[92m   Compiling[0m itoa v1.0.17
-[1m[92m   Compiling[0m jobserver v0.1.34
-[1m[92m   Compiling[0m once_cell v1.21.3
-[1m[92m   Compiling[0m shlex v1.3.0
 [1m[92m   Compiling[0m find-msvc-tools v0.1.9
 [1m[92m   Compiling[0m getrandom v0.4.1
 [1m[92m   Compiling[0m cc v1.2.56
@@ -279,3 +51,234 @@ tauritavern-settings:
 [1m[92m   Compiling[0m allocator-api2 v0.2.21
 [1m[92m   Compiling[0m regex-automata v0.4.14
 [1m[92m   Compiling[0m foldhash v0.2.0
+[1m[92m   Compiling[0m siphasher v1.0.2
+[1m[92m   Compiling[0m equivalent v1.0.2
+[1m[92m   Compiling[0m fnv v1.0.7
+[1m[92m   Compiling[0m typenum v1.20.1
+[1m[92m   Compiling[0m autocfg v1.5.0
+[1m[92m   Compiling[0m fastrand v2.3.0
+[1m[92m   Compiling[0m bstr v1.12.1
+[1m[92m   Compiling[0m dunce v1.0.5
+[1m[92m   Compiling[0m log v0.4.29
+[1m[92m   Compiling[0m anyhow v1.0.102
+[1m[92m   Compiling[0m phf_shared v0.13.1
+[1m[92m   Compiling[0m same-file v1.0.6
+[1m[92m   Compiling[0m byteorder v1.5.0
+[1m[92m   Compiling[0m ppv-lite86 v0.2.21
+[1m[92m   Compiling[0m walkdir v2.5.0
+[1m[92m   Compiling[0m zerofrom v0.1.6
+[1m[92m   Compiling[0m zlib-rs v0.6.3
+[1m[92m   Compiling[0m pin-project-lite v0.2.17
+[1m[92m   Compiling[0m yoke v0.8.1
+[1m[92m   Compiling[0m phf_generator v0.13.1
+[1m[92m   Compiling[0m time-core v0.1.8
+[1m[92m   Compiling[0m num-conv v0.2.0
+[1m[92m   Compiling[0m percent-encoding v2.3.2
+[1m[92m   Compiling[0m ident_case v1.0.1
+[1m[92m   Compiling[0m base64 v0.22.1
+[1m[92m   Compiling[0m tinyvec_macros v0.1.1
+[1m[92m   Compiling[0m strsim v0.11.1
+[1m[92m   Compiling[0m gix-trace v0.1.20
+[1m[92m   Compiling[0m tinyvec v1.10.0
+[1m[92m   Compiling[0m block-buffer v0.10.4
+[1m[92m   Compiling[0m crypto-common v0.1.7
+[1m[92m   Compiling[0m gix-validate v0.11.2
+[1m[92m   Compiling[0m gix-path v0.12.1
+[1m[92m   Compiling[0m digest v0.10.7
+[1m[92m   Compiling[0m unicode-normalization v0.1.25
+[1m[92m   Compiling[0m zerovec v0.11.5
+[1m[92m   Compiling[0m getrandom v0.2.17
+[1m[92m   Compiling[0m thiserror v1.0.69
+[1m[92m   Compiling[0m rand_core v0.6.4
+[1m[92m   Compiling[0m gix-utils v0.3.3
+[1m[92m   Compiling[0m cpufeatures v0.2.17
+[1m[92m   Compiling[0m writeable v0.6.2
+[1m[92m   Compiling[0m rand_chacha v0.3.1
+[1m[92m   Compiling[0m thiserror-impl v1.0.69
+[1m[92m   Compiling[0m rand v0.8.5
+[1m[92m   Compiling[0m tinystr v0.8.2
+[1m[92m   Compiling[0m hashbrown v0.16.1
+[1m[92m   Compiling[0m signal-hook-registry v1.4.8
+[1m[92m   Compiling[0m semver v1.0.27
+[1m[92m   Compiling[0m tokio-macros v2.6.1
+[1m[92m   Compiling[0m socket2 v0.6.2
+[1m[92m   Compiling[0m mio v1.1.1
+[1m[92m   Compiling[0m serde_json v1.0.149
+[1m[92m   Compiling[0m litemap v0.8.1
+[1m[92m   Compiling[0m siphasher v0.3.11
+[1m[92m   Compiling[0m new_debug_unreachable v1.0.6
+[1m[92m   Compiling[0m icu_locale_core v2.1.1
+[1m[92m   Compiling[0m tokio v1.49.0
+[1m[92m   Compiling[0m potential_utf v0.1.4
+[1m[92m   Compiling[0m zerotrie v0.2.3
+[1m[92m   Compiling[0m getrandom v0.1.16
+[1m[92m   Compiling[0m icu_provider v2.1.1
+[1m[92m   Compiling[0m icu_collections v2.1.1
+[1m[92m   Compiling[0m phf_macros v0.13.1
+[1m[92m   Compiling[0m http v1.4.0
+[1m[92m   Compiling[0m prodash v31.0.0
+[1m[92m   Compiling[0m precomputed-hash v0.1.1
+[1m[92m   Compiling[0m typeid v1.0.3
+[1m[92m   Compiling[0m gix-features v0.48.1
+[1m[92m   Compiling[0m gix-error v0.2.4
+[1m[92m   Compiling[0m phf_shared v0.11.3
+[1m[92m   Compiling[0m tracing-attributes v0.1.31
+[1m[92m   Compiling[0m tracing-core v0.1.36
+[1m[92m   Compiling[0m tracing v0.1.44
+[1m[92m   Compiling[0m rand_core v0.5.1
+[1m[92m   Compiling[0m indexmap v2.13.0
+[1m[92m   Compiling[0m phf_codegen v0.13.1
+[1m[92m   Compiling[0m utf8_iter v1.0.4
+[1m[92m   Compiling[0m erased-serde v0.4.10
+[1m[92m   Compiling[0m syn v1.0.109
+[1m[92m   Compiling[0m write16 v1.0.0
+[1m[92m   Compiling[0m getrandom v0.3.4
+[1m[92m   Compiling[0m utf16_iter v1.0.5
+[1m[92m   Compiling[0m icu_normalizer v2.1.1
+[1m[92m   Compiling[0m icu_properties v2.1.2
+[1m[92m   Compiling[0m sha1 v0.10.6
+[1m[92m   Compiling[0m darling_core v0.21.3
+[1m[92m   Compiling[0m futures-core v0.3.32
+[1m[92m   Compiling[0m zeroize v1.8.2
+[1m[92m   Compiling[0m utf-8 v0.7.6
+[1m[92m   Compiling[0m regex v1.12.3
+[1m[92m   Compiling[0m rand_chacha v0.2.2
+[1m[92m   Compiling[0m rand_pcg v0.2.1
+[1m[92m   Compiling[0m phf_generator v0.11.3
+[1m[92m   Compiling[0m phf_shared v0.8.0
+[1m[92m   Compiling[0m darling_macro v0.21.3
+[1m[92m   Compiling[0m form_urlencoded v1.2.2
+[1m[92m   Compiling[0m dtoa v1.0.11
+[1m[92m   Compiling[0m heapless v0.8.0
+[1m[92m   Compiling[0m proc-macro-hack v0.5.20+deprecated
+[1m[92m   Compiling[0m dtoa-short v0.3.5
+[1m[92m   Compiling[0m darling v0.21.3
+[1m[92m   Compiling[0m rand v0.7.3
+[1m[92m   Compiling[0m idna_adapter v1.2.1
+[1m[92m   Compiling[0m phf v0.13.1
+[1m[92m   Compiling[0m phf_shared v0.10.0
+[1m[92m   Compiling[0m string_cache_codegen v0.6.1
+[1m[92m   Compiling[0m hash32 v0.3.1
+[1m[92m   Compiling[0m cssparser-macros v0.6.1
+[1m[92m   Compiling[0m web_atoms v0.2.5
+[1m[92m   Compiling[0m phf_generator v0.8.0
+[1m[92m   Compiling[0m phf_generator v0.10.0
+[1m[92m   Compiling[0m idna v1.1.0
+[1m[92m   Compiling[0m serde_with_macros v3.17.0
+[1m[92m   Compiling[0m string_cache_codegen v0.5.4
+[1m[92m   Compiling[0m phf_codegen v0.11.3
+[1m[92m   Compiling[0m winnow v0.7.14
+[1m[92m   Compiling[0m mac v0.1.1
+[1m[92m   Compiling[0m core-foundation-sys v0.8.7
+[1m[92m   Compiling[0m futures-sink v0.3.32
+[1m[92m   Compiling[0m ctor-proc-macro v0.0.7
+[1m[92m   Compiling[0m phf_macros v0.10.0
+[1m[92m   Compiling[0m futf v0.1.5
+[1m[92m   Compiling[0m toml_parser v1.0.9+spec-1.1.0
+[1m[92m   Compiling[0m markup5ever v0.14.1
+[1m[92m   Compiling[0m cssparser v0.29.6
+[1m[92m   Compiling[0m url v2.5.8
+[1m[92m   Compiling[0m phf_codegen v0.8.0
+[1m[92m   Compiling[0m faster-hex v0.10.0
+[1m[92m   Compiling[0m string_cache v0.9.0
+[1m[92m   Compiling[0m uuid v1.21.0
+[1m[92m   Compiling[0m toml_datetime v0.7.5+spec-1.1.0
+[1m[92m   Compiling[0m serde_spanned v1.0.4
+[1m[92m   Compiling[0m futures-macro v0.3.32
+[1m[92m   Compiling[0m cmake v0.1.57
+[1m[92m   Compiling[0m slab v0.4.12
+[1m[92m   Compiling[0m futures-io v0.3.32
+[1m[92m   Compiling[0m bitflags v1.3.2
+[1m[92m   Compiling[0m toml_writer v1.0.6+spec-1.1.0
+[1m[92m   Compiling[0m futures-task v0.3.32
+[1m[92m   Compiling[0m fs_extra v1.3.0
+[1m[92m   Compiling[0m toml v0.9.12+spec-1.1.0
+[1m[92m   Compiling[0m futures-util v0.3.32
+[1m[92m   Compiling[0m aws-lc-sys v0.38.0
+[1m[92m   Compiling[0m selectors v0.24.0
+[1m[92m   Compiling[0m phf v0.10.1
+[1m[92m   Compiling[0m tendril v0.4.3
+[1m[92m   Compiling[0m tendril v0.5.0
+[1m[92m   Compiling[0m selectors v0.36.1
+[1m[92m   Compiling[0m string_cache v0.8.9
+[1m[92m   Compiling[0m phf v0.11.3
+[1m[92m   Compiling[0m rustc_version v0.4.1
+[1m[92m   Compiling[0m indexmap v1.9.3
+[1m[92m   Compiling[0m derive_more-impl v2.1.1
+[1m[92m   Compiling[0m alloc-no-stdlib v2.0.4
+[1m[92m   Compiling[0m powerfmt v0.2.0
+[1m[92m   Compiling[0m camino v1.2.2
+[1m[92m   Compiling[0m unic-char-range v0.9.0
+[1m[92m   Compiling[0m matches v0.1.10
+[1m[92m   Compiling[0m convert_case v0.4.0
+[1m[92m   Compiling[0m unic-common v0.9.0
+[1m[92m   Compiling[0m nodrop v0.1.14
+[1m[92m   Compiling[0m derive_more v2.1.1
+[1m[92m   Compiling[0m servo_arc v0.2.0
+[1m[92m   Compiling[0m unic-ucd-version v0.9.0
+[1m[92m   Compiling[0m derive_more v0.99.20
+[1m[92m   Compiling[0m unic-char-property v0.9.0
+[1m[92m   Compiling[0m deranged v0.5.8
+[1m[92m   Compiling[0m alloc-stdlib v0.2.2
+[1m[92m   Compiling[0m markup5ever v0.38.0
+[1m[92m   Compiling[0m cssparser v0.36.0
+[1m[92m   Compiling[0m fxhash v0.2.1
+[1m[92m   Compiling[0m phf v0.8.0
+[1m[92m   Compiling[0m rustls-pki-types v1.14.0
+[1m[92m   Compiling[0m sha1-checked v0.10.0
+[1m[92m   Compiling[0m swift-rs v1.0.7
+[1m[92m   Compiling[0m servo_arc v0.4.3
+[1m[92m   Compiling[0m match_token v0.1.0
+[1m[92m   Compiling[0m serde_derive_internals v0.29.1
+[1m[92m   Compiling[0m schemars v0.8.22
+[1m[92m   Compiling[0m jiff v0.2.32
+[1m[92m   Compiling[0m rustc-hash v2.1.1
+[1m[92m   Compiling[0m hashbrown v0.12.3
+[1m[92m   Compiling[0m bit-vec v0.8.0
+[1m[92m   Compiling[0m bit-set v0.8.0
+[1m[92m   Compiling[0m schemars_derive v0.8.22
+[1m[92m   Compiling[0m gix-date v0.15.5
+[1m[92m   Compiling[0m html5ever v0.29.1
+[1m[92m   Compiling[0m gix-hash v0.25.1
+[1m[92m   Compiling[0m html5ever v0.38.0
+[1m[92m   Compiling[0m time v0.3.47
+[1m[92m   Compiling[0m brotli-decompressor v5.0.0
+[1m[92m   Compiling[0m unic-ucd-ident v0.9.0
+[1m[92m   Compiling[0m cfb v0.7.3
+[1m[92m   Compiling[0m rand_core v0.9.5
+[1m[92m   Compiling[0m jsonptr v0.6.3
+[1m[92m   Compiling[0m cargo-platform v0.1.9
+[1m[92m   Compiling[0m quick-xml v0.38.4
+[1m[92m   Compiling[0m base64 v0.21.7
+[1m[92m   Compiling[0m dyn-clone v1.0.20
+[1m[92m   Compiling[0m subtle v2.6.1
+[1m[92m   Compiling[0m httparse v1.10.1
+[1m[92m   Compiling[0m aws-lc-rs v1.16.1
+[1m[92m   Compiling[0m plist v1.8.0
+[1m[92m   Compiling[0m dom_query v0.27.0
+[1m[92m   Compiling[0m cargo_metadata v0.19.2
+[1m[92m   Compiling[0m json-patch v3.0.1
+[1m[92m   Compiling[0m infer v0.19.0
+[1m[92m   Compiling[0m rand_chacha v0.9.0
+[1m[92m   Compiling[0m urlpattern v0.3.0
+[1m[92m   Compiling[0m brotli v8.0.2
+[1m[92m   Compiling[0m kuchikiki v0.8.8-speedreader
+[1m[92m   Compiling[0m serde-untagged v0.1.9
+[1m[92m   Compiling[0m ctor v0.8.0
+[1m[92m   Compiling[0m serde_with v3.17.0
+[1m[92m   Compiling[0m http-body v1.0.1
+[1m[92m   Compiling[0m glob v0.3.3
+[1m[92m   Compiling[0m pkg-config v0.3.32
+[1m[92m   Compiling[0m untrusted v0.9.0
+[1m[92m   Compiling[0m tauri-utils v2.9.3
+[1m[92m   Compiling[0m rand v0.9.2
+[1m[92m   Compiling[0m tokio-util v0.7.18
+[1m[92m   Compiling[0m hashbrown v0.17.1
+[1m[92m   Compiling[0m tower-service v0.3.3
+[1m[92m   Compiling[0m rustix v1.1.4
+[1m[92m   Compiling[0m httpdate v1.0.3
+[1m[92m   Compiling[0m ryu v1.0.23
+[1m[92m   Compiling[0m gix-hashtable v0.15.2
+[1m[92m   Compiling[0m gix-actor v0.41.1
+[1m[92m   Compiling[0m time-macros v0.2.27
+[1m[92m   Compiling[0m num_threads v0.1.7
