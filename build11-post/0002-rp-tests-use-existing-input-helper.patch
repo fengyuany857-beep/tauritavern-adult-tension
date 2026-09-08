@@ -1,0 +1,29 @@
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -1782,7 +1782,7 @@ mod tests {
+ 
+     #[test]
+     fn objective_inference_is_rejected_before_canon_admission() {
+-        let mut value = one_fact("BX numbering", "rule");
++        let mut value = input("rule", "BX numbering");
+         let fact = value.facts.as_mut().unwrap().first_mut().unwrap();
+         fact.classification = Some("INTERPRETATION".to_string());
+         fact.plane = Some("OBJECTIVE".to_string());
+@@ -1792,7 +1792,7 @@ mod tests {
+ 
+     #[test]
+     fn character_inference_persists_without_canon_authority() {
+-        let mut value = one_fact("BX-100", "may be an earlier batch");
++        let mut value = input("may be an earlier batch", "BX-100");
+         let fact = value.facts.as_mut().unwrap().first_mut().unwrap();
+         fact.classification = Some("INTERPRETATION".to_string());
+         fact.plane = Some("CHARACTER".to_string());
+@@ -1809,7 +1809,7 @@ mod tests {
+ 
+     #[test]
+     fn objective_fact_requires_explicit_source() {
+-        let mut value = one_fact("box", "is blue");
++        let mut value = input("is blue", "box");
+         value.facts.as_mut().unwrap()[0].source = None;
+         assert!(validate_stage_input(&value).is_err());
+     }
