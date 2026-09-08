@@ -1,0 +1,625 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/dispatcher.rs b/src-tauri/crates/tt-application/src/services/agent_tools/dispatcher.rs
+index 45541b3..5d56d62 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/dispatcher.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/dispatcher.rs
+@@ -142,27 +142,39 @@ impl AgentToolDispatcher {
+                 world_info::read_activated(&prompt_snapshot, call)?
+             }
+             dice::DICE_ROLL => dice::roll(call).await?,
+-            rp::RP_STATE => rp::state(
+-                self.run_repository.as_ref(),
+-                self.workspace_repository.as_ref(),
+-                run_id,
+-                call,
+-            )
+-            .await?,
+-            rp::RP_RECALL => rp::recall(
+-                self.run_repository.as_ref(),
+-                self.workspace_repository.as_ref(),
+-                run_id,
+-                call,
+-            )
+-            .await?,
+-            rp::RP_STAGE_TURN => rp::stage_turn(
+-                self.run_repository.as_ref(),
+-                self.workspace_repository.as_ref(),
+-                run_id,
+-                call,
+-            )
+-            .await?,
++            rp::RP_STATE => {
++                let prompt_snapshot = self.read_run_prompt_snapshot(run_id).await?;
++                rp::state(
++                    self.run_repository.as_ref(),
++                    self.workspace_repository.as_ref(),
++                    run_id,
++                    &prompt_snapshot,
++                    call,
++                )
++                .await?
++            }
++            rp::RP_RECALL => {
++                let prompt_snapshot = self.read_run_prompt_snapshot(run_id).await?;
++                rp::recall(
++                    self.run_repository.as_ref(),
++                    self.workspace_repository.as_ref(),
++                    run_id,
++                    &prompt_snapshot,
++                    call,
++                )
++                .await?
++            }
++            rp::RP_STAGE_TURN => {
++                let prompt_snapshot = self.read_run_prompt_snapshot(run_id).await?;
++                rp::stage_turn(
++                    self.run_repository.as_ref(),
++                    self.workspace_repository.as_ref(),
++                    run_id,
++                    &prompt_snapshot,
++                    call,
++                )
++                .await?
++            }
+             skill::SKILL_LIST => skill::list(call, session, profile).await?,
+             skill::SKILL_SEARCH => {
+                 skill::search(self.skill_service.as_ref(), call, session, profile).await?
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/binding.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/binding.rs
+new file mode 100644
+index 0000000..0c0f2ae
+--- /dev/null
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/binding.rs
+@@ -0,0 +1,231 @@
++use serde::Serialize;
++use serde_json::Value;
++use tt_domain::models::rp_architecture::{
++    RP_ARCHITECTURE_SCHEMA_VERSION, SessionIdentity, WorldBindingDecision, WorldManifest,
++    check_world_binding,
++};
++
++pub(super) const WORLD_MANIFEST_DISPLAY_NAME: &str = "TauriTavern World Manifest";
++
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "snake_case")]
++pub(super) enum RuntimeBindingStatus {
++    LegacyUnbound,
++    ManifestAvailable,
++    Bound,
++}
++
++#[derive(Debug, Clone)]
++pub(super) struct BindingFailure {
++    pub(super) code: &'static str,
++    pub(super) message: String,
++}
++
++pub(super) fn active_world_manifest(
++    prompt_snapshot: &Value,
++) -> Result<Option<WorldManifest>, BindingFailure> {
++    let Some(entries) = prompt_snapshot
++        .get("worldInfoActivation")
++        .and_then(|batch| batch.get("entries"))
++        .and_then(Value::as_array)
++    else {
++        return Ok(None);
++    };
++
++    let mut manifests = Vec::new();
++    for (index, entry) in entries.iter().enumerate() {
++        let Some(object) = entry.as_object() else {
++            continue;
++        };
++        let is_constant = object
++            .get("constant")
++            .and_then(Value::as_bool)
++            .unwrap_or(false);
++        let display_name = object
++            .get("displayName")
++            .and_then(Value::as_str)
++            .unwrap_or_default()
++            .trim();
++        if !is_constant || display_name != WORLD_MANIFEST_DISPLAY_NAME {
++            continue;
++        }
++
++        let content = object
++            .get("content")
++            .and_then(Value::as_str)
++            .ok_or_else(|| BindingFailure {
++                code: "rp.world_manifest_invalid",
++                message: format!(
++                    "World Manifest entry at activated index {index} must contain JSON text"
++                ),
++            })?;
++        let manifest = serde_json::from_str::<WorldManifest>(content).map_err(|error| {
++            BindingFailure {
++                code: "rp.world_manifest_invalid",
++                message: format!(
++                    "World Manifest entry at activated index {index} is invalid: {error}"
++                ),
++            }
++        })?;
++        validate_manifest(&manifest)?;
++        manifests.push(manifest);
++    }
++
++    match manifests.len() {
++        0 => Ok(None),
++        1 => Ok(manifests.pop()),
++        count => Err(BindingFailure {
++            code: "rp.world_manifest_ambiguous",
++            message: format!(
++                "{count} constant `{WORLD_MANIFEST_DISPLAY_NAME}` entries are active; exactly one World Manifest may define the RP session world"
++            ),
++        }),
++    }
++}
++
++pub(super) fn validate_bound_session(
++    session: &SessionIdentity,
++    manifest: Option<&WorldManifest>,
++) -> Result<(), BindingFailure> {
++    let Some(manifest) = manifest else {
++        return Err(BindingFailure {
++            code: "rp.world_manifest_required",
++            message: format!(
++                "session `{}` is bound to world `{}` but this run has no active constant `{WORLD_MANIFEST_DISPLAY_NAME}` entry; restore the bound world before continuing",
++                session.session_id.0, session.world_id.0
++            ),
++        });
++    };
++
++    match check_world_binding(session, manifest) {
++        WorldBindingDecision::Match => Ok(()),
++        WorldBindingDecision::WorldBindingMismatch => Err(BindingFailure {
++            code: "rp.world_binding_mismatch",
++            message: format!(
++                "WORLD_BINDING_MISMATCH: session `{}` is bound to world `{}`, but the active World Manifest is `{}`. Start a new session for the loaded world, switch back to the bound world, or perform an explicit migration/fork; RP state will not cross this boundary silently.",
++                session.session_id.0, session.world_id.0, manifest.world_id.0
++            ),
++        }),
++        WorldBindingDecision::WorldRevisionDiverged => Err(BindingFailure {
++            code: "rp.world_revision_diverged",
++            message: format!(
++                "WORLD_REVISION_DIVERGED: session `{}` is pinned to canon revision {} / fingerprint `{}`, while world `{}` is now revision {} / fingerprint `{}`. Review or explicitly migrate/fork before continuing.",
++                session.session_id.0,
++                session.bound_canon_revision,
++                session.bound_canon_fingerprint,
++                manifest.world_id.0,
++                manifest.canon_revision,
++                manifest.canon_fingerprint
++            ),
++        }),
++    }
++}
++
++fn validate_manifest(manifest: &WorldManifest) -> Result<(), BindingFailure> {
++    if manifest.schema_version != RP_ARCHITECTURE_SCHEMA_VERSION {
++        return Err(BindingFailure {
++            code: "rp.world_manifest_schema_unsupported",
++            message: format!(
++                "World Manifest schema {} is unsupported; expected {}",
++                manifest.schema_version, RP_ARCHITECTURE_SCHEMA_VERSION
++            ),
++        });
++    }
++    if manifest.world_id.0.trim().is_empty() {
++        return Err(BindingFailure {
++            code: "rp.world_manifest_invalid",
++            message: "World Manifest worldId must not be empty".to_string(),
++        });
++    }
++    if manifest.title.trim().is_empty() {
++        return Err(BindingFailure {
++            code: "rp.world_manifest_invalid",
++            message: "World Manifest title must not be empty".to_string(),
++        });
++    }
++    if manifest.canon_fingerprint.trim().is_empty() {
++        return Err(BindingFailure {
++            code: "rp.world_manifest_invalid",
++            message: "World Manifest canonFingerprint must not be empty".to_string(),
++        });
++    }
++    Ok(())
++}
++
++#[cfg(test)]
++mod tests {
++    use serde_json::json;
++    use tt_domain::models::rp_architecture::{BranchId, SessionId, SessionStatus, WorldId};
++
++    use super::*;
++
++    fn manifest_json(world: &str, revision: u64, fingerprint: &str) -> String {
++        serde_json::to_string(&WorldManifest {
++            schema_version: RP_ARCHITECTURE_SCHEMA_VERSION,
++            world_id: WorldId(world.to_string()),
++            title: world.to_string(),
++            manifest_revision: 1,
++            canon_revision: revision,
++            canon_fingerprint: fingerprint.to_string(),
++            immutable_rules: Vec::new(),
++            canon_entity_refs: Vec::new(),
++            lore_pack_refs: Vec::new(),
++            compatibility: Default::default(),
++        })
++        .unwrap()
++    }
++
++    fn session(world: &str, revision: u64, fingerprint: &str) -> SessionIdentity {
++        SessionIdentity {
++            schema_version: RP_ARCHITECTURE_SCHEMA_VERSION,
++            session_id: SessionId("session-1".to_string()),
++            world_id: WorldId(world.to_string()),
++            bound_canon_revision: revision,
++            bound_canon_fingerprint: fingerprint.to_string(),
++            session_status: SessionStatus::Active,
++            host_chat_id: Some("chat-a".to_string()),
++            active_branch_id: BranchId("chat-a".to_string()),
++        }
++    }
++
++    #[test]
++    fn extracts_only_constant_named_manifest() {
++        let snapshot = json!({
++            "worldInfoActivation": {
++                "entries": [
++                    {"displayName":"Lore", "constant":true, "content":"not manifest"},
++                    {"displayName":WORLD_MANIFEST_DISPLAY_NAME, "constant":true, "content":manifest_json("world-a", 1, "fp-a")}
++                ]
++            }
++        });
++        let manifest = active_world_manifest(&snapshot).unwrap().unwrap();
++        assert_eq!(manifest.world_id.0, "world-a");
++    }
++
++    #[test]
++    fn rejects_multiple_active_manifests() {
++        let content = manifest_json("world-a", 1, "fp-a");
++        let snapshot = json!({
++            "worldInfoActivation": {
++                "entries": [
++                    {"displayName":WORLD_MANIFEST_DISPLAY_NAME, "constant":true, "content":content},
++                    {"displayName":WORLD_MANIFEST_DISPLAY_NAME, "constant":true, "content":manifest_json("world-b", 1, "fp-b")}
++                ]
++            }
++        });
++        let error = active_world_manifest(&snapshot).unwrap_err();
++        assert_eq!(error.code, "rp.world_manifest_ambiguous");
++    }
++
++    #[test]
++    fn bound_session_distinguishes_world_and_revision_failures() {
++        let bound = session("world-a", 17, "fp-17");
++        let world_b = serde_json::from_str::<WorldManifest>(&manifest_json("world-b", 17, "fp-17")).unwrap();
++        let error = validate_bound_session(&bound, Some(&world_b)).unwrap_err();
++        assert_eq!(error.code, "rp.world_binding_mismatch");
++
++        let rev_18 = serde_json::from_str::<WorldManifest>(&manifest_json("world-a", 18, "fp-18")).unwrap();
++        let error = validate_bound_session(&bound, Some(&rev_18)).unwrap_err();
++        assert_eq!(error.code, "rp.world_revision_diverged");
++    }
++}
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs
+index b8568b6..f0c9692 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs
+@@ -1,3 +1,4 @@
++mod binding;
+ mod descriptors;
+ mod state;
+ 
+ diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+index d2045d7..ba894d3 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -2,12 +2,18 @@ use std::collections::{BTreeMap, HashSet};
+ 
+ use serde::{Deserialize, Serialize};
+ use serde_json::{Value, json};
++use uuid::Uuid;
++
++use super::binding::{RuntimeBindingStatus, active_world_manifest, validate_bound_session};
+ 
+ use crate::errors::ApplicationError;
+ use crate::services::agent_tools::common::{object_args, tool_error};
+ use crate::services::agent_tools::dispatcher::AgentToolEffect;
+ use crate::services::agent_tools::structured::structured_value;
+ use tt_domain::errors::DomainError;
+ use tt_domain::models::agent::{AgentToolResult, WorkspacePath};
++use tt_domain::models::rp_architecture::{
++    BranchId, RP_ARCHITECTURE_SCHEMA_VERSION, SessionId, SessionIdentity, SessionStatus,
++};
+ use tt_domain::models::tool::ToolInvocation;
+ use tt_ports::repositories::agent_run_repository::AgentRunRepository;
+ use tt_ports::repositories::workspace_repository::WorkspaceRepository;
+@@ -27,6 +33,8 @@ struct RpState {
+     runtime_revision: u64,
+     turn: u64,
+     mode: String,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    session: Option<SessionIdentity>,
+     #[serde(default = "default_safety_state")]
+     safety_state: String,
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+@@ -67,6 +75,7 @@ impl Default for RpState {
+             runtime_revision: 0,
+             turn: 0,
+             mode: "fixed_canon_living_world".to_string(),
++            session: None,
+             safety_state: default_safety_state(),
+             clock: None,
+             scene_id: None,
+@@ -451,6 +460,8 @@ struct StateResult<'a> {
+     runtime_revision: u64,
+     turn: u64,
+     mode: &'a str,
++    session: &'a Option<SessionIdentity>,
++    binding_status: RuntimeBindingStatus,
+     safety_state: &'a str,
+     clock: &'a Option<String>,
+     scene_id: &'a Option<String>,
+@@ -474,6 +485,7 @@ pub(in crate::services::agent_tools) async fn state(
+     run_repository: &dyn AgentRunRepository,
+     workspace_repository: &dyn WorkspaceRepository,
+     run_id: &str,
++    prompt_snapshot: &Value,
+     call: &ToolInvocation,
+ ) -> Result<(AgentToolResult, AgentToolEffect), ApplicationError> {
+     if object_args(call).is_none() {
+@@ -481,7 +493,18 @@ pub(in crate::services::agent_tools) async fn state(
+     }
+     let run = run_repository.load_run(run_id).await?;
+     let state = load_state(workspace_repository, run_id).await?;
+-    let payload = state_payload(&run.stable_chat_id, &state);
++    let manifest = match active_world_manifest(prompt_snapshot) {
++        Ok(manifest) => manifest,
++        Err(error) => return Ok((tool_error(call, error.code, &error.message), AgentToolEffect::None)),
++    };
++    if let Some(session) = state.session.as_ref()
++        && let Err(error) = validate_bound_session(session, manifest.as_ref())
++    {
++        return Ok((tool_error(call, error.code, &error.message), AgentToolEffect::None));
++    }
++    let binding_status = binding_status(&state, manifest.as_ref());
++    let payload = state_payload(&run.stable_chat_id, &state, binding_status);
+     Ok((success(call, render_state_summary(&payload), payload), AgentToolEffect::None))
+ }
+ 
+@@ -490,6 +513,7 @@ pub(in crate::services::agent_tools) async fn recall(
+     run_repository: &dyn AgentRunRepository,
+     workspace_repository: &dyn WorkspaceRepository,
+     run_id: &str,
++    prompt_snapshot: &Value,
+     call: &ToolInvocation,
+ ) -> Result<(AgentToolResult, AgentToolEffect), ApplicationError> {
+     let Some(args) = object_args(call) else {
+@@ -499,10 +523,21 @@ pub(in crate::services::agent_tools) async fn recall(
+     let limit = args.get("limit").and_then(Value::as_u64).unwrap_or(12).clamp(1, 20) as usize;
+     let run = run_repository.load_run(run_id).await?;
+     let state = load_state(workspace_repository, run_id).await?;
++    let manifest = match active_world_manifest(prompt_snapshot) {
++        Ok(manifest) => manifest,
++        Err(error) => return Ok((tool_error(call, error.code, &error.message), AgentToolEffect::None)),
++    };
++    if let Some(session) = state.session.as_ref()
++        && let Err(error) = validate_bound_session(session, manifest.as_ref())
++    {
++        return Ok((tool_error(call, error.code, &error.message), AgentToolEffect::None));
++    }
+     let hits = recall_hits(&state, &query, limit);
+     let structured = json!({
+         "stableChatId": run.stable_chat_id,
+         "runtimeRevision": state.runtime_revision,
++        "session": state.session,
++        "bindingStatus": binding_status(&state, manifest.as_ref()),
+         "query": query,
+         "hits": hits,
+         "authorityNote": "Historical recall never grants current consent, boundary, safety, permission, or player internal state."
+@@ -515,6 +550,7 @@ pub(in crate::services::agent_tools) async fn stage_turn(
+     run_repository: &dyn AgentRunRepository,
+     workspace_repository: &dyn WorkspaceRepository,
+     run_id: &str,
++    prompt_snapshot: &Value,
+     call: &ToolInvocation,
+ ) -> Result<(AgentToolResult, AgentToolEffect), ApplicationError> {
+     if object_args(call).is_none() {
+@@ -531,6 +567,13 @@ pub(in crate::services::agent_tools) async fn stage_turn(
+     }
+     let run = run_repository.load_run(run_id).await?;
+     let mut state = load_state(workspace_repository, run_id).await?;
++    let manifest = match active_world_manifest(prompt_snapshot) {
++        Ok(manifest) => manifest,
++        Err(error) => return Ok((tool_error(call, error.code, &error.message), AgentToolEffect::None)),
++    };
++    if let Err(error) = ensure_stage_session_binding(&mut state, &run.stable_chat_id, manifest.as_ref()) {
++        return Ok((tool_error(call, error.code, &error.message), AgentToolEffect::None));
++    }
+     if let Err(message) = validate_stage_against_state(&state, &input) {
+         return Ok((tool_error(call, "rp.stage_rejected", &message), AgentToolEffect::None));
+     }
+@@ -590,7 +633,8 @@ pub(in crate::services::agent_tools) async fn stage_turn(
+     }
+     let file = workspace_repository.write_text(run_id, &path, &text).await?;
+-    let payload = state_payload(&run.stable_chat_id, &state);
++    let binding_status = binding_status(&state, manifest.as_ref());
++    let payload = state_payload(&run.stable_chat_id, &state, binding_status);
+     Ok((
+         success(call, format!("Staged RP turn {} at runtime revision {}. State remains branch-local until workspace.finish commits this run's persistent projection.", state.turn, state.runtime_revision), payload),
+         AgentToolEffect::WorkspaceFileWritten {
+@@ -1036,12 +1080,18 @@ fn withdraw_all_current_grants(grants: &mut [RpGrant], turn: u64) {
+     }
+ }
+ 
+-fn state_payload<'a>(stable_chat_id: &'a str, state: &'a RpState) -> StateResult<'a> {
++fn state_payload<'a>(
++    stable_chat_id: &'a str,
++    state: &'a RpState,
++    binding_status: RuntimeBindingStatus,
++) -> StateResult<'a> {
+     StateResult {
+         stable_chat_id,
+         runtime_revision: state.runtime_revision,
+         turn: state.turn,
+         mode: state.mode.as_str(),
++        session: &state.session,
++        binding_status,
+         safety_state: state.safety_state.as_str(),
+         clock: &state.clock,
+         scene_id: &state.scene_id,
+@@ -1060,7 +1110,11 @@ fn state_payload<'a>(stable_chat_id: &'a str, state: &'a RpState) -> StateResul
+ }
+ 
+ fn render_state_summary(payload: &StateResult<'_>) -> String {
+-    format!("RP state revision {} / turn {}. Safety={}, {} active participant(s), {} tracked NPC(s), {} active boundary/boundaries, {} active grant(s), {} pending event(s), {} open commitment(s), {} open thread(s).", payload.runtime_revision, payload.turn, payload.safety_state, payload.participants.len(), payload.npcs.len(), payload.active_boundaries.len(), payload.active_grants.len(), payload.pending_events.len(), payload.open_commitments.len(), payload.open_threads.len())
++    let binding = match payload.session {
++        Some(session) => format!("session={} world={} canonRev={}", session.session_id.0, session.world_id.0, session.bound_canon_revision),
++        None => "session=unbound".to_string(),
++    };
++    format!("RP state revision {} / turn {}. {}, Safety={}, {} active participant(s), {} tracked NPC(s), {} active boundary/boundaries, {} active grant(s), {} pending event(s), {} open commitment(s), {} open thread(s).", payload.runtime_revision, payload.turn, binding, payload.safety_state, payload.participants.len(), payload.npcs.len(), payload.active_boundaries.len(), payload.active_grants.len(), payload.pending_events.len(), payload.open_commitments.len(), payload.open_threads.len())
+ }
+ 
+ fn recall_hits(state: &RpState, query: &str, limit: usize) -> Vec<Value> {
+@@ -1400,6 +1454,68 @@ fn apply_stage(state: &mut RpState, input: StageTurnArgs, run_id: &str) -> Resu
+     Ok(())
+ }
+ 
++fn binding_status(state: &RpState, manifest: Option<&tt_domain::models::rp_architecture::WorldManifest>) -> RuntimeBindingStatus {
++    if state.session.is_some() {
++        RuntimeBindingStatus::Bound
++    } else if manifest.is_some() {
++        RuntimeBindingStatus::ManifestAvailable
++    } else {
++        RuntimeBindingStatus::LegacyUnbound
++    }
++}
++
++fn state_has_continuity(state: &RpState) -> bool {
++    state.runtime_revision > 0
++        || state.turn > 0
++        || state.clock.is_some()
++        || state.scene_id.is_some()
++        || state.scene.is_some()
++        || state.location.is_some()
++        || !state.participants.is_empty()
++        || !state.npcs.is_empty()
++        || !state.events.is_empty()
++        || !state.facts.is_empty()
++        || !state.knowledge.is_empty()
++        || !state.commitments.is_empty()
++        || !state.threads.is_empty()
++        || !state.recent_beats.is_empty()
++        || !state.retractions.is_empty()
++}
++
++fn ensure_stage_session_binding(
++    state: &mut RpState,
++    stable_chat_id: &str,
++    manifest: Option<&tt_domain::models::rp_architecture::WorldManifest>,
++) -> Result<(), super::binding::BindingFailure> {
++    if let Some(session) = state.session.as_mut() {
++        validate_bound_session(session, manifest)?;
++        session.active_branch_id = BranchId(stable_chat_id.to_string());
++        return Ok(());
++    }
++
++    let Some(manifest) = manifest else {
++        // Build #13 compatibility mode. Legacy worlds remain playable until a
++        // first-class World Manifest is adopted; once a Session is bound, the
++        // manifest gate becomes fail-closed on every subsequent RP tool call.
++        return Ok(());
++    };
++
++    if state_has_continuity(state) {
++        return Err(super::binding::BindingFailure {
++            code: "rp.session_binding_required",
++            message: format!(
++                "SESSION_NOT_BOUND: this branch already contains legacy RP continuity but now exposes World Manifest `{}`. Refusing to silently adopt existing facts into that world. Start a fresh session or perform an explicit legacy-session migration.",
++                manifest.world_id.0
++            ),
++        });
++    }
++
++    state.session = Some(SessionIdentity {
++        schema_version: RP_ARCHITECTURE_SCHEMA_VERSION,
++        session_id: SessionId(format!("session-{}", Uuid::new_v4())),
++        world_id: manifest.world_id.clone(),
++        bound_canon_revision: manifest.canon_revision,
++        bound_canon_fingerprint: manifest.canon_fingerprint.clone(),
++        session_status: SessionStatus::Active,
++        host_chat_id: Some(stable_chat_id.to_string()),
++        active_branch_id: BranchId(stable_chat_id.to_string()),
++    });
++    Ok(())
++}
++
+ fn default_safety_state() -> String { "running".to_string() }
+ fn default_true() -> bool { true }
+ 
+@@ -1921,4 +2037,65 @@ mod tests {
+         assert!(validate_knowledge_provenance(&state, &value).is_err());
+     }
+ 
++    fn world_manifest(world: &str, revision: u64, fingerprint: &str) -> tt_domain::models::rp_architecture::WorldManifest {
++        tt_domain::models::rp_architecture::WorldManifest {
++            schema_version: RP_ARCHITECTURE_SCHEMA_VERSION,
++            world_id: tt_domain::models::rp_architecture::WorldId(world.to_string()),
++            title: world.to_string(),
++            manifest_revision: 1,
++            canon_revision: revision,
++            canon_fingerprint: fingerprint.to_string(),
++            immutable_rules: Vec::new(),
++            canon_entity_refs: Vec::new(),
++            lore_pack_refs: Vec::new(),
++            compatibility: BTreeMap::new(),
++        }
++    }
++
++    #[test]
++    fn fresh_state_auto_binds_to_active_world_manifest() {
++        let mut state = RpState::default();
++        let manifest = world_manifest("world-a", 1, "fp-a");
++        ensure_stage_session_binding(&mut state, "chat-a", Some(&manifest)).unwrap();
++        let session = state.session.as_ref().expect("session should bind");
++        assert_eq!(session.world_id.0, "world-a");
++        assert_eq!(session.bound_canon_revision, 1);
++        assert_eq!(session.active_branch_id.0, "chat-a");
++    }
++
++    #[test]
++    fn bound_state_rejects_world_switch_and_revision_drift() {
++        let mut state = RpState::default();
++        let manifest = world_manifest("world-a", 17, "fp-17");
++        ensure_stage_session_binding(&mut state, "chat-a", Some(&manifest)).unwrap();
++
++        let world_b = world_manifest("world-b", 17, "fp-17");
++        let error = ensure_stage_session_binding(&mut state, "chat-a", Some(&world_b)).unwrap_err();
++        assert_eq!(error.code, "rp.world_binding_mismatch");
++
++        let rev_18 = world_manifest("world-a", 18, "fp-18");
++        let error = ensure_stage_session_binding(&mut state, "chat-a", Some(&rev_18)).unwrap_err();
++        assert_eq!(error.code, "rp.world_revision_diverged");
++    }
++
++    #[test]
++    fn legacy_continuity_is_not_silently_adopted_into_manifest_world() {
++        let mut state = RpState { turn: 1, ..RpState::default() };
++        let manifest = world_manifest("world-a", 1, "fp-a");
++        let error = ensure_stage_session_binding(&mut state, "chat-a", Some(&manifest)).unwrap_err();
++        assert_eq!(error.code, "rp.session_binding_required");
++        assert!(state.session.is_none());
++    }
++
++    #[test]
++    fn branch_host_change_keeps_session_id_but_updates_active_branch_id() {
++        let mut state = RpState::default();
++        let manifest = world_manifest("world-a", 1, "fp-a");
++        ensure_stage_session_binding(&mut state, "chat-a", Some(&manifest)).unwrap();
++        let session_id = state.session.as_ref().unwrap().session_id.clone();
++        ensure_stage_session_binding(&mut state, "chat-b", Some(&manifest)).unwrap();
++        let session = state.session.as_ref().unwrap();
++        assert_eq!(session.session_id.0, session_id.0);
++        assert_eq!(session.active_branch_id.0, "chat-b");
++    }
++
+ }
