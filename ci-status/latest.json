@@ -1,12 +1,12 @@
 {
-  "run_id": "34179712922",
-  "run_number": "7",
+  "run_id": "34181823058",
+  "run_number": "8",
   "run_attempt": "1",
   "repository": "fengyuany857-beep/tauritavern-adult-tension",
-  "trigger_sha": "9bf78845925d01423a6849d8f8cb8b421aa7a67b",
+  "trigger_sha": "6f2834af0b44f490ea86aee0fa10363c978eb226",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
-  "stage": "Rust Clippy",
-  "state": "FAIL",
-  "exit_code": 101,
-  "updated_at": "2026-09-08T02:29:43Z"
+  "stage": "Environment ready",
+  "state": "RUNNING",
+  "exit_code": 0,
+  "updated_at": "2026-09-08T02:57:49Z"
 }
