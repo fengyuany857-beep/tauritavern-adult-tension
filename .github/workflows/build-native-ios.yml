@@ -88,8 +88,8 @@ jobs:
             echo "Applying Build 14 architecture patch: $patch"
             normalized="$(mktemp)"
             sed 's/^ diff --git /diff --git /' "$patch" > "$normalized"
-            git apply --check "$normalized"
-            git apply "$normalized"
+            git apply --recount --check "$normalized"
+            git apply --recount "$normalized"
             rm -f "$normalized"
           done
           git diff --check
