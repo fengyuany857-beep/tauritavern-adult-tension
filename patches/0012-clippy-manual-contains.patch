@@ -1,0 +1,11 @@
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -580,7 +580,7 @@ fn validate_stage_input(input: &StageTurnArgs) -> Result<(), String> {
+     if retract_turns.len() > 16 {
+         return Err("retract_turns may contain at most 16 prior story turns".to_string());
+     }
+-    if retract_turns.iter().any(|turn| *turn == 0) {
++    if retract_turns.contains(&0) {
+         return Err("retract_turns must contain positive story turn numbers".to_string());
+     }
+     if !retract_turns.is_empty() {
