@@ -114,25 +114,11 @@
 1745:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 1751:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 1757:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1763:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1769:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1775:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 # Tail
-test services::settings_service::tests::unavailable_chat_backup_storage_stats_do_not_block_settings ... ok
-test services::settings_service::tests::user_settings_hash_is_stable_for_object_key_order ... ok
-test services::data_archive_service::tests::start_import_runs_executor_initializer_reconciler_and_cleanup ... ok
-test services::data_archive_service::tests::start_import_with_no_local_mutation_skips_initializer_and_reconciler ... ok
-test services::skill_service::tests::resolve_effective_skills_fails_when_explicit_visible_skill_is_missing ... ok
-test services::skill_service::tests::download_import_url_fetches_skill_md_with_limit_and_sanitized_source ... ok
-test services::skill_service::tests::resolve_effective_skills_prefers_later_scopes ... ok
-test services::skill_service::tests::sanitized_source_url_drops_secret_parts ... ok
-test services::skill_service::tests::skill_import_url_requires_https_skill_md ... ok
-test services::sync_automation_service::tests::completed_transfer_updates_last_success ... ok
-test services::sync_automation_service::tests::lan_request_acceptance_does_not_count_as_success ... ok
-test services::sync_automation_service::tests::legacy_rule_migration_keeps_existing_lan_auto_start ... ok
-test services::sync_automation_service::tests::legacy_rule_migration_moves_auto_start_and_manual_mode ... ok
-test services::sync_automation_service::tests::scheduled_job_uses_current_global_overwrite_policy ... ok
-test services::sync_job_coordinator::tests::active_guard_only_clears_its_own_job ... ok
-test services::sync_job_coordinator::tests::busy_report_mentions_running_job ... ok
-test services::sync_job_coordinator::tests::completed_with_reconcile_failure_is_failed ... ok
 test services::sync_job_coordinator::tests::partial_failure_reports_reconcile_error ... ok
 test services::sync_job_coordinator::tests::remote_pull_request_does_not_wait_for_transfer_gate ... ok
 test services::sync_job_coordinator::tests::resolves_lan_replicate_as_remote_pull_request ... ok
@@ -376,3 +362,20 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 [1m[92m   Doc-tests[0m tt_contracts
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_domain
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_ports
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
