@@ -5,9 +5,9 @@
   "repository": "fengyuany857-beep/tauritavern-adult-tension",
   "trigger_sha": "aaf709cd70f9abb83f66742b31ba1fe41c2a9af7",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
-  "stage": "Logging boundaries",
-  "state": "PASS",
+  "stage": "Rust crate boundaries",
+  "state": "RUNNING",
   "exit_code": 0,
-  "updated_at": "2026-09-08T16:37:15Z",
+  "updated_at": "2026-09-08T16:37:17Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-13-a1"
 }
