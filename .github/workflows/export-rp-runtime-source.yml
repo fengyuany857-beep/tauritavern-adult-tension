@@ -25,7 +25,7 @@ jobs:
           ref: 3a8c5401c859ac15ac11f3339846360615232896
           path: source
 
-      - name: Reconstruct and apply Build 11 patch stack
+      - name: Reconstruct and apply Build 14 patch stack
         shell: bash
         run: |
           set -euo pipefail
@@ -63,6 +63,10 @@ jobs:
             git apply --check "$patch"
             git apply "$patch"
           done
+          for patch in ../control/build14-post/*.patch; do
+            git apply --check "$patch"
+            git apply "$patch"
+          done
           git diff --check
 
       - name: Collect RP and persistence runtime source
@@ -77,7 +81,7 @@ jobs:
           } | sort -u > ../export/candidates.txt
           while IFS= read -r f; do
             [ -f "$f" ] || continue
-            if grep -Eqi 'rp\.stage_turn|rp_stage_turn|persist/rp/state\.json|Adult Tension|persistent state|persistStateId|persist_state|workspace\.finish|stage turn' "$f"; then
+            if grep -Eqi 'rp\.stage_turn|rp_stage_turn|persist/rp/state\.json|Adult Tension|persistent state|persistStateId|persist_state|workspace\.finish|stage turn|WorldManifest|SessionIdentity|CharacterEntity|MemoryTier' "$f"; then
               mkdir -p "../export/$(dirname "$f")"
               cp "$f" "../export/$f"
             fi
@@ -90,7 +94,7 @@ jobs:
       - name: Upload source export
         uses: actions/upload-artifact@v4
         with:
-          name: RP-Runtime-Source-Build11
+          name: RP-Runtime-Source-Build14
           path: export/
           if-no-files-found: error
           retention-days: 7
