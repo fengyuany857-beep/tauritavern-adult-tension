@@ -21,87 +21,11 @@
 901:[1m[92m   Compiling[0m thiserror-impl v1.0.69
 927:[1m[92m   Compiling[0m gix-error v0.2.4
 1274:[1m[92m   Compiling[0m serde_path_to_error v0.1.20
+1390:    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/ibtool --errors --warnings --notices --module TauriTavern --output-partial-info-plist /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/LaunchScreen-SBPartialInfo.plist --auto-activate-custom-fonts --target-device iphone --target-device ipad --minimum-deployment-target 16.0 --output-format human-readable-text /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/LaunchScreen.storyboard --compilation-directory /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build
+1407:    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x objective-c++ -ivfsstatcache /Users/runner/work/_temp/tauritavern-ios-derived-data/SDKStatCaches.noindex/iphoneos26.5-23F81a-688ef53f1462e2c8f657fdc38a81448fee66e23052a0157c865c76b268046726.sdkstatcache -target arm64-apple-ios16.0 -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/_temp/tauritavern-ios-derived-data/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wquoted-include-in-framework-header -Wno-implicit-atomic-properties -Werror\=deprecated-objc-isa-usage -Wno-objc-interface-ivars -Werror\=objc-root-class -Wno-arc-repeated-use-of-weak -Wimplicit-retain-self -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wduplicate-method-match -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wconditional-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wshorten-64-to-32 -Wno-newline-eof -Wno-selector -Wno-strict-selector-match -Wundeclared-selector -Wdeprecated-implementations -Wno-c++11-extensions -Wno-implicit-fallthrough -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk -fstrict-aliasing -Wprotocol -Wdeprecated-declarations -Winvalid-offsetof -Wno-sign-conversion -Winfinite-recursion -Wmove -Wcomma -Wblock-capture-autoreleasing -Wstrict-prototypes -Wrange-loop-analysis -Wno-semicolon-before-method-body -Wunguarded-availability @/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/af3fcb34312c57c0f52879cdce924b91-common-args.resp -MMD -MT dependencies -MF /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/main.d --serialize-diagnostics /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/main.dia -c /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/Sources/tauritavern/main.mm -o /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/main.o
+1415:    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/ibtool --errors --warnings --notices --module TauriTavern --target-device iphone --target-device ipad --minimum-deployment-target 16.0 --output-format human-readable-text --link /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/LaunchScreen.storyboardc
 
 # Tail
-[1m[92m   Compiling[0m embed-resource v3.0.6
-[1m[92m   Compiling[0m security-framework-sys v2.17.0
-[1m[92m   Compiling[0m core-foundation v0.10.1
-[1m[92m   Compiling[0m gix-chunk v0.7.2
-[1m[92m   Compiling[0m gix-fs v0.21.2
-[1m[92m   Compiling[0m heck v0.5.0
-[1m[92m   Compiling[0m rustversion v1.0.22
-[1m[92m   Compiling[0m gix-tempfile v23.0.2
-[1m[92m   Compiling[0m security-framework v3.7.0
-[1m[92m   Compiling[0m tauri-winres v0.3.5
-[1m[92m   Compiling[0m dirs v6.0.0
-[1m[92m   Compiling[0m serde_urlencoded v0.7.1
-[1m[92m   Compiling[0m zstd-sys v2.0.16+zstd.1.5.7
-[1m[92m   Compiling[0m cargo_toml v0.22.3
-[1m[92m   Compiling[0m iana-time-zone v0.1.65
-[1m[92m   Compiling[0m gix-quote v0.7.2
-[1m[92m   Compiling[0m nonempty v0.12.0
-[1m[92m   Compiling[0m iri-string v0.7.10
-[1m[92m   Compiling[0m either v1.15.0
-[1m[92m   Compiling[0m tt-domain v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-domain)
-[1m[92m   Compiling[0m itertools v0.14.0
-[1m[92m   Compiling[0m tower-http v0.6.8
-[1m[92m   Compiling[0m tauri-build v2.5.5
-[1m[92m   Compiling[0m chrono v0.4.44
-[1m[92m   Compiling[0m block2 v0.6.2
-[1m[92m   Compiling[0m tauri-plugin v2.6.3
-[1m[92m   Compiling[0m static_assertions v1.1.0
-[1m[92m   Compiling[0m lazy_static v1.5.0
-[1m[92m   Compiling[0m prost-derive v0.13.5
-[1m[92m   Compiling[0m gix-commitgraph v0.37.1
-[1m[92m   Compiling[0m objc2-core-foundation v0.3.2
-[1m[92m   Compiling[0m gix-glob v0.26.1
-[1m[92m   Compiling[0m async-trait v0.1.89
-[1m[92m   Compiling[0m simd-adler32 v0.3.8
-[1m[92m   Compiling[0m zstd-safe v7.2.4
-[1m[92m   Compiling[0m objc2-foundation v0.3.2
-[1m[92m   Compiling[0m gix-revwalk v0.33.0
-[1m[92m   Compiling[0m tt-contracts v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-contracts)
-[1m[92m   Compiling[0m tauri v2.10.2
-[1m[92m   Compiling[0m gix-lock v23.0.1
-[1m[92m   Compiling[0m adler2 v2.0.1
-[1m[92m   Compiling[0m beef v0.5.2
-[1m[92m   Compiling[0m logos-codegen v0.14.4
-[1m[92m   Compiling[0m miniz_oxide v0.8.9
-[1m[92m   Compiling[0m tt-ports v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-ports)
-[1m[92m   Compiling[0m prost v0.13.5
-[1m[92m   Compiling[0m hybrid-array v0.4.13
-[1m[92m   Compiling[0m cookie v0.18.1
-[1m[92m   Compiling[0m unicode-bom v2.0.3
-[1m[92m   Compiling[0m prost-types v0.13.5
-[1m[92m   Compiling[0m zstd v0.13.3
-[1m[92m   Compiling[0m objc2-uniform-type-identifiers v0.3.2
-[1m[92m   Compiling[0m flate2 v1.1.9
-[1m[92m   Compiling[0m logos-derive v0.14.4
-[1m[92m   Compiling[0m fdeflate v0.3.7
-[1m[92m   Compiling[0m gix-config-value v0.18.1
-[1m[92m   Compiling[0m dpi v0.1.2
-[1m[92m   Compiling[0m miette-derive v7.6.0
-[1m[92m   Compiling[0m raw-window-handle v0.6.2
-[1m[92m   Compiling[0m shell-words v1.1.1
-[1m[92m   Compiling[0m compression-core v0.4.31
-[1m[92m   Compiling[0m unicode-width v0.1.14
-[1m[92m   Compiling[0m rustls-webpki v0.103.9
-[1m[92m   Compiling[0m miette v7.6.0
-[1m[92m   Compiling[0m compression-codecs v0.4.37
-[1m[92m   Compiling[0m gix-command v0.9.1
-[1m[92m   Compiling[0m tokio-rustls v0.26.4
-[1m[92m   Compiling[0m hyper-rustls v0.27.7
-[1m[92m   Compiling[0m rustls-platform-verifier v0.6.2
-[1m[92m   Compiling[0m reqwest v0.13.2
-[1m[92m   Compiling[0m png v0.17.16
-[1m[92m   Compiling[0m logos v0.14.4
-[1m[92m   Compiling[0m objc2-ui-kit v0.3.2
-[1m[92m   Compiling[0m crypto-common v0.2.2
-[1m[92m   Compiling[0m block-buffer v0.12.1
-[1m[92m   Compiling[0m kstring v2.0.2
-[1m[92m   Compiling[0m crossbeam-channel v0.5.15
-[1m[92m   Compiling[0m curve25519-dalek v4.1.3
-[1m[92m   Compiling[0m darling_core v0.20.11
 [1m[92m   Compiling[0m gix-sec v0.14.1
 [1m[92m   Compiling[0m filetime v0.2.29
 [1m[92m   Compiling[0m tauri-runtime v2.10.0
@@ -283,3 +207,82 @@ MkDir /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.
 GenerateAssetSymbols /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/Assets.xcassets (in target 'tauritavern_iOS' from project 'tauritavern')
     cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
     /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/Assets.xcassets --compile /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_dependencies --output-partial-info-plist /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_generated_info.plist --app-icon AppIcon --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 16.0 --platform iphoneos --bundle-identifier com.tauritavern.client --generate-objc-asset-symbols /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/* com.apple.actool.compilation-results */
+/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/DerivedSources/GeneratedAssetSymbols.h
+
+
+CpResource /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/assets /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/assets (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/assets /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app
+
+CompileStoryboard /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/LaunchScreen.storyboard (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/ibtool --errors --warnings --notices --module TauriTavern --output-partial-info-plist /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/LaunchScreen-SBPartialInfo.plist --auto-activate-custom-fonts --target-device iphone --target-device ipad --minimum-deployment-target 16.0 --output-format human-readable-text /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/LaunchScreen.storyboard --compilation-directory /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build
+
+CompileAssetCatalogVariant thinned /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/Assets.xcassets (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/Assets.xcassets --compile /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 16.0 --platform iphoneos
+/* com.apple.actool.compilation-results */
+/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_generated_info.plist_thinned
+/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_output/thinned/AppIcon60x60@2x.png
+/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_output/thinned/AppIcon76x76@2x~ipad.png
+/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_output/thinned/Assets.car
+
+
+CompileC /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/main.o /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/Sources/tauritavern/main.mm normal arm64 objective-c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    
+    Using response file: /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/af3fcb34312c57c0f52879cdce924b91-common-args.resp
+    
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x objective-c++ -ivfsstatcache /Users/runner/work/_temp/tauritavern-ios-derived-data/SDKStatCaches.noindex/iphoneos26.5-23F81a-688ef53f1462e2c8f657fdc38a81448fee66e23052a0157c865c76b268046726.sdkstatcache -target arm64-apple-ios16.0 -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/_temp/tauritavern-ios-derived-data/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wquoted-include-in-framework-header -Wno-implicit-atomic-properties -Werror\=deprecated-objc-isa-usage -Wno-objc-interface-ivars -Werror\=objc-root-class -Wno-arc-repeated-use-of-weak -Wimplicit-retain-self -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wduplicate-method-match -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wconditional-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wshorten-64-to-32 -Wno-newline-eof -Wno-selector -Wno-strict-selector-match -Wundeclared-selector -Wdeprecated-implementations -Wno-c++11-extensions -Wno-implicit-fallthrough -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk -fstrict-aliasing -Wprotocol -Wdeprecated-declarations -Winvalid-offsetof -Wno-sign-conversion -Winfinite-recursion -Wmove -Wcomma -Wblock-capture-autoreleasing -Wstrict-prototypes -Wrange-loop-analysis -Wno-semicolon-before-method-body -Wunguarded-availability @/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/af3fcb34312c57c0f52879cdce924b91-common-args.resp -MMD -MT dependencies -MF /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/main.d --serialize-diagnostics /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/main.dia -c /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/Sources/tauritavern/main.mm -o /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/main.o
+
+Ld /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/TauriTavern normal (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++ -Xlinker -reproducible -target arm64-apple-ios16.0 -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk -Os -L/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/EagerLinkingTBDs/release-iphoneos -L/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos -L/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/Externals/arm64/release -L/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/lib/swift -L/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos -L/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/iphoneos -F/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/EagerLinkingTBDs/release-iphoneos -F/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos -F. -filelist /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/TauriTavern.LinkFileList -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/TauriTavern_lto.o -Xlinker -dependency_info -Xlinker /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/TauriTavern_dependency_info.dat -stdlib\=libc++ -fobjc-arc -fobjc-link-runtime -lapp -framework CoreGraphics -framework Metal -framework MetalKit -framework QuartzCore -framework Security -framework UIKit -framework WebKit -o /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/TauriTavern
+
+LinkStoryboards (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/ibtool --errors --warnings --notices --module TauriTavern --target-device iphone --target-device ipad --minimum-deployment-target 16.0 --output-format human-readable-text --link /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/LaunchScreen.storyboardc
+
+LinkAssetCatalog /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/Assets.xcassets (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    builtin-linkAssetCatalog --thinned /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_output/thinned --thinned-dependencies /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_generated_info.plist_unthinned --output /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app --plist-output /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_generated_info.plist
+note: Emplaced /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/Assets.car (in target 'tauritavern_iOS' from project 'tauritavern')
+note: Emplaced /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/AppIcon76x76@2x~ipad.png (in target 'tauritavern_iOS' from project 'tauritavern')
+note: Emplaced /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/AppIcon60x60@2x.png (in target 'tauritavern_iOS' from project 'tauritavern')
+
+ProcessInfoPlistFile /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/Info.plist /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/tauritavern_iOS/Info.plist (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    builtin-infoPlistUtility /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/tauritavern_iOS/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/PkgInfo -expandbuildsettings -format binary -platform iphoneos -additionalcontentfile /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/assetcatalog_generated_info.plist -additionalcontentfile /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/LaunchScreen-SBPartialInfo.plist -requiredArchitecture arm64 -o /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/Info.plist
+
+CopySwiftLibs /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/TauriTavern --scan-folder /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/Frameworks --scan-folder /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/PlugIns --scan-folder /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/SystemExtensions --scan-folder /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/Extensions --scan-folder /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/System/Library/Frameworks/CoreGraphics.framework --scan-folder /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/System/Library/Frameworks/Metal.framework --scan-folder /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/System/Library/Frameworks/MetalKit.framework --scan-folder /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/System/Library/Frameworks/QuartzCore.framework --scan-folder /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/System/Library/Frameworks/Security.framework --scan-folder /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/System/Library/Frameworks/UIKit.framework --scan-folder /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/System/Library/Frameworks/WebKit.framework --platform iphoneos --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.2KgBUe/Metal.xctoolchain --toolchain /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os --back-deploy-swift-span
+Ignoring --strip-bitcode because --sign was not passed
+
+GenerateDSYMFile /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app.dSYM /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/TauriTavern (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/dsymutil /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/TauriTavern -o /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app.dSYM
+
+RegisterExecutionPolicyException /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    builtin-RegisterExecutionPolicyException /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app
+
+Validate /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    builtin-validationUtility /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app -shallow-bundle -infoplist-subpath Info.plist
+
+Touch /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    /usr/bin/touch -c /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app
+
+note: Run script build phase 'Build Rust Code' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'tauritavern_iOS' from project 'tauritavern')
+** BUILD SUCCEEDED **
+
+Unsigned iOS build created:
+  /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/TauriTavern-unsigned.ipa
+  /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/TauriTavern.app.zip
+68f43a75e39e3dc38ea46c8f99527d5733b4f2dad4da9ae7a4ab881bca982b85  TauriTavern-unsigned.ipa
+1e484f7974237d0fc4d457ce93a0133c085288e0bfdb5757731e1283135d5953  TauriTavern.app.zip
+bd9784c6adb999116601a12eecac7adafc473ec9a3625fc570a52465b9a90773  build-info.json
