@@ -1,0 +1,54 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+index 37a2669..37fe38b 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -1070,19 +1070,25 @@ fn binding_status(
+ fn state_has_continuity(state: &RpState) -> bool {
+     state.runtime_revision > 0
+         || state.turn > 0
++        || state.safety_state != "running"
+         || state.clock.is_some()
+         || state.scene_id.is_some()
+         || state.scene.is_some()
+         || state.location.is_some()
+         || !state.participants.is_empty()
+         || !state.npcs.is_empty()
++        || !state.boundaries.is_empty()
++        || !state.grants.is_empty()
+         || !state.events.is_empty()
+         || !state.facts.is_empty()
+         || !state.knowledge.is_empty()
+         || !state.commitments.is_empty()
+         || !state.threads.is_empty()
++        || !state.living_world.agendas.is_empty()
++        || !state.living_world.repetition_keys.is_empty()
+         || !state.recent_beats.is_empty()
+         || !state.retractions.is_empty()
++        || !state.runtime_history.is_empty()
+ }
+ 
+ fn ensure_stage_session_binding(
+@@ -2019,6 +2025,23 @@ mod tests {
+         assert!(state.session.is_none());
+     }
+ 
++    #[test]
++    fn legacy_authority_state_is_not_silently_adopted_into_manifest_world() {
++        let mut state = RpState {
++            boundaries: vec![RpBoundary {
++                id: "b1".to_string(),
++                topic: "legacy boundary".to_string(),
++                status: "active".to_string(),
++                created_turn: 0,
++                revoked_turn: None,
++            }],
++            ..RpState::default()
++        };
++        let manifest = world_manifest("world-a", 1, "fp-a");
++        let error = ensure_stage_session_binding(&mut state, "chat-a", Some(&manifest)).unwrap_err();
++        assert_eq!(error.code, "rp.session_binding_required");
++    }
++
+     #[test]
+     fn branch_host_change_keeps_session_id_but_updates_active_branch_id() {
+         let mut state = RpState::default();
