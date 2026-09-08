@@ -1,0 +1,14 @@
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -876,9 +876,8 @@ fn apply_stage(state: &mut RpState, input: StageTurnArgs, run_id: &str) -> Resu
+         state.runtime_revision = state.runtime_revision.saturating_add(1);
+     }
+     if advances_story {
+-        let next_turn = state.turn.saturating_add(1);
+-        capture_runtime_checkpoint(state, next_turn);
+-        state.turn = next_turn;
++        state.turn = state.turn.saturating_add(1);
++        capture_runtime_checkpoint(state, state.turn);
+     }
+     state.last_run_id = Some(run_id.to_string());
+     let turn = state.turn;
