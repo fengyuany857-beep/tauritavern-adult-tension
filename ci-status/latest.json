@@ -6,8 +6,8 @@
   "trigger_sha": "c07b99fc26f2e96409c0bde78b14c48a1af9c627",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
   "stage": "Full contract tests",
-  "state": "RUNNING",
-  "exit_code": 0,
-  "updated_at": "2026-09-08T15:27:44Z",
+  "state": "FAIL",
+  "exit_code": 1,
+  "updated_at": "2026-09-08T15:28:10Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-10-a1"
 }
