@@ -6,7 +6,7 @@
   "trigger_sha": "6f2834af0b44f490ea86aee0fa10363c978eb226",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
   "stage": "iOS mobile HTTP compatibility",
-  "state": "RUNNING",
+  "state": "PASS",
   "exit_code": 0,
-  "updated_at": "2026-09-08T03:06:55Z"
+  "updated_at": "2026-09-08T03:06:59Z"
 }
