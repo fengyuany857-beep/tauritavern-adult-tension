@@ -1,0 +1,86 @@
+--- a/extras/adult-tension-tauritavern-adapter/SKILL.md
++++ b/extras/adult-tension-tauritavern-adapter/SKILL.md
+@@ -34,11 +34,13 @@
+ 2. Call `rp_state` (native id `rp.state`) before drafting.
+ 3. Call `rp_recall` (native id `rp.recall`) when older accepted history matters.
+ 4. Decide one coherent action beat.
+-5. Call `rp_stage_turn` (native id `rp.stage_turn`) until one stage succeeds, with consequences that actually occur in the
++5. Keep NPC knowledge source-bound. A new NPC does not inherit accepted continuity merely because it exists in state. Positive `knowledge` rows must include `source`; when a newly introduced NPC goal/beat relies on a prior accepted fact, bind that fact id through `npc_updates.knowledge_refs` and a matching `knowledge.fact_id`.
++6. If the current user explicitly says an already accepted prior story turn never happened, use `retract_turns` + `retraction_reason` instead of merely cancelling an event. Use `facts.supersedes` for a targeted correction that should preserve the rest of that turn.
++7. Call `rp_stage_turn` (native id `rp.stage_turn`) until one stage succeeds, with consequences that actually occur in the
+    assistant response. The profile allows at most three attempts to repair recoverable validation errors and exactly one successful stage per run.
+-6. Write the response to `output/main.md` with `workspace_write_file`.
+-7. Call `workspace_commit`.
+-8. Call `workspace_finish`.
++8. Write the response to `output/main.md` with `workspace_write_file`.
++9. Call `workspace_commit`.
++10. Call `workspace_finish`.
+ 
+ For a genuinely OOC/meta response that does not advance the story, call
+ `rp_stage_turn` (native id `rp.stage_turn`) with `advances_story=false`; if validation rejects the first attempt, correct it within the same three-attempt budget.
+@@ -89,6 +91,39 @@
+ `rp_stage_turn` (native id `rp.stage_turn`) independently rejects shadow-current continuity predicates and
+ player-internal continuity facts.
+ 
++
++## NPC knowledge provenance
++
++Knowledge is not global merely because a fact exists in continuity state.
++
++For every positive knowledge state (`partial`, `suspects`, `knows`, `false_belief`),
++`rp_stage_turn.knowledge[]` must include a source with one of:
++
++- `user_asserted` — the current explicit user turn establishes the character knows it;
++- `observed` — the character actually perceives the evidence in the current/accepted story;
++- `told_by` — another character/source told them; provide `source.reference`;
++- `public` — the information is already established as public;
++- `inferred` — inference only, which may support `suspects`/`partial`, not direct `knows`;
++- `existing` — reuse of a matching accepted prior knowledge row.
++
++When a **newly introduced NPC** mentions, pursues, or acts on an already accepted fact,
++include that fact id in `npc_updates[].knowledge_refs` and bind a matching
++`knowledge[].fact_id` with explicit provenance in the same stage. If there is no valid
++source, the NPC must remain ignorant of that fact.
++
++## Retraction cascade
++
++If the current user explicitly corrects an accepted prior **story turn as never having
++happened**, call `rp_stage_turn` with `retract_turns` and `retraction_reason` (normally
++`advances_story=false`). The native runtime removes continuity records originating in
++those turns instead of leaving ghost Canon behind. This includes facts, knowledge,
++events, commitments, threads, agendas, recent beats, and NPC runtime updates from the
++retracted turn.
++
++Use `facts.supersedes` instead when only one fact is wrong and the rest of that prior
++turn remains valid. Do not use event `status=cancelled` as a substitute for retracting
++a beat the user says never happened.
++
+ ## Player sovereignty
+ 
+ The user owns the player character's dialogue, actions/attempts, explicit feelings,
+--- a/extras/adult-tension-tauritavern-adapter/references/NATIVE_STATE_RULES.md
++++ b/extras/adult-tension-tauritavern-adapter/references/NATIVE_STATE_RULES.md
+@@ -59,7 +59,22 @@
+ - `knows`
+ - `false_belief`
+ 
+-No knowledge row means unknown to the state system.
++No knowledge row means unknown to the state system. Positive knowledge rows are
++source-bound and carry optional `factId` plus required provenance `source`:
++`user_asserted|observed|told_by|public|inferred|existing`. `inferred` cannot promote
++directly to `knows`. Newly introduced NPCs that rely on prior accepted facts must
++bind those fact ids explicitly through `knowledge_refs` + matching sourced knowledge.
++
++### Retractions
++
++`retract_turns` + `retraction_reason` is the whole-beat correction path when the
++current explicit user says an accepted prior story turn never happened. It cascades
++removal of continuity records originating in the target turn(s): facts, knowledge,
++events, commitments, threads, agendas, recent beats, and NPC runtime updates. A small
++retraction audit record remains so recall can avoid resurrecting the invalid beat.
++
++Use `facts.supersedes` for a targeted fact correction when the rest of the prior turn
++remains valid. Event `cancelled` by itself is not a historical rollback.
+ 
+ ## Thread gates
+ 
