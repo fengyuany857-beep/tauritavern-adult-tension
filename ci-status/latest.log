@@ -2,6 +2,10 @@
 19:[1m[91merror[E0425][0m[1m: cannot find function `one_fact` in this scope[0m
 25:[1m[91merror[E0425][0m[1m: cannot find function `one_fact` in this scope[0m
 31:[1m[91merror[E0425][0m[1m: cannot find function `one_fact` in this scope[0m
+37:[1mFor more information about this error, try `rustc --explain E0425`.[0m
+38:[1m[91merror[0m: could not compile `tt-application` (lib test) due to 3 previous errors
+39:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+40: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
 
@@ -40,3 +44,7 @@
 [1m[94m1812[0m [1m[94m|[0m         let mut value = one_fact("box", "is blue");
      [1m[94m|[0m                         [1m[91m^^^^^^^^[0m [1m[91mnot found in this scope[0m
 
+[1mFor more information about this error, try `rustc --explain E0425`.[0m
+[1m[91merror[0m: could not compile `tt-application` (lib test) due to 3 previous errors
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+ ELIFECYCLE  Command failed with exit code 101.
