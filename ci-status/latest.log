@@ -5,100 +5,25 @@
 95:[1m[92m    Checking[0m gix-error v0.2.4
 243:[1m[92m    Checking[0m thiserror v1.0.69
 338:[1m[92m    Checking[0m serde_path_to_error v0.1.20
+427:[1m[91merror[0m[1m: the `Err`-variant returned from this function is very large[0m
+430:[1m[94m62[0m [1m[94m|[0m     ) -> Result<SyncExecutionReport, SyncExecutionFailure> {
+433:   [1m[94m= [0m[1mhelp[0m: try reducing the size of `tt_contracts::sync::SyncExecutionFailure`, for example by boxing large elements or replacing it with `Box<tt_contracts::sync::SyncExecutionFailure>`
+434:   [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+435:   [1m[94m= [0m[1mnote[0m: `-D clippy::result-large-err` implied by `-D warnings`
+436:   [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::result_large_err)]`
+438:[1m[91merror[0m[1m: the `Err`-variant returned from this function is very large[0m
+441:[1m[94m123[0m [1m[94m|[0m     ) -> Result<SyncExecutionReport, SyncExecutionFailure> {
+444:    [1m[94m= [0m[1mhelp[0m: try reducing the size of `tt_contracts::sync::SyncExecutionFailure`, for example by boxing large elements or replacing it with `Box<tt_contracts::sync::SyncExecutionFailure>`
+445:    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+447:[1m[91merror[0m[1m: the `Err`-variant returned from this function is very large[0m
+450:[1m[94m182[0m [1m[94m|[0m     ) -> Result<SyncExecutionReport, SyncExecutionFailure> {
+453:    [1m[94m= [0m[1mhelp[0m: try reducing the size of `tt_contracts::sync::SyncExecutionFailure`, for example by boxing large elements or replacing it with `Box<tt_contracts::sync::SyncExecutionFailure>`
+454:    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+456:[1m[91merror[0m: could not compile `tt-adapter-sync` (lib) due to 3 previous errors
+457:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+458: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
-[1m[92m    Checking[0m num-traits v0.2.19
-[1m[92m    Checking[0m powerfmt v0.2.0
-[1m[92m    Checking[0m futures-sink v0.3.32
-[1m[92m    Checking[0m deranged v0.5.8
-[1m[92m    Checking[0m faster-hex v0.10.0
-[1m[92m    Checking[0m objc2-core-foundation v0.3.2
-[1m[92m    Checking[0m ppv-lite86 v0.2.21
-[1m[92m    Checking[0m iana-time-zone v0.1.65
-[1m[92m    Checking[0m rand_chacha v0.9.0
-[1m[92m    Checking[0m num_threads v0.1.7
-[1m[92m    Checking[0m num-conv v0.2.0
-[1m[92m    Checking[0m slab v0.4.12
-[1m[92m    Checking[0m futures-task v0.3.32
-[1m[92m    Checking[0m rand v0.9.2
-[1m[92m   Compiling[0m tt-domain v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-domain)
-[1m[92m    Checking[0m time-core v0.1.8
-[1m[92m    Checking[0m time v0.3.47
-[1m[92m    Checking[0m futures-util v0.3.32
-[1m[92m    Checking[0m chrono v0.4.44
-[1m[92m    Checking[0m sha1-checked v0.10.0
-[1m[92m    Checking[0m jiff v0.2.32
-[1m[92m    Checking[0m gix-hash v0.25.1
-[1m[92m    Checking[0m block2 v0.6.2
-[1m[92m    Checking[0m rustls-pki-types v1.14.0
-[1m[92m    Checking[0m subtle v2.6.1
-[1m[92m    Checking[0m ryu v1.0.23
-[1m[92m    Checking[0m objc2-foundation v0.3.2
-[1m[92m    Checking[0m gix-date v0.15.5
-[1m[92m    Checking[0m tokio-util v0.7.18
-[1m[92m    Checking[0m http-body v1.0.1
-[1m[92m    Checking[0m hashbrown v0.17.1
-[1m[92m    Checking[0m httpdate v1.0.3
-[1m[92m    Checking[0m simd-adler32 v0.3.8
-[1m[92m    Checking[0m untrusted v0.9.0
-[1m[92m    Checking[0m gix-hashtable v0.15.2
-[1m[92m    Checking[0m gix-actor v0.41.1
-[1m[92m    Checking[0m httparse v1.10.1
-[1m[92m    Checking[0m crossbeam-utils v0.8.21
-[1m[92m    Checking[0m aws-lc-sys v0.38.0
-[1m[92m    Checking[0m tt-contracts v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-contracts)
-[1m[92m    Checking[0m tower-service v0.3.3
-[1m[92m    Checking[0m adler2 v2.0.1
-[1m[92m    Checking[0m miniz_oxide v0.8.9
-[1m[92m    Checking[0m tt-ports v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-ports)
-[1m[92m    Checking[0m aws-lc-rs v1.16.1
-[1m[92m    Checking[0m gix-object v0.62.0
-[1m[92m    Checking[0m rustix v1.1.4
-[1m[92m    Checking[0m unicase v2.9.0
-[1m[92m    Checking[0m atomic-waker v1.1.2
-[1m[92m    Checking[0m try-lock v0.2.5
-[1m[92m    Checking[0m want v0.3.1
-[1m[92m    Checking[0m h2 v0.4.13
-[1m[92m    Checking[0m mime_guess v2.0.5
-[1m[92m    Checking[0m rustls-webpki v0.103.9
-[1m[92m    Checking[0m flate2 v1.1.9
-[1m[92m    Checking[0m futures-channel v0.3.32
-[1m[92m    Checking[0m memmap2 v0.9.11
-[1m[92m    Checking[0m pin-utils v0.1.0
-[1m[92m    Checking[0m rustls v0.23.37
-[1m[92m    Checking[0m hyper v1.8.1
-[1m[92m    Checking[0m security-framework-sys v2.17.0
-[1m[92m    Checking[0m ipnet v2.12.0
-[1m[92m    Checking[0m security-framework v3.7.0
-[1m[92m    Checking[0m hyper-util v0.1.20
-[1m[92m    Checking[0m sync_wrapper v1.0.2
-[1m[92m    Checking[0m tower-layer v0.3.3
-[1m[92m    Checking[0m tokio-rustls v0.26.4
-[1m[92m    Checking[0m zstd-sys v2.0.16+zstd.1.5.7
-[1m[92m    Checking[0m tempfile v3.26.0
-[1m[92m    Checking[0m http-body-util v0.1.3
-[1m[92m    Checking[0m objc2-core-text v0.3.2
-[1m[92m    Checking[0m objc2-core-video v0.3.2
-[1m[92m    Checking[0m objc2-core-graphics v0.3.2
-[1m[92m    Checking[0m gix-fs v0.21.2
-[1m[92m    Checking[0m gix-chunk v0.7.2
-[1m[92m    Checking[0m objc2-cloud-kit v0.3.2
-[1m[92m    Checking[0m objc2-quartz-core v0.3.2
-[1m[92m    Checking[0m objc2-core-image v0.3.2
-[1m[92m    Checking[0m objc2-core-data v0.3.2
-[1m[92m    Checking[0m regex v1.12.3
-[1m[92m    Checking[0m hybrid-array v0.4.13
-[1m[92m    Checking[0m lazy_static v1.5.0
-[1m[92m    Checking[0m objc2-app-kit v0.3.2
-[1m[92m    Checking[0m gix-tempfile v23.0.2
-[1m[92m    Checking[0m zstd-safe v7.2.4
-[1m[92m    Checking[0m tower v0.5.3
-[1m[92m    Checking[0m rustls-native-certs v0.8.3
-[1m[92m    Checking[0m gix-quote v0.7.2
-[1m[92m    Checking[0m nonempty v0.12.0
-[1m[92m    Checking[0m static_assertions v1.1.0
-[1m[92m    Checking[0m hyper-rustls v0.27.7
-[1m[92m    Checking[0m crypto-common v0.2.2
 [1m[92m    Checking[0m block-buffer v0.12.1
 [1m[92m    Checking[0m zstd v0.13.3
 [1m[92m   Compiling[0m tauri v2.10.2
@@ -267,3 +192,95 @@
 [1m[92m    Checking[0m derive_builder v0.20.2
 [1m[92m    Checking[0m gix-transport v0.57.2
 [1m[92m    Checking[0m ahash v0.8.12
+[1m[92m    Checking[0m esaxx-rs v0.1.10
+[1m[92m    Checking[0m fancy-regex v0.13.0
+[1m[92m    Checking[0m gix-config v0.58.0
+[1m[92m    Checking[0m gix-pathspec v0.18.1
+[1m[92m    Checking[0m gix-shallow v0.12.1
+[1m[92m    Checking[0m gix-negotiate v0.33.0
+[1m[92m    Checking[0m prost v0.13.5
+[1m[92m    Checking[0m webpki-roots v1.0.6
+[1m[92m    Checking[0m rustls-pemfile v2.2.0
+[1m[92m    Checking[0m dary_heap v0.3.8
+[1m[92m    Checking[0m unicode-normalization-alignments v0.1.12
+[1m[92m    Checking[0m io-close v0.3.7
+[1m[92m    Checking[0m unicode_categories v0.1.1
+[1m[92m    Checking[0m rustc-hash v1.1.0
+[1m[92m    Checking[0m data-encoding v2.11.0
+[1m[92m    Checking[0m tiktoken-rs v0.9.1
+[1m[92m    Checking[0m tungstenite v0.29.0
+[1m[92m    Checking[0m tokenizers v0.22.2
+[1m[92m    Checking[0m gix-worktree-state v0.32.0
+[1m[92m    Checking[0m gix-protocol v0.63.0
+[1m[92m    Checking[0m ttsync-http v2.3.1
+[1m[92m    Checking[0m sentencepiece-model v0.1.4
+[1m[92m    Checking[0m gix-submodule v0.32.0
+[1m[92m    Checking[0m gix-odb v0.82.0
+[1m[92m    Checking[0m gix-discover v0.53.0
+[1m[92m    Checking[0m gix-diff v0.65.0
+[1m[92m    Checking[0m headers-core v0.3.0
+[1m[92m    Checking[0m parking v2.2.1
+[1m[92m    Checking[0m seahash v4.1.0
+[1m[92m    Checking[0m gix v0.85.0
+[1m[92m    Checking[0m yup-oauth2 v12.1.2
+[1m[92m    Checking[0m futures-lite v2.6.1
+[1m[92m    Checking[0m miktik v0.3.0
+[1m[92m    Checking[0m headers v0.4.1
+[1m[92m   Compiling[0m tauri-plugin-opener v2.5.3
+[1m[92m   Compiling[0m tauri-plugin-notification v2.3.3
+[1m[92m   Compiling[0m tauri-plugin-dialog v2.7.0
+[1m[92m   Compiling[0m tauri-plugin-window-state v2.4.1
+[1m[92m    Checking[0m ttsync-client v2.3.1
+[1m[92m    Checking[0m mac-notification-sys v0.6.9
+[1m[92m    Checking[0m tokio-tungstenite v0.29.0
+[1m[92m    Checking[0m tar v0.4.45
+[1m[92m    Checking[0m sharded-slab v0.1.7
+[1m[92m    Checking[0m dispatch2 v0.3.1
+[1m[92m    Checking[0m regress v0.11.1
+[1m[92m    Checking[0m matchers v0.2.0
+[1m[92m    Checking[0m local-ip-address v0.6.10
+[1m[92m    Checking[0m thread_local v1.1.9
+[1m[92m    Checking[0m nu-ansi-term v0.50.3
+[1m[92m    Checking[0m pathdiff v0.2.3
+[1m[92m    Checking[0m open v5.3.3
+[1m[92m    Checking[0m tracing-subscriber v0.3.22
+[1m[92m    Checking[0m rfd v0.16.0
+[1m[92m    Checking[0m notify-rust v4.12.0
+[1m[92m   Compiling[0m tauritavern v2.2.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern)
+[1m[92m    Checking[0m tt-application v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-application)
+[1m[92m    Checking[0m tracing-appender v0.2.4
+[1m[92m    Checking[0m tt-adapter-sync v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-sync)
+[1m[92m    Checking[0m tt-adapter-archive v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-archive)
+[1m[92m    Checking[0m tt-adapter-extension v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-extension)
+[1m[91merror[0m[1m: the `Err`-variant returned from this function is very large[0m
+  [1m[94m--> [0mcrates/tt-adapter-sync/src/sync/job_executor.rs:62:10
+   [1m[94m|[0m
+[1m[94m62[0m [1m[94m|[0m     ) -> Result<SyncExecutionReport, SyncExecutionFailure> {
+   [1m[94m|[0m          [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mthe `Err`-variant is at least 128 bytes[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mhelp[0m: try reducing the size of `tt_contracts::sync::SyncExecutionFailure`, for example by boxing large elements or replacing it with `Box<tt_contracts::sync::SyncExecutionFailure>`
+   [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+   [1m[94m= [0m[1mnote[0m: `-D clippy::result-large-err` implied by `-D warnings`
+   [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::result_large_err)]`
+
+[1m[91merror[0m[1m: the `Err`-variant returned from this function is very large[0m
+   [1m[94m--> [0mcrates/tt-adapter-sync/src/sync/job_executor.rs:123:10
+    [1m[94m|[0m
+[1m[94m123[0m [1m[94m|[0m     ) -> Result<SyncExecutionReport, SyncExecutionFailure> {
+    [1m[94m|[0m          [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mthe `Err`-variant is at least 128 bytes[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: try reducing the size of `tt_contracts::sync::SyncExecutionFailure`, for example by boxing large elements or replacing it with `Box<tt_contracts::sync::SyncExecutionFailure>`
+    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+[1m[91merror[0m[1m: the `Err`-variant returned from this function is very large[0m
+   [1m[94m--> [0mcrates/tt-adapter-sync/src/sync/job_executor.rs:182:10
+    [1m[94m|[0m
+[1m[94m182[0m [1m[94m|[0m     ) -> Result<SyncExecutionReport, SyncExecutionFailure> {
+    [1m[94m|[0m          [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mthe `Err`-variant is at least 128 bytes[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: try reducing the size of `tt_contracts::sync::SyncExecutionFailure`, for example by boxing large elements or replacing it with `Box<tt_contracts::sync::SyncExecutionFailure>`
+    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+[1m[91merror[0m: could not compile `tt-adapter-sync` (lib) due to 3 previous errors
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+ ELIFECYCLE  Command failed with exit code 101.
