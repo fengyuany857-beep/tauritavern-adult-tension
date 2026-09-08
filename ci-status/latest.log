@@ -2,51 +2,280 @@
 2:    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild -project /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/tauritavern.xcodeproj -scheme tauritavern_iOS -configuration release -sdk iphoneos -destination generic/platform=iOS -derivedDataPath /Users/runner/work/_temp/tauritavern-ios-derived-data CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= DEVELOPMENT_TEAM= build
 11:note: Using codesigning identity override: 
 27:GatherProvisioningInputs
+195:    export CLANG_WARN_DIRECT_OBJC_ISA_USAGE\=YES_ERROR
+204:    export CLANG_WARN_OBJC_ROOT_CLASS\=YES_ERROR
+215:    export CODESIGNING_FOLDER_PATH\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app
+218:    export CODE_SIGN_CONTEXT_CLASS\=XCiPhoneOSCodeSignContext
+288:    export EMBEDDED_PROFILE_NAME\=embedded.mobileprovision
+355:    export GCC_TREAT_WARNINGS_AS_ERRORS\=NO
+359:    export GCC_WARN_ABOUT_RETURN_TYPE\=YES_ERROR
+532:    export PROVISIONING_PROFILE_REQUIRED\=YES
+533:    export PROVISIONING_PROFILE_REQUIRED_YES_YES\=YES
+534:    export PROVISIONING_PROFILE_SUPPORTED\=YES
+667:    export TREAT_MISSING_BASELINES_AS_TEST_FAILURES\=NO
+668:    export TREAT_MISSING_SCRIPT_PHASE_OUTPUTS_AS_ERRORS\=NO
+681:    export VALIDATE_DEVELOPMENT_ASSET_PATHS\=YES_ERROR
+823:[1m[92m   Compiling[0m thiserror v2.0.18
+839:[1m[92m   Compiling[0m thiserror-impl v2.0.18
 
 # Tail
-Command line invocation:
-    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild -project /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/tauritavern.xcodeproj -scheme tauritavern_iOS -configuration release -sdk iphoneos -destination generic/platform=iOS -derivedDataPath /Users/runner/work/_temp/tauritavern-ios-derived-data CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= DEVELOPMENT_TEAM= build
+    export STRINGS_FILE_OUTPUT_ENCODING\=binary
+    export STRING_CATALOG_GENERATE_SYMBOLS\=NO
+    export STRIP_BITCODE_FROM_COPIED_FILES\=YES
+    export STRIP_INSTALLED_PRODUCT\=YES
+    export STRIP_STYLE\=all
+    export STRIP_SWIFT_SYMBOLS\=YES
+    export SUPPORTED_DEVICE_FAMILIES\=1,2
+    export SUPPORTED_PLATFORMS\=iphoneos\ iphonesimulator
+    export SUPPORTS_MACCATALYST\=NO
+    export SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD\=YES
+    export SUPPORTS_ON_DEMAND_RESOURCES\=YES
+    export SUPPORTS_TEXT_BASED_API\=NO
+    export SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD\=YES
+    export SUPPRESS_WARNINGS\=NO
+    export SWIFT_COMPILATION_MODE\=wholemodule
+    export SWIFT_EMIT_CONST_VALUE_PROTOCOLS\=AnyResolverProviding\ AppEntity\ AppEnum\ AppExtension\ AppIntent\ AppIntentsPackage\ AppShortcutProviding\ AppShortcutsProvider\ DynamicOptionsProvider\ EntityQuery\ ExtensionPointDefining\ IntentValueQuery\ Resolver\ TransientEntity\ _AssistantIntentsProvider\ _GenerativeFunctionExtractable\ _IntentValueRepresentable
+    export SWIFT_EMIT_LOC_STRINGS\=NO
+    export SWIFT_ENABLE_EXPLICIT_MODULES\=YES
+    export SWIFT_OPTIMIZATION_LEVEL\=-O
+    export SWIFT_PLATFORM_TARGET_PREFIX\=ios
+    export SWIFT_RESPONSE_FILE_PATH_normal_arm64\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/TauriTavern.SwiftFileList
+    export SWIFT_VERSION\=5.0
+    export SYMROOT\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products
+    export SYSTEM_ADMIN_APPS_DIR\=/Applications/Utilities
+    export SYSTEM_APPS_DIR\=/Applications
+    export SYSTEM_CORE_SERVICES_DIR\=/System/Library/CoreServices
+    export SYSTEM_DEMOS_DIR\=/Applications/Extras
+    export SYSTEM_DEVELOPER_APPS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications
+    export SYSTEM_DEVELOPER_BIN_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/usr/bin
+    export SYSTEM_DEVELOPER_DEMOS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Utilities/Built\ Examples
+    export SYSTEM_DEVELOPER_DIR\=/Applications/Xcode_26.6.app/Contents/Developer
+    export SYSTEM_DEVELOPER_DOC_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library
+    export SYSTEM_DEVELOPER_GRAPHICS_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Graphics\ Tools
+    export SYSTEM_DEVELOPER_JAVA_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Java\ Tools
+    export SYSTEM_DEVELOPER_PERFORMANCE_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Performance\ Tools
+    export SYSTEM_DEVELOPER_RELEASENOTES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/releasenotes
+    export SYSTEM_DEVELOPER_TOOLS\=/Applications/Xcode_26.6.app/Contents/Developer/Tools
+    export SYSTEM_DEVELOPER_TOOLS_DOC_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/documentation/DeveloperTools
+    export SYSTEM_DEVELOPER_TOOLS_RELEASENOTES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/releasenotes/DeveloperTools
+    export SYSTEM_DEVELOPER_USR_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/usr
+    export SYSTEM_DEVELOPER_UTILITIES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Utilities
+    export SYSTEM_DEXT_INSTALL_PATH\=/System/Library/DriverExtensions
+    export SYSTEM_DOCUMENTATION_DIR\=/Library/Documentation
+    export SYSTEM_EXTENSIONS_FOLDER_PATH\=TauriTavern.app/SystemExtensions
+    export SYSTEM_EXTENSIONS_FOLDER_PATH_SHALLOW_BUNDLE_NO\=TauriTavern.app/Library/SystemExtensions
+    export SYSTEM_EXTENSIONS_FOLDER_PATH_SHALLOW_BUNDLE_YES\=TauriTavern.app/SystemExtensions
+    export SYSTEM_KEXT_INSTALL_PATH\=/System/Library/Extensions
+    export SYSTEM_LIBRARY_DIR\=/System/Library
+    export TAPI_DEMANGLE\=YES
+    export TAPI_ENABLE_PROJECT_HEADERS\=NO
+    export TAPI_LANGUAGE\=objective-c
+    export TAPI_LANGUAGE_STANDARD\=compiler-default
+    export TAPI_USE_SRCROOT\=YES
+    export TAPI_VERIFY_MODE\=Pedantic
+    export TARGETED_DEVICE_FAMILY\=1,2
+    export TARGETNAME\=tauritavern_iOS
+    export TARGET_BUILD_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos
+    export TARGET_NAME\=tauritavern_iOS
+    export TARGET_TEMP_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build
+    export TEMP_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build
+    export TEMP_FILES_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build
+    export TEMP_FILE_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build
+    export TEMP_ROOT\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex
+    export TEMP_SANDBOX_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/TemporaryTaskSandboxes
+    export TEST_FRAMEWORK_SEARCH_PATHS\=\ /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/Frameworks\ /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/Developer/Library/Frameworks
+    export TEST_LIBRARY_SEARCH_PATHS\=\ /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib
+    export TOOLCHAINS\=com.apple.dt.toolchain.Metal.32023.883\ com.apple.dt.toolchain.XcodeDefault
+    export TOOLCHAIN_DIR\=/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.2KgBUe/Metal.xctoolchain
+    export TOOLCHAIN_VERSION\=32023.883
+    export TREAT_MISSING_BASELINES_AS_TEST_FAILURES\=NO
+    export TREAT_MISSING_SCRIPT_PHASE_OUTPUTS_AS_ERRORS\=NO
+    export UID\=501
+    export UNINSTALLED_PRODUCTS_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/UninstalledProducts
+    export UNLOCALIZED_RESOURCES_FOLDER_PATH\=TauriTavern.app
+    export UNLOCALIZED_RESOURCES_FOLDER_PATH_SHALLOW_BUNDLE_NO\=TauriTavern.app/Resources
+    export UNLOCALIZED_RESOURCES_FOLDER_PATH_SHALLOW_BUNDLE_YES\=TauriTavern.app
+    export UNSTRIPPED_PRODUCT\=NO
+    export USER\=runner
+    export USER_APPS_DIR\=/Users/runner/Applications
+    export USER_LIBRARY_DIR\=/Users/runner/Library
+    export USE_DYNAMIC_NO_PIC\=YES
+    export USE_HEADERMAP\=YES
+    export USE_HEADER_SYMLINKS\=NO
+    export VALIDATE_DEVELOPMENT_ASSET_PATHS\=YES_ERROR
+    export VALIDATE_PRODUCT\=NO
+    export VALID_ARCHS\=arm64
+    export VERBOSE_PBXCP\=NO
+    export VERSIONPLIST_PATH\=TauriTavern.app/version.plist
+    export VERSION_INFO_BUILDER\=runner
+    export VERSION_INFO_FILE\=TauriTavern_vers.c
+    export VERSION_INFO_STRING\=\"@\(\#\)PROGRAM:TauriTavern\ \ PROJECT:tauritavern-\"
+    export WORKSPACE_DIR\=/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/tauritavern.xcodeproj
+    export WRAPPER_EXTENSION\=app
+    export WRAPPER_NAME\=TauriTavern.app
+    export WRAPPER_SUFFIX\=.app
+    export WRAP_ASSET_PACKS_IN_SEPARATE_DIRECTORIES\=NO
+    export XCODE_APP_SUPPORT_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Library/Xcode
+    export XCODE_PRODUCT_BUILD_VERSION\=17F113
+    export XCODE_VERSION_ACTUAL\=2660
+    export XCODE_VERSION_MAJOR\=2600
+    export XCODE_VERSION_MINOR\=2660
+    export XPCSERVICES_FOLDER_PATH\=TauriTavern.app/XPCServices
+    export YACC\=yacc
+    export _DISCOVER_COMMAND_LINE_LINKER_INPUTS\=YES
+    export _DISCOVER_COMMAND_LINE_LINKER_INPUTS_INCLUDE_WL\=YES
+    export _LD_MULTIARCH\=YES
+    export _WRAPPER_CONTENTS_DIR_SHALLOW_BUNDLE_NO\=/Contents
+    export _WRAPPER_PARENT_PATH_SHALLOW_BUNDLE_NO\=/..
+    export _WRAPPER_RESOURCES_DIR_SHALLOW_BUNDLE_NO\=/Resources
+    export __DIAGNOSE_DEPRECATED_ARCHS\=YES
+    export __IS_NOT_MACOS\=YES
+    export __IS_NOT_MACOS_macosx\=NO
+    export __IS_NOT_SIMULATOR\=YES
+    export __IS_NOT_SIMULATOR_simulator\=NO
+    export __ORIGINAL_SDK_DEFINED_LLVM_TARGET_TRIPLE_SYS\=ios
+    export arch\=undefined_arch
+    export variant\=normal
+    /bin/sh -c /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Script-95C7284793BDA95D8927B3DA.sh
 
-Build settings from command line:
-    CODE_SIGN_IDENTITY = 
-    CODE_SIGNING_ALLOWED = NO
-    CODE_SIGNING_REQUIRED = NO
-    DEVELOPMENT_TEAM = 
-    SDKROOT = iphoneos26.5
+> tauritavern@2.2.0 tauri /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> node scripts/tauri-app.mjs --prepare-frontend ios xcode-script -v --platform iOS --sdk-root /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk --framework-search-paths '/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos  "."' --header-search-paths '/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/include ' --gcc-preprocessor-definitions '' --configuration release arm64
 
-note: Using codesigning identity override: 
-ComputePackagePrebuildTargetDependencyGraph
 
-Prepare packages
+> tauritavern@2.2.0 web:build /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> rspack build --config rspack.config.js
 
-CreateBuildRequest
+vendor-libs:
+  asset [1m[32mlib.optional.bundle.js[39m[22m 934 KiB [1m[32m[emitted][39m[22m [javascript module] (name: lib.optional)
+  asset [1m[32mlib.core.bundle.js[39m[22m 781 KiB [1m[32m[emitted][39m[22m [javascript module] (name: lib.core)
+  Entrypoint [1mlib.core[39m[22m 781 KiB = [1m[32mlib.core.bundle.js[39m[22m
+  Entrypoint [1mlib.optional[39m[22m 934 KiB = [1m[32mlib.optional.bundle.js[39m[22m
+  chunk (runtime: lib.core) [1m[32mlib.core.bundle.js[39m[22m (lib.core) 3.01 MiB (javascript) 1.02 KiB (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
+  chunk (runtime: lib.optional) [1m[32mlib.optional.bundle.js[39m[22m (lib.optional) 1.5 MiB (javascript) 431 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
+  cached modules 1.15 MiB [1m[32m[cached][39m[22m 435 modules
+  runtime modules 1.44 KiB 7 modules
+  cacheable modules 4.51 MiB
+    modules by path [1m./node_modules/.pnpm/highlight.js@11.11.1/node_modules/highlight.js/lib/[39m[22m 1.5 MiB 194 modules
+    modules by path [1m./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/dist/cjs/[39m[22m 591 KiB 30 modules
+    modules by path [1m./node_modules/.pnpm/source-map@0.6.1/node_modules/source-map/[39m[22m 99.4 KiB 11 modules
+    modules by path [1m./node_modules/.pnpm/seedrandom@3.0.5/node_modules/seedrandom/[39m[22m 26.5 KiB 8 modules
+    modules by path [1m./node_modules/.pnpm/@mozilla+readability@0.6.0/node_modules/@mozilla/readability/*.js[39m[22m 92.2 KiB
+      [1m./node_modules/.pnpm/@mozilla+readability@0.6.0/node_modules/@mozilla/readability/Readability.js[39m[22m 87.9 KiB [1m[33m[code generated][39m[22m
+      + 2 modules
+    modules by path [1m./src/*.js[39m[22m 1.13 MiB
+      [1m./src/lib-bundle-core.js + 427 modules[39m[22m 1.13 MiB [1m[33m[code generated][39m[22m
+      [1m./src/lib-bundle-optional.js + 1 modules[39m[22m 485 bytes [1m[33m[code generated][39m[22m
+    modules by path [1m./node_modules/.pnpm/moment@2.30.1/node_modules/[39m[22m 172 KiB
+      [1m./node_modules/.pnpm/moment@2.30.1/node_modules/moment/moment.js[39m[22m 172 KiB [1m[33m[code generated][39m[22m
+      [1m./node_modules/.pnpm/moment@2.30.1/node_modules/moment|sync[39m[22m 160 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    modules by path [1m./node_modules/.pnpm/localforage@1.10.0/node_modules/localforage/[39m[22m 91.7 KiB
+      [1m./node_modules/.pnpm/localforage@1.10.0/node_modules/localforage/dist/localforage.js[39m[22m 91.6 KiB [1m[33m[code generated][39m[22m
+      [1m./node_modules/.pnpm/localforage@1.10.0/node_modules/localforage/dist|sync[39m[22m 160 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    + 10 modules
+  2026-09-08 [1m03:07:42[39m[22m: [1mvendor-libs[39m[22m (Rspack 2.0.8) compiled [1m[32msuccessfully[39m[22m in 1.63 s
 
-SendProjectDescription
+agent-system:
+  asset [1m[32mindex.bundle.js[39m[22m 477 KiB [1m[32m[emitted][39m[22m [javascript module] (name: index)
+  Entrypoint [1mindex[39m[22m 477 KiB = [1m[32mindex.bundle.js[39m[22m
+  chunk (runtime: index) [1m[32mindex.bundle.js[39m[22m (index) 1.11 MiB (javascript) 921 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
+  cached modules 1.12 MiB [1m[32m[cached][39m[22m 64 modules
+  runtime modules 921 bytes 4 modules
+  [1m./src/scripts/extensions/agent-system/src/index.js + 62 modules[39m[22m 1.11 MiB [1m[33m[code generated][39m[22m
+  2026-09-08 [1m03:07:43[39m[22m: [1magent-system[39m[22m (Rspack 2.0.8) compiled [1m[32msuccessfully[39m[22m in 485 ms
 
-CreateBuildOperation
-
-ComputeTargetDependencyGraph
-note: Building targets in dependency order
-note: Target dependency graph (1 target)
-    Target 'tauritavern_iOS' in project 'tauritavern' (no dependencies)
-
-GatherProvisioningInputs
-
-CreateBuildDescription
-
-ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk -x c -c /dev/null
-
-ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -arch arm64 -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk -x objective-c++ -c /dev/null
-
-ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/ibtool --version --output-format xml1
-
-ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -arch arm64 -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk -x c -c /dev/null
-
-ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/Assets.xcassets
-
-ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool --version --output-format xml1
-
-ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
-
-Build description signature: f27e46368f79ff722bdb39b4c8c73cef
-Build description path: /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/XCBuildData/f27e46368f79ff722bdb39b4c8c73cef.xcbuilddata
+tauritavern-settings:
+  asset [1m[32msync.bundle.js[39m[22m 210 KiB [1m[32m[emitted][39m[22m [javascript module] (name: sync)
+  asset [1m[32msettings.bundle.js[39m[22m 196 KiB [1m[32m[emitted][39m[22m [javascript module] (name: settings)
+  asset [1m[32mdev-logs.bundle.js[39m[22m 185 KiB [1m[32m[emitted][39m[22m [javascript module] (name: dev-logs)
+  Entrypoint [1msettings[39m[22m 196 KiB = [1m[32msettings.bundle.js[39m[22m
+  Entrypoint [1mdev-logs[39m[22m 185 KiB = [1m[32mdev-logs.bundle.js[39m[22m
+  Entrypoint [1msync[39m[22m 210 KiB = [1m[32msync.bundle.js[39m[22m
+  chunk (runtime: sync) [1m[32msync.bundle.js[39m[22m (sync) 657 KiB (javascript) 921 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
+  chunk (runtime: dev-logs) [1m[32mdev-logs.bundle.js[39m[22m (dev-logs) 622 KiB (javascript) 921 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
+  chunk (runtime: settings) [1m[32msettings.bundle.js[39m[22m (settings) 633 KiB (javascript) 921 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
+  cached modules 723 KiB [1m[32m[cached][39m[22m 23 modules
+  runtime modules 2.7 KiB 12 modules
+  cacheable modules 1.87 MiB
+    [1m./src/scripts/tauri/setting/sync-app/index.js + 12 modules[39m[22m 657 KiB [1m[33m[code generated][39m[22m
+    [1m./src/scripts/tauri/setting/settings-app/index.js + 10 modules[39m[22m 633 KiB [1m[33m[code generated][39m[22m
+    [1m./src/scripts/tauri/setting/dev-logs-app/index.js + 12 modules[39m[22m 622 KiB [1m[33m[code generated][39m[22m
+  2026-09-08 [1m03:07:43[39m[22m: [1mtauritavern-settings[39m[22m (Rspack 2.0.8) compiled [1m[32msuccessfully[39m[22m in 558 ms
+       Debug [tauri_cli::helpers::app_paths] Found Tauri project inside /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern on early lookup
+       Debug [jsonrpsee-client] Connecting to target: Target { host: "127.0.0.1", host_header: "127.0.0.1:49400", _mode: Plain, path_and_query: "/", basic_auth: None }
+       Debug [jsonrpsee-client] Connection established to target: Target { host: "127.0.0.1", host_header: "127.0.0.1:49400", _mode: Plain, path_and_query: "/", basic_auth: None }
+[1m[92m Downloading[0m crates ...
+[1m[92m  Downloaded[0m async-channel v2.5.0
+[1m[92m  Downloaded[0m async-executor v1.14.0
+[1m[92m  Downloaded[0m async-broadcast v0.7.2
+[1m[92m  Downloaded[0m async-recursion v1.1.1
+[1m[92m  Downloaded[0m async-lock v3.4.2
+[1m[92m  Downloaded[0m async-process v2.5.0
+[1m[92m  Downloaded[0m async-signal v0.2.13
+[1m[92m  Downloaded[0m async-task v4.7.1
+[1m[92m  Downloaded[0m async-io v2.6.0
+[1m[92m  Downloaded[0m blocking v1.6.2
+[1m[92m  Downloaded[0m concurrent-queue v2.5.0
+[1m[92m  Downloaded[0m endi v1.1.1
+[1m[92m  Downloaded[0m event-listener-strategy v0.5.4
+[1m[92m  Downloaded[0m enumflags2 v0.7.12
+[1m[92m  Downloaded[0m enumflags2_derive v0.7.12
+[1m[92m  Downloaded[0m event-listener v5.4.1
+[1m[92m  Downloaded[0m objc2-uniform-type-identifiers v0.3.2
+[1m[92m  Downloaded[0m objc2-ui-kit v0.3.2
+[1m[92m  Downloaded[0m ordered-stream v0.2.0
+[1m[92m  Downloaded[0m piper v0.2.5
+[1m[92m  Downloaded[0m proc-macro-crate v3.4.0
+[1m[92m  Downloaded[0m polling v3.11.0
+[1m[92m  Downloaded[0m tauri-plugin-barcode-scanner v2.4.4
+[1m[92m  Downloaded[0m toml_edit v0.23.10+spec-1.0.0
+[1m[92m  Downloaded[0m zbus v5.14.0
+[1m[92m  Downloaded[0m zbus_names v4.3.1
+[1m[92m  Downloaded[0m zvariant_utils v3.3.0
+[1m[92m  Downloaded[0m zvariant_derive v5.10.0
+[1m[92m  Downloaded[0m zvariant v5.10.0
+[1m[92m  Downloaded[0m zbus_macros v5.14.0
+[1m[92m   Compiling[0m proc-macro2 v1.0.106
+[1m[92m   Compiling[0m unicode-ident v1.0.24
+[1m[92m   Compiling[0m quote v1.0.44
+[1m[92m   Compiling[0m libc v0.2.186
+[1m[92m   Compiling[0m serde_core v1.0.228
+[1m[92m   Compiling[0m cfg-if v1.0.4
+[1m[92m   Compiling[0m syn v2.0.117
+[1m[92m   Compiling[0m memchr v2.8.0
+[1m[92m   Compiling[0m serde v1.0.228
+[1m[92m   Compiling[0m parking_lot_core v0.9.12
+[1m[92m   Compiling[0m thiserror v2.0.18
+[1m[92m   Compiling[0m smallvec v1.15.1
+[1m[92m   Compiling[0m itoa v1.0.17
+[1m[92m   Compiling[0m jobserver v0.1.34
+[1m[92m   Compiling[0m once_cell v1.21.3
+[1m[92m   Compiling[0m shlex v1.3.0
+[1m[92m   Compiling[0m find-msvc-tools v0.1.9
+[1m[92m   Compiling[0m getrandom v0.4.1
+[1m[92m   Compiling[0m cc v1.2.56
+[1m[92m   Compiling[0m zerocopy v0.8.40
+[1m[92m   Compiling[0m synstructure v0.13.2
+[1m[92m   Compiling[0m scopeguard v1.2.0
+[1m[92m   Compiling[0m lock_api v0.4.14
+[1m[92m   Compiling[0m parking_lot v0.12.5
+[1m[92m   Compiling[0m version_check v0.9.5
+[1m[92m   Compiling[0m serde_derive v1.0.228
+[1m[92m   Compiling[0m thiserror-impl v2.0.18
+[1m[92m   Compiling[0m zerofrom-derive v0.1.6
+[1m[92m   Compiling[0m yoke-derive v0.8.1
+[1m[92m   Compiling[0m zerovec-derive v0.11.2
+[1m[92m   Compiling[0m stable_deref_trait v1.2.1
+[1m[92m   Compiling[0m displaydoc v0.2.5
+[1m[92m   Compiling[0m aho-corasick v1.1.4
+[1m[92m   Compiling[0m bytes v1.11.1
+[1m[92m   Compiling[0m regex-syntax v0.8.10
+[1m[92m   Compiling[0m zmij v1.0.21
+[1m[92m   Compiling[0m icu_properties_data v2.1.2
+[1m[92m   Compiling[0m icu_normalizer_data v2.1.1
+[1m[92m   Compiling[0m bitflags v2.11.0
+[1m[92m   Compiling[0m generic-array v0.14.7
+[1m[92m   Compiling[0m errno v0.3.14
+[1m[92m   Compiling[0m crc32fast v1.5.0
+[1m[92m   Compiling[0m allocator-api2 v0.2.21
+[1m[92m   Compiling[0m regex-automata v0.4.14
+[1m[92m   Compiling[0m foldhash v0.2.0
