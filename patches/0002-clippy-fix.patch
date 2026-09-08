@@ -1,0 +1,60 @@
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -564,7 +564,11 @@
+         for (label, value) in [("emotion", update.emotion.as_deref()), ("goal", update.goal.as_deref()), ("autonomy", update.autonomy.as_deref()), ("relationship", update.relationship.as_deref())] {
+             if let Some(value) = value { bounded_text(value, label, 0, 1000)?; }
+         }
+-        if let Some(trust) = update.trust { if !(-100..=100).contains(&trust) { return Err("npc trust must be between -100 and 100".to_string()); } }
++        if let Some(trust) = update.trust
++            && !(-100..=100).contains(&trust)
++        {
++            return Err("npc trust must be between -100 and 100".to_string());
++        }
+     }
+     for event in input.events.as_deref().unwrap_or(&[]) {
+         bounded_text(&event.summary, "event summary", 1, 1500)?;
+@@ -758,11 +762,11 @@
+         upsert_event(&mut state.events, RpEvent { id, summary: event.summary, status: event.status.unwrap_or_else(|| "pending".to_string()), turn });
+     }
+     for (index, fact) in input.facts.unwrap_or_default().into_iter().enumerate() {
+-        if let Some(prior_id) = fact.supersedes.as_deref() {
+-            if let Some(prior) = state.facts.iter_mut().find(|item| item.id == prior_id) {
+-                prior.truth_status = "SUPERSEDED".to_string();
+-                prior.invalid_at_turn = Some(turn);
+-            }
++        if let Some(prior_id) = fact.supersedes.as_deref()
++            && let Some(prior) = state.facts.iter_mut().find(|item| item.id == prior_id)
++        {
++            prior.truth_status = "SUPERSEDED".to_string();
++            prior.invalid_at_turn = Some(turn);
+         }
+         let classification = fact.classification.unwrap_or_else(|| "HISTORICAL".to_string());
+         let truth_status = match classification.as_str() {
+@@ -1054,8 +1058,10 @@
+ 
+     #[test]
+     fn paused_state_blocks_story_until_explicit_resume() {
+-        let mut state = RpState::default();
+-        state.safety_state = "paused".to_string();
++        let state = RpState {
++            safety_state: "paused".to_string(),
++            ..RpState::default()
++        };
+         let advancing = StageTurnArgs { advances_story: Some(true), facts: None, authority: None, ..authority_only() };
+         assert!(validate_stage_against_state(&state, &advancing).is_err());
+ 
+@@ -1069,9 +1075,11 @@
+ 
+     #[test]
+     fn current_grant_requires_effective_scene_participants() {
+-        let mut state = RpState::default();
+-        state.scene_id = Some("scene-1".to_string());
+-        state.participants = vec!["player".to_string(), "npc-a".to_string()];
++        let state = RpState {
++            scene_id: Some("scene-1".to_string()),
++            participants: vec!["player".to_string(), "npc-a".to_string()],
++            ..RpState::default()
++        };
+         let mut value = authority_only();
+         value.authority.as_mut().unwrap().grants_add = Some(vec![GrantAddInput {
+             id: "grant-1".to_string(),
