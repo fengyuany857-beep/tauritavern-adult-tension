@@ -1,0 +1,203 @@
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -922,12 +1017,200 @@
+     for a in &state.living_world.agendas {
+         records.push((a.turn, json!({"kind":"agenda","record":a}), format!("{} {} {} {}", a.id, a.npc_id, a.summary, a.status)));
+     }
++    for retraction in &state.retractions {
++        records.push((retraction.recorded_at_turn, json!({"kind":"retraction","record":retraction}), format!("retracted turn {} {}", retraction.target_turn, retraction.reason)));
++    }
+     records.sort_by_key(|(turn, _, _)| *turn);
+     let mut hits = records.into_iter().rev().filter(|(_,_,hay)| query.is_empty() || hay.to_lowercase().contains(query)).take(limit).map(|(_,v,_)| v).collect::<Vec<_>>();
+     hits.reverse();
+     hits
+ }
+ 
++fn fact_is_active(fact: &RpFact) -> bool {
++    fact.admission_state == "COMMITTED"
++        && fact.invalid_at_turn.is_none()
++        && !matches!(fact.truth_status.as_str(), "SUPERSEDED" | "RETRACTED")
++}
++
++fn apply_retractions(state: &mut RpState, target_turns: &[u64], reason: &str, recorded_at_turn: u64) {
++    let targets = target_turns.iter().copied().collect::<HashSet<_>>();
++    let removed_facts = state
++        .facts
++        .iter()
++        .filter(|fact| targets.contains(&fact.recorded_at_turn))
++        .map(|fact| (fact.id.clone(), compact(&format!("{}{}", fact.subject, fact.predicate))))
++        .collect::<Vec<_>>();
++    let removed_fact_ids = removed_facts.iter().map(|(id, _)| id.as_str()).collect::<HashSet<_>>();
++    let removed_signatures = removed_facts.iter().map(|(_, signature)| signature.as_str()).collect::<HashSet<_>>();
++
++    state.events.retain(|event| !targets.contains(&event.turn));
++    state.facts.retain(|fact| !targets.contains(&fact.recorded_at_turn));
++    state.knowledge.retain(|knowledge| {
++        if targets.contains(&knowledge.turn) {
++            return false;
++        }
++        if knowledge.fact_id.as_deref().is_some_and(|fact_id| removed_fact_ids.contains(fact_id)) {
++            return false;
++        }
++        let signature = compact(&format!("{}{}", knowledge.subject, knowledge.predicate));
++        !removed_signatures.contains(signature.as_str())
++    });
++    state.commitments.retain(|commitment| !targets.contains(&commitment.turn));
++    state.threads.retain(|thread| {
++        !targets.contains(&thread.turn)
++            && !thread.requires.iter().any(|required| removed_fact_ids.contains(required.as_str()))
++    });
++    state.living_world.agendas.retain(|agenda| !targets.contains(&agenda.turn));
++    state.recent_beats.retain(|beat| !targets.contains(&beat.turn));
++    state.npcs.retain(|_, npc| npc.last_updated_turn.is_none_or(|turn| !targets.contains(&turn)));
++
++    for target_turn in target_turns {
++        state.retractions.push(RpRetraction {
++            target_turn: *target_turn,
++            reason: reason.to_string(),
++            recorded_at_turn,
++            runtime_revision: state.runtime_revision,
++        });
++    }
++    trim_front(&mut state.retractions, 64);
++}
++
++fn validate_knowledge_provenance(state: &RpState, input: &StageTurnArgs) -> Result<(), String> {
++    let knowledge = input.knowledge.as_deref().unwrap_or(&[]);
++    let staged_fact_ids = input
++        .facts
++        .as_deref()
++        .unwrap_or(&[])
++        .iter()
++        .filter_map(|fact| fact.id.as_deref())
++        .collect::<HashSet<_>>();
++
++    for item in knowledge {
++        if item.state == "does_not_know" {
++            continue;
++        }
++        let source = item.source.as_ref().ok_or_else(|| {
++            format!(
++                "positive knowledge for `{}` about `{}` requires explicit source provenance; use source.kind user_asserted|observed|told_by|public|inferred|existing",
++                item.character_id, item.subject
++            )
++        })?;
++        if item.state == "knows" && source.kind == "inferred" {
++            return Err(format!(
++                "knowledge for `{}` cannot promote an inference directly to knows; use suspects/partial or provide observed/told_by/public/user_asserted evidence",
++                item.character_id
++            ));
++        }
++        if let Some(fact_id) = item.fact_id.as_deref() {
++            let exists_in_state = state.facts.iter().any(|fact| fact.id == fact_id && fact_is_active(fact));
++            if !exists_in_state && !staged_fact_ids.contains(fact_id) {
++                return Err(format!("knowledge fact_id `{fact_id}` does not reference an active accepted fact or an explicitly-id'd fact in this stage"));
++            }
++        }
++        if source.kind == "existing" && !state.knowledge.iter().any(|existing| {
++            existing.character_id == item.character_id
++                && existing.subject == item.subject
++                && existing.predicate == item.predicate
++                && existing.state != "does_not_know"
++        }) {
++            return Err(format!(
++                "knowledge source existing for `{}` has no matching accepted prior knowledge record",
++                item.character_id
++            ));
++        }
++    }
++
++    let new_npcs = input
++        .npc_updates
++        .as_deref()
++        .unwrap_or(&[])
++        .iter()
++        .filter(|update| !state.npcs.contains_key(update.id.as_str()))
++        .collect::<Vec<_>>();
++    for update in new_npcs {
++        let mut referenced = Vec::new();
++        if let Some(goal) = update.goal.as_deref() {
++            referenced.extend(referenced_active_fact_ids(state, goal));
++        }
++        let beat_mentions_npc = compact(&input.beat_summary).contains(&compact(&update.id));
++        if beat_mentions_npc {
++            referenced.extend(referenced_active_fact_ids(state, &input.beat_summary));
++        }
++        for fact in input
++            .facts
++            .as_deref()
++            .unwrap_or(&[])
++            .iter()
++            .filter(|fact| compact(&fact.subject) == compact(&update.id))
++        {
++            let fact_text = format!("{} {}", fact.predicate, fact.value);
++            referenced.extend(referenced_active_fact_ids(state, &fact_text));
++        }
++        referenced.sort();
++        referenced.dedup();
++        let declared_refs = update.knowledge_refs.as_deref().unwrap_or(&[]).iter().map(String::as_str).collect::<HashSet<_>>();
++        for fact_id in referenced {
++            if !declared_refs.contains(fact_id.as_str()) {
++                return Err(format!(
++                    "new NPC `{}` references accepted fact `{fact_id}` without declaring it in npc_updates.knowledge_refs; do not give newly introduced NPCs continuity knowledge without an explicit source",
++                    update.id
++                ));
++            }
++            if !staged_positive_knowledge_for_fact(knowledge, &update.id, &fact_id) {
++                return Err(format!(
++                    "new NPC `{}` references accepted fact `{fact_id}` but this stage has no positive knowledge row bound to that fact_id with explicit provenance",
++                    update.id
++                ));
++            }
++        }
++    }
++
++    Ok(())
++}
++
++fn staged_positive_knowledge_for_fact(knowledge: &[KnowledgeInput], character_id: &str, fact_id: &str) -> bool {
++    knowledge.iter().any(|item| {
++        item.character_id == character_id
++            && item.fact_id.as_deref() == Some(fact_id)
++            && item.state != "does_not_know"
++            && item.source.is_some()
++    })
++}
++
++fn referenced_active_fact_ids(state: &RpState, text: &str) -> Vec<String> {
++    let haystack = compact(text);
++    if haystack.is_empty() {
++        return Vec::new();
++    }
++    state
++        .facts
++        .iter()
++        .filter(|fact| fact_is_active(fact))
++        .filter(|fact| fact_reference_tokens(fact).into_iter().any(|token| haystack.contains(token.as_str())))
++        .map(|fact| fact.id.clone())
++        .collect()
++}
++
++fn fact_reference_tokens(fact: &RpFact) -> Vec<String> {
++    let mut candidates = vec![fact.id.clone(), fact.subject.clone()];
++    match &fact.value {
++        Value::String(value) => candidates.push(value.clone()),
++        Value::Number(value) => candidates.push(value.to_string()),
++        _ => {}
++    }
++    let mut tokens = candidates
++        .into_iter()
++        .map(|value| compact(&value))
++        .filter(|value| {
++            let len = value.chars().count();
++            if value.is_ascii() { len >= 5 } else { len >= 3 }
++        })
++        .collect::<Vec<_>>();
++    tokens.sort();
++    tokens.dedup();
++    tokens
++}
++
+ fn duplicate_fact_id<'a>(state: &RpState, facts: &'a [FactInput]) -> Option<&'a str> {
+     let mut seen = HashSet::new();
+     for fact in facts {
