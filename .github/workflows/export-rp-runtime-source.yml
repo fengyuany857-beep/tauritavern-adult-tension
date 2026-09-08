@@ -64,8 +64,11 @@ jobs:
             git apply "$patch"
           done
           for patch in ../control/build14-post/*.patch; do
-            git apply --check "$patch"
-            git apply "$patch"
+            normalized="$(mktemp)"
+            sed 's/^ diff --git /diff --git /' "$patch" > "$normalized"
+            git apply --check "$normalized"
+            git apply "$normalized"
+            rm -f "$normalized"
           done
           git diff --check
 
