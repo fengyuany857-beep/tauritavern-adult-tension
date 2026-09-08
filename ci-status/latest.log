@@ -67,265 +67,320 @@
 1554:test sync::lan::server::tests::server_task_failure_is_reported ... ok
 1566:test sync_fs::tests::cleanup_failure_after_delete_reports_target_changed ... ok
 1577:test result: ok. 47 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+1600:test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.17s
+1620:test errors::tests::domain_conflict_maps_to_application_conflict ... ok
+1621:test errors::tests::domain_cancelled_maps_to_application_cancelled ... ok
+1647:test services::agent_profile_diagnostic_service::tests::dangling_openai_preset_is_diagnostic_not_preview_failure ... ok
+1675:test services::agent_run_history_service::tests::apply_run_prune_serializes_concurrent_calls_without_false_failures ... ok
+1694:test services::agent_runtime_service::error_payload::tests::application_error_without_code_uses_variant_code ... ok
+1695:test services::agent_runtime_service::error_payload::tests::max_tool_rounds_exceeded_is_user_retryable ... ok
+1698:test services::agent_runtime_service::error_payload::tests::partial_success_payload_preserves_commits_but_disables_retry_flags ... ok
+1699:test services::agent_runtime_service::error_payload::tests::rate_limited_error_is_retryable ... ok
+1700:test services::agent_runtime_service::error_payload::tests::tool_after_finish_drift_is_user_retryable ... ok
+1701:test services::agent_runtime_service::error_payload::tests::upstream_invalid_response_is_transient_and_retryable ... ok
+1702:test services::agent_runtime_service::error_payload::tests::validation_error_with_code_becomes_structured_run_failure_payload ... ok
+1744:test services::agent_tools::workspace::tests::classify_not_found_error_maps_to_file_not_found ... ok
+1745:test services::agent_tools::workspace::tests::classify_unknown_error_bubbles_up_for_host_failure ... ok
+1746:test services::agent_tools::workspace::tests::classify_workspace_path_is_directory_error_maps_to_tool_error ... ok
+1748:test services::agent_tools::workspace::tests::workspace_read_hidden_path_returns_recoverable_tool_error ... ok
+1749:test services::agent_tools::workspace::tests::workspace_read_invalid_path_returns_canonical_tool_error ... ok
+1752:test services::agent_tools::workspace::tests::workspace_write_root_returns_recoverable_tool_error ... ok
+1753:test services::agent_tools::workspace::tests::workspace_patch_partial_failure_requires_full_read_before_retry ... ok
+1770:test services::bundled_template_service::tests::wraps_non_not_found_errors_with_template_context ... ok
+1827:test services::chat_completion_service::custom_parameters::tests::parse_object_returns_error_for_invalid_non_empty_input ... ok
+1878:test services::chat_completion_service::payload::aws_bedrock::tests::build_returns_clear_error_when_model_family_is_not_supported ... ok
+2126:test services::data_archive_service::tests::partial_import_failure_reports_reconcile_error ... ok
+2127:test services::data_archive_service::tests::partial_import_failure_initializes_reconciles_and_reports_local_mutation ... ok
+2130:test services::data_archive_service::tests::save_export_restores_available_artifact_on_save_error ... ok
+2134:test services::data_archive_service::tests::start_export_cleans_partial_archive_on_failure ... ok
+2152:test services::host_resource_service::tests::head_never_returns_an_error_body ... ok
+2221:test services::settings_service::tests::chat_backup_cleanup_failure_does_not_fail_settings_update ... ok
+2251:test services::sync_job_coordinator::tests::completed_with_reconcile_failure_is_failed ... ok
+2252:test services::sync_job_coordinator::tests::partial_failure_reports_reconcile_error ... ok
+2286:test result: ok. 680 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+2315:test sync::tests::failed_report_keeps_legacy_status_with_failure_kind ... ok
+2316:test sync::tests::failed_without_local_mutation_omits_empty_local_summary ... ok
+2322:test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2327:test errors::tests::workspace_path_is_directory_constructor_keeps_path ... ok
+2328:test errors::tests::generation_cancelled_by_user_is_cancelled_variant ... ok
+2329:test errors::tests::cancelled_constructor_keeps_message ... ok
+2330:test errors::tests::workspace_write_conflict_constructor_keeps_kind ... ok
+2409:test result: ok. 81 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2418:test repositories::content_repository::tests::stylesheet_and_error_pages_are_global_content ... ok
+2421:test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2427:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2433:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2439:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2445:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2451:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2457:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2463:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2469:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2475:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2481:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2487:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2493:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2499:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2505:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 # Tail
-test repositories::file_chat_repository::tests::search_group_chats_respects_query_and_chat_filter ... ok
-test repositories::file_chat_repository::tests::settings_reconciliation_preserves_tracked_backup_provenance ... ok
-test repositories::file_chat_repository::tests::startup_cleanup_removes_only_chat_commit_staging ... ok
-test repositories::file_chat_repository::tests::streaming_chat_commit_keeps_old_current_visible_until_finish ... ok
-test repositories::file_chat_repository::tests::summary_cache_is_invalidated_after_payload_save ... ok
-test repositories::file_chat_repository::tests::summary_index_is_persisted_and_reloaded ... ok
-test repositories::file_chat_repository::tests::shared_alias_store_serializes_concurrent_repository_writes ... ok
-test repositories::file_chat_repository::tests::tool_role_roundtrips_and_is_distinct_from_system ... ok
-test repositories::file_chat_repository::tests::zstd_quota_uses_actual_compressed_bytes ... ok
-test repositories::file_chat_repository::tests::truncated_zstd_backup_does_not_poison_healthy_inventory_entries ... ok
-test repositories::file_chat_repository::tests::zstd_setting_converts_all_backups_in_both_directions ... ok
-test repositories::file_chat_repository::tests::zstd_storage_stats_use_frame_headers_without_waiting_for_history ... ok
-test repositories::file_chat_repository::tests::zstd_backup_materialize_and_restore_are_streamed_and_byte_exact ... ok
-test repositories::file_chat_repository::tests::zstd_to_raw_convergence_prunes_oldest_before_decoding_it ... ok
-test repositories::file_extension_store_repository::tests::blob_round_trip ... ok
-test repositories::file_extension_store_repository::tests::json_round_trip_and_update_merges_objects ... ok
-test repositories::file_extension_store_repository::tests::rename_and_delete_json_key ... ok
-test repositories::file_group_repository::tests::group_manifest_compat_accepts_legacy_activation_strategy_bool ... ok
-test repositories::file_group_repository::tests::group_manifest_compat_preserves_unknown_fields ... ok
-test repositories::file_group_repository::tests::group_manifest_compat_rejects_string_activation_strategy ... ok
-test repositories::file_group_repository::tests::group_manifest_compat_rejects_unrelated_dirty_field ... ok
-test repositories::file_extension_store_repository::tests::try_get_json_distinguishes_missing_from_null_and_keeps_invalid_json_fatal ... ok
-test repositories::file_group_repository::tests::group_manifest_compat_truncates_legacy_float_timestamps ... ok
-test repositories::file_extension_store_repository::tests::list_and_delete_tables ... ok
-test repositories::file_llm_connection_repository::tests::load_connection_rejects_wrong_kind ... ok
-test repositories::file_llm_connection_repository::tests::load_connection_rejects_id_that_does_not_match_filename ... ok
-test repositories::file_group_repository::tests::group_repository_loads_and_rewrites_legacy_group_manifest ... ok
-test repositories::file_llm_connection_repository::tests::load_connection_rejects_wrong_schema_version ... ok
-test repositories::file_settings_repository::tests::get_openai_settings_prefers_canonical_file_over_deprecated_legacy_duplicate ... ok
-test repositories::file_settings_repository::tests::get_openai_settings_sorts_like_upstream_locale_compare ... ok
-test repositories::file_settings_repository::tests::get_openai_settings_uses_embedded_name_from_deprecated_legacy_file ... ok
-test repositories::file_settings_repository::tests::get_themes_preserves_upstream_js_default_file_name_order ... ok
-test repositories::file_settings_repository::tests::load_tauritavern_settings_sync_creates_default_file ... ok
-test repositories::file_settings_repository::tests::get_world_names_sorts_like_upstream_locale_compare ... ok
-test repositories::file_settings_repository::tests::load_tauritavern_settings_reads_disk_each_time ... ok
-test repositories::file_settings_repository::tests::load_user_settings_reads_disk_each_time ... ok
-test sillytavern_sorting::tests::js_default_sort_matches_upstream_code_unit_order ... ok
-test sillytavern_sorting::tests::path_sort_helpers_use_file_name_semantics ... ok
-test repositories::file_settings_repository::tests::sillytavern_settings_signature_changes_when_source_file_changes ... ok
-test sillytavern_sorting::tests::sillytavern_name_sort_matches_upstream_locale_compare_order ... ok
-test repositories::file_settings_repository::tests::user_settings_revision_cache_uses_user_cache_directory_and_expires_on_file_change ... ok
+test services::sync_job_coordinator::tests::active_guard_only_clears_its_own_job ... ok
+test services::sync_automation_service::tests::scheduled_job_uses_current_global_overwrite_policy ... ok
+test services::sync_automation_service::tests::legacy_rule_migration_moves_auto_start_and_manual_mode ... ok
+test services::sync_job_coordinator::tests::busy_report_mentions_running_job ... ok
+test services::sync_job_coordinator::tests::completed_with_reconcile_failure_is_failed ... ok
+test services::sync_job_coordinator::tests::partial_failure_reports_reconcile_error ... ok
+test services::sync_job_coordinator::tests::remote_pull_request_does_not_wait_for_transfer_gate ... ok
+test services::sync_job_coordinator::tests::shared_local_mutation_gate_blocks_sync_but_not_remote_pull_request ... ok
+test services::sync_job_coordinator::tests::resolves_lan_replicate_as_remote_pull_request ... ok
+test services::sync_job_coordinator::tests::terminal_event_publishes_after_job_guard_releases ... ok
+test services::sync_policy::tests::invalid_sync_selection_is_rejected ... ok
+test services::sync_policy::tests::default_sync_options_validate ... ok
+test services::sync_policy::tests::scheduled_rule_rejects_enabled_rule_without_target ... ok
+test services::sync_policy::tests::scheduled_rule_accepts_default_selection_with_target ... ok
+test services::sync_policy::tests::scheduled_rule_rejects_too_frequent_interval ... ok
+test services::tool_request_gate::tests::gate_counts_canonical_tool_ids_at_the_exact_per_tool_boundary ... ok
+test services::translate_service::tests::deepl_endpoint_defaults_to_free_when_missing ... ok
+test services::tool_request_gate::tests::gate_enforces_turn_choice_before_reserving_budget ... ok
+test services::translate_service::tests::deepl_endpoint_rejects_invalid_values ... ok
+test services::translate_service::tests::normalize_deepl_lang_maps_zh_to_uppercase ... ok
+test services::translate_service::tests::normalize_libre_lang_maps_zh_and_pt ... ok
+test services::tts_service::tests::minimax_api_host_accepts_known_hosts_and_normalizes_trailing_slash ... ok
+test services::tts_service::tests::minimax_api_host_defaults_to_official_host ... ok
+test services::tts_service::tests::minimax_api_host_rejects_untrusted_hosts ... ok
+test services::update_service::tests::canary_uses_revision_instead_of_version ... ok
+test services::update_service::tests::different_segment_lengths ... ok
+test services::update_service::tests::check_for_update_uses_injected_product_version ... ok
+test services::update_service::tests::invalid_version_fails_fast ... ok
+test services::update_service::tests::newer_major_version ... ok
+test services::update_service::tests::newer_minor_version ... ok
+test services::update_service::tests::newer_patch_version ... ok
+test services::update_service::tests::older_version ... ok
+test services::update_service::tests::revision_identity_is_exactly_sha12 ... ok
+test services::update_service::tests::same_version ... ok
+test services::user_media_service::tests::remove_last_extension_strips_only_final_suffix ... ok
+test services::user_media_service::tests::delete_user_image_accepts_url_and_rejects_other_routes ... ok
+test services::user_media_service::tests::list_user_images_filters_and_sorts_by_date ... ok
+test services::user_media_service::tests::upload_user_image_writes_sanitized_path_and_returns_client_path ... ok
 
-test result: ok. 173 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.42s
+test result: ok. 680 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
 
-[1m[92m     Running[0m unittests src/lib.rs (src-tauri/target/debug/deps/tt_adapter_storage_userdata-e05fd2d1cef92c83)
+[1m[92m     Running[0m unittests src/lib.rs (src-tauri/target/debug/deps/tt_contracts-08ccddceb5d14d84)
 
-running 143 tests
-test png_card_metadata::tests::read_prefers_first_duplicate_metadata_chunk ... ok
-test png_card_metadata::tests::read_supports_itxt_metadata ... ok
-test png_card_metadata::tests::streaming_read_rejects_truncated_chunks ... ok
-test png_card_metadata::tests::streaming_read_matches_in_memory_png_reader ... ok
-test png_card_metadata::tests::write_removes_existing_character_metadata_from_all_text_chunk_types ... ok
-test png_card_metadata::tests::write_replaces_existing_character_metadata_chunks ... ok
-test repositories::file_agent_profile_repository::tests::repository_identity_repair_refuses_to_replace_missing_profile_content ... ok
-test png_card_metadata::tests::streaming_read_supports_compressed_text_metadata ... ok
-test repositories::file_agent_profile_repository::tests::repository_identity_repair_preserves_profile_content ... ok
-test repositories::file_agent_profile_repository::tests::repository_round_trips_profile_files ... ok
-test repositories::file_agent_profile_repository::tests::repository_lists_valid_profiles_and_reports_repairable_file_issues ... ok
-test repositories::file_agent_repository::tests::delete_missing_chat_workspace_is_idempotent ... ok
-test repositories::file_agent_repository::tests::delete_chat_workspace_removes_runs_and_indexes ... ok
-test repositories::file_agent_repository::tests::delete_run_removes_workspace_index_and_summary_projection ... ok
-test repositories::file_agent_repository::tests::append_text_is_atomic_per_path_and_creates_missing_files ... ok
-test repositories::file_agent_repository::tests::inspect_run_storage_counts_total_and_heavy_artifacts ... ok
-test repositories::file_agent_repository::tests::list_runs_accepts_legacy_awaiting_commit_status ... ok
-test repositories::file_agent_repository::tests::guarded_workspace_writes_are_atomic_per_path ... ok
-test repositories::file_agent_repository::tests::empty_persistent_state_restores_when_empty_root_directory_is_missing ... ok
-test repositories::file_agent_repository::tests::list_runs_accepts_legacy_index_without_presentation ... ok
-test repositories::file_agent_repository::tests::list_runs_filters_by_chat_stable_id_and_status ... ok
-test repositories::file_agent_repository::tests::list_runs_returns_empty_when_index_is_missing ... ok
-test repositories::file_agent_repository::tests::list_runs_reads_index_sorted_and_cursor_paginated ... ok
-test repositories::file_agent_repository::tests::list_runs_rejects_index_file_with_mismatched_run_id ... ok
-test repositories::file_agent_repository::tests::prune_persistent_states_rejects_candidate_file ... ok
-test repositories::file_agent_repository::tests::prune_persistent_states_removes_only_unretained_candidates ... ok
-test repositories::file_agent_repository::tests::read_text_on_directory_returns_typed_workspace_error ... ok
-test repositories::file_agent_repository::tests::repository_round_trips_invocations ... ok
-test repositories::file_agent_repository::tests::persistent_workspace_projects_run_changes_only_after_commit ... ok
-test repositories::file_agent_repository::tests::repository_round_trips_run_workspace_event_and_checkpoint ... ok
-test repositories::file_agent_repository::tests::run_summary_projection_round_trips_by_run_id ... ok
-test repositories::file_agent_repository::tests::persistent_workspace_commits_parallel_branch_states ... ok
-test repositories::file_character_repository::cache::tests::memory_cache_evicts_oldest_entry ... ok
-test repositories::file_character_repository::importer::tests::normalize_imported_character_chat_default_keeps_room_for_jsonl_suffix ... ok
-test repositories::file_character_repository::importer::tests::normalize_imported_character_chat_uses_shared_chat_file_contract ... ok
-test repositories::file_character_repository::importer::tests::normalize_json_surrogate_escapes_keeps_valid_surrogate_pair ... ok
-test repositories::file_character_repository::importer::tests::normalize_json_surrogate_escapes_replaces_lone_high_surrogate ... ok
-test repositories::file_character_repository::importer::tests::normalize_json_surrogate_escapes_replaces_lone_low_surrogate ... ok
-test repositories::file_character_repository::importer::tests::normalize_json_surrogate_escapes_skips_escaped_unicode_literal ... ok
-test repositories::file_character_repository::importer::tests::preserved_avatar_filename_is_an_exact_identity ... ok
-test repositories::file_character_repository::tests::calculate_data_size_uses_js_string_length_semantics ... ok
-test repositories::file_agent_repository::tests::slim_run_heavy_artifacts_removes_only_non_core_run_files ... ok
-test repositories::file_agent_repository::tests::write_text_on_directory_returns_typed_workspace_error ... ok
-test repositories::file_character_repository::tests::character_chat_listing_refreshes_shared_summary_cache_after_file_change ... ok
-test repositories::file_character_repository::tests::character_chat_listing_uses_shared_summary_cache ... ok
-test repositories::file_character_repository::tests::character_chat_listing_reads_legacy_alias_directory ... ok
-test repositories::file_character_repository::tests::character_chat_simple_listing_does_not_build_summary_cache ... ok
-test repositories::file_character_repository::tests::create_with_avatar_allocates_unique_file_stems ... ok
-test repositories::file_character_repository::tests::create_with_avatar_invalid_avatar_bytes_falls_back_to_default_avatar ... ok
-test repositories::file_character_repository::tests::create_with_avatar_missing_avatar_file_falls_back_to_default_avatar ... ok
-test repositories::file_character_repository::tests::create_with_avatar_prefers_explicit_file_stem ... ok
-test repositories::file_character_repository::tests::create_with_avatar_png_without_crop_preserves_png_metadata_fast_path ... ok
-test repositories::file_character_repository::tests::create_with_avatar_sanitizes_file_stem_like_sillytavern ... ok
-test repositories::file_character_repository::tests::duplicate_copies_png_bytes_and_uses_upstream_suffix ... ok
-test repositories::file_character_repository::tests::failed_replace_keeps_existing_character ... ok
-test repositories::file_character_repository::tests::delete_with_chats_removes_legacy_alias_chat_directory ... ok
-test repositories::file_character_repository::tests::find_all_shallow_preserves_runtime_fields_and_omits_character_book ... ok
-test repositories::file_character_repository::tests::find_by_name_repairs_invalid_create_date_and_persists_patch ... ok
-test repositories::file_character_repository::tests::find_by_name_promotes_cached_shallow_character_to_full ... ok
-test repositories::file_character_repository::tests::find_by_name_repairs_legacy_utc_create_date_format ... ok
-test repositories::file_character_repository::tests::import_json_preserves_top_level_alternate_greetings_array ... ok
-test repositories::file_character_repository::tests::import_json_preserves_top_level_alternate_greetings_string ... ok
-test repositories::file_character_repository::tests::import_json_preserves_unknown_card_fields ... ok
-test repositories::file_character_repository::tests::import_json_uses_exact_preserved_file_name ... ok
-test repositories::file_character_repository::tests::import_json_with_alternate_greetings_does_not_create_initial_chat_file ... ok
-test repositories::file_character_repository::tests::import_json_with_lone_surrogate_escape_sequence_succeeds ... ok
-test repositories::file_character_repository::tests::import_json_with_only_alternate_greetings_keeps_payload_for_first_open ... ok
-test repositories::file_character_repository::tests::import_json_with_valid_surrogate_pair_preserves_emoji ... ok
-test repositories::file_character_repository::tests::import_png_does_not_eagerly_create_chat_file ... ok
-test repositories::file_character_repository::tests::import_png_preserves_unknown_card_fields ... ok
-test repositories::file_character_repository::tests::import_png_updates_create_date_without_dropping_unknown_fields ... ok
-test repositories::file_character_repository::tests::import_png_uses_data_description_when_top_level_is_empty ... ok
-test repositories::file_character_repository::tests::import_preserved_json_replaces_cached_full_card ... ok
-test repositories::file_character_repository::tests::import_preserved_character_replaces_cached_full_card ... ok
-test repositories::file_character_repository::tests::import_v3_uses_data_fields_when_top_level_is_stale ... ok
-test repositories::file_character_repository::tests::list_avatar_filenames_uses_directory_entries_without_card_parsing ... ok
-test repositories::file_character_repository::tests::legacy_cards_get_data_size_after_normalization ... ok
-test repositories::file_character_repository::tests::persistent_shallow_index_io_errors_do_not_fail_character_operations ... ok
-test repositories::file_character_repository::tests::invalid_persistent_shallow_index_is_ignored_and_rebuilt ... ok
-test repositories::file_character_repository::tests::persistent_shallow_index_is_used_after_repository_restart ... ok
-test repositories::file_character_repository::tests::rename_allocates_new_file_stem_even_when_base_matches_current ... ok
-test repositories::file_character_repository::tests::rename_preserves_avatar_pixel_data ... ok
-test repositories::file_character_repository::tests::persistent_shallow_index_rebuilds_when_chat_signature_changes ... ok
-test repositories::file_character_repository::tests::rename_moves_legacy_alias_chat_directory_to_new_canonical_dir ... ok
-test repositories::file_character_repository::tests::rename_uses_next_available_file_stem_when_target_exists ... ok
-test repositories::file_character_repository::tests::rename_sanitizes_target_file_name_and_moves_chat_directory ... ok
-test repositories::file_character_repository::tests::replace_character_preserves_requested_primary_lorebook_in_single_import_write ... ok
-test repositories::file_character_repository::tests::replace_character_rejects_non_segment_storage_identity ... ok
-test repositories::file_character_repository::tests::save_character_cache_exposes_real_avatar_file_name ... ok
-test repositories::file_character_repository::tests::shallow_index_repairs_create_date_without_persisting_patch ... ok
-test repositories::file_character_repository::tests::shallow_index_signature_tracks_chat_stats_changes ... ok
-test repositories::file_character_repository::tests::update_avatar_keeps_invalid_avatar_bytes_as_failure ... ok
-test repositories::file_character_repository::tests::update_avatar_replaces_stored_image ... ok
-test repositories::file_character_repository::tests::v2_data_metadata_is_canonical_for_full_and_shallow_reads ... ok
-test repositories::file_character_repository::tests::shallow_index_returns_stale_cache_when_refresh_partially_fails ... ok
-test repositories::file_character_repository::tests::write_character_card_json_canonicalizes_dirty_metadata_chunks ... ok
-test repositories::file_character_repository::tests::write_character_card_json_overwrites_invalid_existing_metadata ... ok
-test repositories::file_character_repository::tests::write_character_card_json_replaces_avatar_even_when_metadata_is_unchanged ... ok
-test repositories::file_character_repository::tests::shallow_index_does_not_cache_partial_failures ... ok
-test repositories::file_character_repository::tests::write_character_card_json_rewrites_changed_metadata_and_clears_shallow_index ... ok
-test repositories::file_skill_repository::tests::delete_skill_keeps_directory_when_index_save_fails ... ok
-test repositories::file_character_repository::tests::write_character_card_json_skips_when_writer_output_is_unchanged ... ok
-test repositories::file_skill_repository::tests::allows_same_skill_name_in_different_scopes ... ok
-test repositories::file_skill_repository::tests::delete_skills_for_source_prunes_missing_linked_skill_directory ... ok
-test repositories::file_skill_repository::tests::delete_skills_for_source_keeps_directory_when_index_save_fails ... ok
-test repositories::file_skill_repository::tests::deletes_selected_skill ... ok
-test repositories::file_skill_repository::tests::deletes_skill_when_last_linked_source_is_deleted ... ok
-test repositories::file_skill_repository::tests::exported_skill_archive_base64_can_be_reimported ... ok
-test repositories::file_skill_repository::tests::exported_skill_roundtrip_preserves_hash ... ok
-test repositories::file_skill_repository::tests::exported_skill_archive_can_be_reimported ... ok
-test repositories::file_skill_repository::tests::install_rolls_back_target_when_index_save_fails ... ok
-test repositories::file_skill_repository::tests::installs_inline_skill_and_reads_file ... ok
-test repositories::file_skill_repository::tests::list_rejects_invalid_scope_filter ... ok
-test repositories::file_skill_repository::tests::install_import_restores_matching_orphan_directory_index_entry ... ok
-test repositories::file_skill_repository::tests::list_skills_filters_index_entries_with_missing_directories_without_saving ... ok
-test repositories::file_skill_repository::tests::migrate_v1_rejects_target_inside_legacy_source ... ok
-test repositories::file_skill_repository::tests::migrate_v1_accepts_previously_moved_global_dir ... ok
-test repositories::file_skill_repository::tests::keeps_skill_until_all_linked_sources_are_deleted ... ok
-test repositories::file_skill_repository::tests::migrate_v1_rolls_back_prepared_global_dirs_on_later_failure ... ok
-test repositories::file_skill_repository::tests::migrates_v1_unscoped_index_to_global_scope ... ok
-test repositories::file_skill_repository::tests::move_skill_rolls_back_target_copy_when_index_save_fails ... ok
-test repositories::file_skill_repository::tests::preview_import_allows_missing_license_without_warning ... ok
-test repositories::file_skill_repository::tests::moves_skill_between_scopes ... ok
-test repositories::file_skill_repository::tests::move_replace_rolls_back_target_when_index_save_fails ... ok
-test repositories::file_skill_repository::tests::read_rejects_symlink_escape_inside_installed_skill ... ok
-test repositories::file_skill_repository::tests::preview_import_filters_missing_directory_without_saving_and_install_repairs ... ok
-test repositories::file_skill_repository::tests::rejects_invalid_sidecar_schema ... ok
-test repositories::file_skill_repository::tests::reads_skill_file_ranges ... ok
-test repositories::file_skill_repository::tests::reads_default_budget_without_enforcing_it_as_a_hard_cap ... ok
-test repositories::file_skill_repository::tests::replacing_skill_drops_previous_source_links ... ok
-test repositories::file_skill_repository::tests::requires_explicit_replace_on_conflict ... ok
-test repositories::file_skill_repository::tests::retarget_reports_cleanup_failure_after_index_commit ... ok
-test repositories::file_skill_repository::tests::retarget_rejects_different_target_content ... ok
-test repositories::file_skill_repository::tests::retarget_rolls_back_prepared_target_when_index_save_fails ... ok
-test repositories::file_skill_repository::tests::retargets_character_scope ... ok
-test repositories::file_skill_repository::tests::searches_installed_skill_text_files ... ok
-test repositories::file_skill_repository::tests::retargets_preset_scope_and_source_refs ... ok
-test repositories::file_skill_repository::tests::write_skill_file_rejects_skill_rename ... ok
-test repositories::file_skill_repository::tests::write_skill_file_rejects_stale_expected_hash ... ok
-test repositories::file_world_info_repository::tests::import_world_info_preserves_leading_space_from_original_filename ... ok
-test repositories::file_world_info_repository::tests::save_get_delete_keeps_spaced_world_names_distinct ... ok
-test repositories::file_skill_repository::tests::writes_skill_file_and_updates_index_metadata ... ok
-test repositories::file_world_info_repository::tests::list_world_names_sorts_like_upstream_locale_compare ... ok
+running 30 tests
+test client_asset_paths::tests::parses_background_asset_path ... ok
+test client_asset_paths::tests::normalizes_redundant_third_party_relative_separators ... ok
+test client_asset_paths::tests::normalizes_redundant_relative_separators ... ok
+test client_asset_paths::tests::parses_character_asset_path ... ok
+test client_asset_paths::tests::parses_legacy_c1_background_asset_path ... ok
+test client_asset_paths::tests::parses_legacy_c1_third_party_asset_path_segments ... ok
+test client_asset_paths::tests::parses_nested_user_image_asset_path ... ok
+test client_asset_paths::tests::parses_persona_asset_path_with_encoded_prefix ... ok
+test client_asset_paths::tests::parses_valid_third_party_asset_path ... ok
+test client_asset_paths::tests::rejects_c0_control_path_segments ... ok
+test client_asset_paths::tests::rejects_dot_segments ... ok
+test client_asset_paths::tests::rejects_encoded_path_separators ... ok
+test client_asset_paths::tests::rejects_third_party_c0_control_segments ... ok
+test client_asset_paths::tests::rejects_third_party_dot_segments ... ok
+test client_asset_paths::tests::rejects_third_party_encoded_path_separators ... ok
+test client_asset_paths::tests::validates_browser_asset_path_segments ... ok
+test range::tests::clamps_end_to_total_size ... ok
+test range::tests::parses_explicit_range ... ok
+test range::tests::parses_open_ended_range ... ok
+test range::tests::parses_suffix_range ... ok
+test range::tests::rejects_descending_range ... ok
+test range::tests::rejects_multiple_ranges ... ok
+test range::tests::rejects_unsatisfiable_range_start_beyond_length ... ok
+test range::tests::rejects_unsatisfiable_suffix_zero ... ok
+test sync::tests::failed_report_keeps_legacy_status_with_failure_kind ... ok
+test sync::tests::failed_without_local_mutation_omits_empty_local_summary ... ok
+test sync::tests::operation_options_default_missing_overwrite_policy_to_exact ... ok
+test sync::tests::sync_job_event_exposes_top_level_status ... ok
+test sync::tests::sync_job_progress_event_serializes_contract_shape ... ok
+test sync::tests::sync_job_remote_request_final_serializes_origin_type ... ok
 
-test result: ok. 143 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.46s
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-[1m[92m     Running[0m unittests src/lib.rs (src-tauri/target/debug/deps/tt_adapter_sync-9e7b2a55d6ccee4a)
+[1m[92m     Running[0m unittests src/lib.rs (src-tauri/target/debug/deps/tt_domain-855b17dc96ff257c)
 
-running 47 tests
-test json_file::tests::read_json_file_reports_missing_file_as_not_found ... ok
-test json_file::tests::read_json_file_reports_malformed_json_as_invalid_data ... ok
-test json_file::tests::replace_file_with_fallback_copies_when_target_parent_is_missing ... ok
-test json_file::tests::write_json_file_rejects_directory_target_after_failed_replace ... ok
-test json_file::tests::write_json_file_does_not_modify_target_on_serialization_error ... ok
-test json_file::tests::write_json_file_creates_parent_directory_and_round_trips ... ok
-test lan_sync::store::tests::invalid_old_config_fails_without_creating_new_state ... ok
-test lan_sync::store::tests::old_config_is_removed_when_new_files_already_exist ... ok
-test json_file::tests::write_json_file_replaces_target_entry ... ok
-test lan_sync::store::tests::old_config_with_explicit_https_port_migrates_once ... ok
-test lan_sync::store::tests::old_config_without_https_port_uses_existing_port ... ok
-test lan_sync::store::tests::old_config_migrates_when_preferences_load_runs_first ... ok
-test lan_sync::store::tests::old_sync_preferences_default_to_exact ... ok
-test lan_sync::store::tests::server_settings_creation_round_trips_without_port_drift ... ok
-test lan_sync::store::tests::sync_preferences_round_trip ... ok
-test sync::http_client::tests::status_requires_dataset_scope_feature ... ok
-test sync::http_client::tests::status_accepts_matching_dataset_policy_version ... ok
-test sync::http_client::tests::sync_error_maps_to_domain_error ... ok
-test sync::job_executor::tests::failure_summary_ignores_remote_only_changes ... ok
-test sync::job_executor::tests::failure_summary_preserves_target_changed_with_counted_changes ... ok
-test sync::lan::client::tests::overwrite_policy_feature_is_only_required_for_prefer_newer ... ok
-test sync::lan::discovery::tests::routed_lan_advertise_address_uses_peer_route ... ok
-test sync::lan::server::tests::manifest_store_delete_prunes_fileless_parents ... ok
-test sync::lan::server::tests::cancelled_pairing_maps_to_service_unavailable ... ok
-test sync::lan::server::tests::pairing_rejection_maps_to_forbidden ... ok
-test sync::lan::server::tests::server_task_failure_is_reported ... ok
-test sync::lan::server::tests::status_is_served_over_spki_pinned_https ... ok
-test sync::lan::server::tests::pair_complete_delegates_to_inbound_handler ... ok
-test sync::lan::store::tests::store_round_trips_identity ... ok
-test sync::lan::store::tests::store_round_trips_and_removes_peer ... ok
-test sync::workspace::tests::workspace_round_trips_file_operations_and_prunes_empty_parents ... ok
-test sync::lan::store::tests::update_paired_device_keeps_other_fields ... ok
-test sync_automation_store::tests::old_camel_case_config_reports_canonical_rewrite ... ok
-test sync_automation_store::tests::load_or_create_rule_writes_default_local_config ... ok
-test sync_automation_store::tests::old_config_reports_canonical_rewrite ... ok
-test sync_automation_store::tests::old_config_without_selection_is_migrated ... ok
-test sync_fs::tests::delete_sync_file_does_not_follow_symlinks_in_candidate_tree ... ok
-test sync_fs::tests::cleanup_failure_after_delete_reports_target_changed ... ok
-test sync_fs::tests::delete_sync_file_does_not_prune_file_only_dataset_parent ... ok
-test sync_fs::tests::delete_sync_file_rejects_unknown_path_before_mutation ... ok
-test sync_fs::tests::download_tmp_path_avoids_stem_collisions_for_lock_files ... ok
-test sync_fs::tests::download_tmp_path_preserves_original_extension ... ok
-test sync::lan::server::tests::pull_plan_and_file_download_use_session_and_dataset_scope ... ok
-test sync_fs::tests::write_file_atomic_overwrites_and_preserves_mtime ... ok
-test sync_fs::tests::delete_sync_file_prunes_fileless_git_tree_at_dataset_boundary ... ok
-test tt_sync::fs::tests::sync_policy_excludes_chat_backup_staging_files ... ok
-test tt_sync::fs::tests::scan_manifest_excludes_all_sync_state_files ... ok
+running 81 tests
+test errors::tests::workspace_path_is_directory_constructor_keeps_path ... ok
+test errors::tests::generation_cancelled_by_user_is_cancelled_variant ... ok
+test errors::tests::cancelled_constructor_keeps_message ... ok
+test errors::tests::workspace_write_conflict_constructor_keeps_kind ... ok
+test ios_policy::tests::resolves_full_profile_when_ignored ... ok
+test json_merge::tests::merge_json_value_with_unset_deletes_nested_keys ... ok
+test json_merge::tests::merge_json_value_with_unset_prunes_replaced_objects ... ok
+test ios_policy::tests::applies_overrides_and_tracks_paths ... ok
+test ios_policy::tests::rejects_unknown_keys ... ok
+test models::agent::storage::tests::preserves_only_journal_and_local_summary_projection_as_core_history ... ok
+test models::agent::storage::tests::classifies_tt_sync_agent_run_components ... ok
+test models::agent::tests::chat_ref_accepts_frontend_abi_shape ... ok
+test models::agent::profile::tests::profile_definition_applies_schema_defaults_for_optional_fields ... ok
+test models::agent::tests::chat_ref_rejects_internal_field_names_at_abi_boundary ... ok
+test models::agent::tests::chat_ref_serializes_to_frontend_abi_shape ... ok
+test models::agent::tests::workspace_path_normalizes_relative_paths ... ok
+test models::agent::tests::workspace_path_rejects_escape_paths ... ok
+test models::bedrock_model::tests::classifies_known_provider_legacy_families_as_unsupported ... ok
+test models::bedrock_model::tests::classifies_wired_bedrock_model_families ... ok
+test models::bedrock_model::tests::exposes_conservative_capabilities_by_family ... ok
+test models::bedrock_model::tests::extract_provider_strips_inference_profile_prefix ... ok
+test models::bedrock_model::tests::strips_inference_profile_prefix_before_classification ... ok
+test models::chat::tests::keeps_uppercase_jsonl_as_part_of_the_chat_stem ... ok
+test models::chat::tests::normalizes_complete_chat_file_name_before_utf8_byte_truncation ... ok
+test models::chat::tests::normalizes_epoch_seconds_from_json_number ... ok
+test models::character::tests::into_shallow_drops_heavy_character_payload ... ok
+test models::character::tests::talkativeness_serializes_as_clean_json_number ... ok
+test models::chat::tests::parses_rfc3339_timestamp ... ok
+test models::chat::tests::parses_legacy_humanized_timestamp ... ok
+test models::chat::tests::preserves_upstream_chat_file_spacing_semantics ... ok
+test models::chat::tests::sanitizes_chat_file_stem_without_repository_fallback ... ok
+test models::chat::tests::strips_jsonl_extension_like_upstream_case_sensitively ... ok
+test models::chat::tests::truncates_generated_chat_stem_prefix_without_splitting_utf8 ... ok
+test models::chat_completion_source::tests::parse_new_openai_compatible_sources ... ok
+test models::claude_model::tests::detects_vertex_claude_ids ... ok
+test models::claude_model::tests::normalizes_vertex_revision_suffix_for_contract_matching ... ok
+test models::claude_model::tests::one_hour_prompt_cache_support_excludes_known_old_series ... ok
+test models::filename::tests::sanitize_filename_keeps_upstream_reserved_name_ordering ... ok
+test models::filename::tests::sanitize_filename_preserves_leading_spaces_like_upstream ... ok
+test models::filename::tests::sanitize_filename_removes_control_codes ... ok
+test models::filename::tests::sanitize_filename_removes_illegal_characters ... ok
+test models::filename::tests::sanitize_filename_removes_reserved_names ... ok
+test models::filename::tests::sanitize_filename_strips_trailing_dots_and_spaces ... ok
+test models::filename::tests::sanitize_filename_truncates_by_utf8_bytes ... ok
+test models::preset::tests::test_preset_data_with_name ... ok
+test models::preset::tests::test_preset_type_directory_name ... ok
+test models::preset::tests::test_preset_type_from_api_id ... ok
+test models::preset::tests::test_preset_validation ... ok
+test models::quick_reply::tests::validate_rejects_empty_name ... ok
+test models::quick_reply::tests::validate_rejects_non_object_payload ... ok
+test models::secret::tests::rotate_delete_and_rename_secret ... ok
+test models::secret::tests::write_secret_sets_latest_active ... ok
+test models::settings::tests::agent_retention_defaults_to_recent_terminal_history_policy ... ok
+test models::settings::tests::agent_retention_validation_caps_run_counts_and_requires_full_subset ... ok
+test models::settings::tests::chat_backup_settings_accept_documented_sentinels_and_reject_lower_values ... ok
+test models::settings::tests::agent_settings_defaults_when_loading_older_settings ... ok
+test models::settings::tests::avatar_persona_original_images_enabled_migrates_legacy_thumbnail_setting ... ok
+test models::settings::tests::chat_backup_settings_default_missing_nested_fields ... ok
+test models::settings::tests::chat_backup_settings_default_when_loading_older_settings ... ok
+test models::settings::tests::effective_llm_api_keep_has_minimum_of_one ... ok
+test models::settings::tests::chat_virtualization_defaults_to_disabled_and_accepts_enabled ... ok
+test models::settings::tests::llm_api_keep_validation_requires_positive_values ... ok
+test models::settings::tests::native_regex_backend_enabled_defaults_to_true ... ok
+test models::settings::tests::removed_chat_history_mode_is_ignored ... ok
+test models::tool::tests::tool_catalog_can_be_empty ... ok
+test models::tool::tests::snapshot_preserves_binding_order_and_rejects_duplicate_aliases ... ok
+test models::tool::tests::tool_catalog_orders_by_id_and_keeps_provider_namespaces_distinct ... ok
+test models::tool::tests::tool_catalog_rejects_duplicate_ids ... ok
+test models::tool::tests::tool_choice_uses_canonical_domain_shape ... ok
+test models::tool::tests::tool_identity_is_stable_and_opaque ... ok
+test models::tool::tests::tool_identity_rejects_invalid_serialized_values ... ok
+test models::tool::tests::turn_uses_the_complete_snapshot_and_validates_choice ... ok
+test models::world_info::tests::sanitize_world_info_import_name_uses_original_filename_contract ... ok
+test models::world_info::tests::sanitize_world_info_name_matches_upstream_full_filename_sanitization ... ok
+test models::world_info::tests::sanitize_world_info_name_preserves_upstream_significant_whitespace_and_dots ... ok
+test text_metrics::tests::counts_ascii_words_and_chars ... ok
+test text_metrics::tests::counts_cjk_characters_as_word_units ... ok
+test text_metrics::tests::counts_mixed_script_text ... ok
+test text_metrics::tests::ignores_punctuation_and_emoji_for_words ... ok
+test text_search::tests::returns_line_numbered_snippets ... ok
+test text_search::tests::searches_case_insensitive_ascii ... ok
 
-test result: ok. 47 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+test result: ok. 81 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-[1m[92m     Running[0m unittests src/lib.rs (src-tauri/target/debug/deps/tt_adapter_tokenization-39a2371f97a87e14)
+[1m[92m     Running[0m unittests src/lib.rs (src-tauri/target/debug/deps/tt_ports-a3859ff692d5ca2e)
 
-running 17 tests
-test miktik_tokenizer_repository::tests::bundled_model_payloads_are_gzip_compressed ... ok
-test miktik_tokenizer_repository::tests::bundled_cache_publish_leaves_no_temp_files ... ok
-test miktik_tokenizer_repository::tests::bundled_models_are_usable_without_network ... ok
-test miktik_tokenizer_repository::tests::canonical_model_aligns_sillytavern_aliases ... ok
-test miktik_tokenizer_repository::tests::bundled_models_materialize_cache_files_on_first_use ... ok
-test miktik_tokenizer_repository::tests::corrupt_bundled_cache_is_rebuilt ... ok
-test miktik_tokenizer_repository::tests::cumulative_prefix_counts_return_empty_without_loading_a_model ... ok
-test miktik_tokenizer_repository::tests::bundled_models_write_decompressed_cache_files ... ok
-test miktik_tokenizer_repository::tests::cumulative_prefix_counts_preserve_stop_at_fill_across_backends ... ok
-test miktik_tokenizer_repository::tests::cumulative_prefix_estimates_track_boundary_corpus_across_backends ... ok
-test miktik_tokenizer_repository::tests::new_does_not_eagerly_register_bundled_models ... ok
+running 6 tests
+test repositories::chat_completion_repository::tests::parse_new_openai_compatible_sources ... ok
+test repositories::agent_run_repository::tests::canonical_event_scope_matches_primary_and_related_invocations ... ok
+test repositories::agent_run_repository::tests::legacy_invocation_fields_still_match_without_canonical_scope ... ok
+test repositories::content_repository::tests::ordinary_default_content_remains_user_scoped ... ok
+test repositories::content_repository::tests::stylesheet_and_error_pages_are_global_content ... ok
+test repositories::tokenizer_repository::tests::openai_text_token_threshold_excludes_the_message_wrapper_offset ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tauritavern_lib
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_archive
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_extension
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_http
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_media
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_provider_http
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_storage_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_storage_userdata
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_sync
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_tokenization
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_application
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_contracts
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_domain
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_ports
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
