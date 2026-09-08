@@ -1,8 +1,8 @@
 # TauriTavern Adult Tension iOS build status
 
-- State: **PASS**
-- Stage: **Unsigned iPhone arm64 build**
+- State: **RUNNING**
+- Stage: **Unsigned IPA verification**
 - Exit code: **0**
 - Run: **8 / attempt 1**
 - Upstream: `3a8c5401c859ac15ac11f3339846360615232896`
-- Updated: **2026-09-08T03:16:04Z**
+- Updated: **2026-09-08T03:16:05Z**
