@@ -5,265 +5,378 @@
 319:[1m[92m   Compiling[0m thiserror-impl v1.0.69
 352:[1m[92m   Compiling[0m gix-error v0.2.4
 688:[1m[92m   Compiling[0m serde_path_to_error v0.1.20
+775:test app::backend_errors::tests::backend_error_state_drains_pending_errors_once ... ok
+776:test app::backend_errors::tests::backend_error_state_caps_pending_errors ... ok
+778:test app::backend_readiness::tests::failed_status_returns_message ... ok
+782:test app::contract_tests::agent_runtime::agent_runtime_does_not_retry_non_retryable_model_errors ... ok
+785:test app::contract_tests::agent_runtime::agent_runtime_handoff_target_failure_keeps_root_transferred ... ok
+804:test app::contract_tests::agent_runtime::agent_runtime_retries_retryable_model_errors_with_real_repositories ... ok
+852:test infrastructure::logging::tracing_runtime::tests::extracts_only_user_visible_error_events ... ok
+855:test infrastructure::paths::tests::apply_runtime_config_recovers_to_existing_source_on_migration_failure ... ok
+876:test presentation::commands::helpers::tests::should_not_log_internal_server_error_as_warning ... ok
+877:test presentation::errors::tests::application_cancelled_maps_to_command_cancelled ... ok
+878:test presentation::errors::tests::domain_cancelled_maps_to_command_cancelled ... ok
+879:test presentation::errors::tests::domain_conflict_maps_to_command_conflict ... ok
+890:test result: ok. 114 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.62s
+896:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+946:test data_archive::import::tests::tar_scan_reports_cancelled_errors_as_cancelled ... ok
+947:test data_archive::import::tests::layout_validation_errors_use_utf8_entry_names ... ok
+949:test result: ok. 47 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+965:test repositories::file_extension_repository::git_http::tests::truncated_response_body_returns_a_safe_read_error ... ok
+982:test repositories::file_extension_repository::git_http::tests::status_and_timeout_errors_are_typed_and_redacted ... ok
+992:test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.38s
+1015:test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+1023:test host_resources::tests::failed_thumbnail_generation_falls_back_before_representation_selection ... ok
+1050:test repositories::file_image_metadata_repository::tests::metadata_animation_not_found_errors_are_skippable ... ok
+1051:test repositories::file_image_metadata_repository::tests::metadata_dimension_decode_errors_are_skippable ... ok
+1052:test repositories::file_image_metadata_repository::tests::metadata_dimension_permission_errors_are_fatal ... ok
+1053:test repositories::file_image_metadata_repository::tests::metadata_file_vanished_errors_are_skippable ... ok
+1062:test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+1071:test file_replace::tests::replace_file_with_fallback_rejects_directory_target_after_failed_rename ... ok
+1159:test http_chat_completion_repository::tests::error_status_classification_marks_retryable_provider_failures ... ok
+1165:test http_error::tests::sanitize_endpoint_removes_query_fragment_and_userinfo ... ok
+1166:test http_error::tests::source_chain_text_excludes_top_level_reqwest_display ... ok
+1180:test http_tts_repository::tests::falls_back_for_empty_error_body ... ok
+1181:test http_tts_repository::tests::minimax_generate_returns_json_error_for_base_resp_failure ... ok
+1183:test http_tts_repository::tests::parses_minimax_base_resp_error ... ok
+1184:test http_tts_repository::tests::parses_minimax_upstream_error_without_generic_provider_leakage ... ok
+1185:test http_tts_repository::tests::parses_nested_json_error_message ... ok
+1186:test http_tts_repository::tests::preserves_plain_text_error_body ... ok
+1187:test http_tts_repository::tests::rejects_invalid_minimax_hex_audio_as_upstream_payload_error ... ok
+1196:test result: ok. 128 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+1210:test file_system::tests::replace_file_with_fallback_rejects_directory_target_after_failed_rename ... ok
+1215:test file_system::tests::replace_file_with_fallback_sync_rejects_directory_target_after_failed_rename ... ok
+1216:test file_system::tests::write_json_file_does_not_modify_target_on_serialization_error ... ok
+1231:test repositories::file_chat_repository::backup_inventory::tests::inventory_byte_overflow_is_an_error_not_a_panic ... ok
+1277:test repositories::file_chat_repository::tests::explicit_access_retries_a_failed_inventory_build ... ok
+1375:test result: ok. 173 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+1406:test repositories::file_agent_repository::tests::read_text_on_directory_returns_typed_workspace_error ... ok
+1422:test repositories::file_agent_repository::tests::write_text_on_directory_returns_typed_workspace_error ... ok
+1434:test repositories::file_character_repository::tests::failed_replace_keeps_existing_character ... ok
+1457:test repositories::file_character_repository::tests::persistent_shallow_index_io_errors_do_not_fail_character_operations ... ok
+1470:test repositories::file_character_repository::tests::shallow_index_does_not_cache_partial_failures ... ok
+1471:test repositories::file_character_repository::tests::update_avatar_keeps_invalid_avatar_bytes_as_failure ... ok
+1498:test repositories::file_skill_repository::tests::migrate_v1_rolls_back_prepared_global_dirs_on_later_failure ... ok
+1511:test repositories::file_skill_repository::tests::retarget_reports_cleanup_failure_after_index_commit ... ok
+1524:test result: ok. 143 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+1532:test json_file::tests::write_json_file_rejects_directory_target_after_failed_replace ... ok
+1534:test json_file::tests::write_json_file_does_not_modify_target_on_serialization_error ... ok
+1544:test sync::http_client::tests::sync_error_maps_to_domain_error ... ok
+1545:test sync::job_executor::tests::failure_summary_ignores_remote_only_changes ... ok
+1546:test sync::job_executor::tests::failure_summary_preserves_target_changed_with_counted_changes ... ok
+1554:test sync::lan::server::tests::server_task_failure_is_reported ... ok
+1565:test sync_fs::tests::cleanup_failure_after_delete_reports_target_changed ... ok
+1577:test result: ok. 47 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+1600:test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.51s
+1620:test errors::tests::domain_cancelled_maps_to_application_cancelled ... ok
+1621:test errors::tests::domain_conflict_maps_to_application_conflict ... ok
+1646:test services::agent_profile_diagnostic_service::tests::dangling_openai_preset_is_diagnostic_not_preview_failure ... ok
+1676:test services::agent_run_history_service::tests::apply_run_prune_serializes_concurrent_calls_without_false_failures ... ok
+1694:test services::agent_runtime_service::error_payload::tests::application_error_without_code_uses_variant_code ... ok
+1697:test services::agent_runtime_service::error_payload::tests::max_tool_rounds_exceeded_is_user_retryable ... ok
+1698:test services::agent_runtime_service::error_payload::tests::partial_success_payload_preserves_commits_but_disables_retry_flags ... ok
+1699:test services::agent_runtime_service::error_payload::tests::rate_limited_error_is_retryable ... ok
+1700:test services::agent_runtime_service::error_payload::tests::tool_after_finish_drift_is_user_retryable ... ok
+1701:test services::agent_runtime_service::error_payload::tests::upstream_invalid_response_is_transient_and_retryable ... ok
+1702:test services::agent_runtime_service::error_payload::tests::validation_error_with_code_becomes_structured_run_failure_payload ... ok
+1744:test services::agent_tools::workspace::tests::classify_not_found_error_maps_to_file_not_found ... ok
+1745:test services::agent_tools::workspace::tests::classify_unknown_error_bubbles_up_for_host_failure ... ok
+1746:test services::agent_tools::workspace::tests::classify_workspace_path_is_directory_error_maps_to_tool_error ... ok
+1748:test services::agent_tools::workspace::tests::workspace_read_hidden_path_returns_recoverable_tool_error ... ok
+1750:test services::agent_tools::workspace::tests::workspace_patch_partial_failure_requires_full_read_before_retry ... ok
+1751:test services::agent_tools::workspace::tests::workspace_read_invalid_path_returns_canonical_tool_error ... ok
+1753:test services::agent_tools::workspace::tests::workspace_write_root_returns_recoverable_tool_error ... ok
+1770:test services::bundled_template_service::tests::wraps_non_not_found_errors_with_template_context ... ok
+1827:test services::chat_completion_service::custom_parameters::tests::parse_object_returns_error_for_invalid_non_empty_input ... ok
+1878:test services::chat_completion_service::payload::aws_bedrock::tests::build_returns_clear_error_when_model_family_is_not_supported ... ok
+2129:test services::data_archive_service::tests::save_export_restores_available_artifact_on_save_error ... ok
+2131:test services::data_archive_service::tests::partial_import_failure_initializes_reconciles_and_reports_local_mutation ... ok
+2132:test services::data_archive_service::tests::partial_import_failure_reports_reconcile_error ... ok
+2134:test services::data_archive_service::tests::start_export_cleans_partial_archive_on_failure ... ok
+2152:test services::host_resource_service::tests::head_never_returns_an_error_body ... ok
+2225:test services::settings_service::tests::chat_backup_cleanup_failure_does_not_fail_settings_update ... ok
+2251:test services::sync_job_coordinator::tests::completed_with_reconcile_failure_is_failed ... ok
+2252:test services::sync_job_coordinator::tests::partial_failure_reports_reconcile_error ... ok
+2286:test result: ok. 680 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+2315:test sync::tests::failed_report_keeps_legacy_status_with_failure_kind ... ok
+2316:test sync::tests::failed_without_local_mutation_omits_empty_local_summary ... ok
+2322:test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2327:test errors::tests::generation_cancelled_by_user_is_cancelled_variant ... ok
+2328:test errors::tests::cancelled_constructor_keeps_message ... ok
+2329:test errors::tests::workspace_path_is_directory_constructor_keeps_path ... ok
+2330:test errors::tests::workspace_write_conflict_constructor_keeps_kind ... ok
+2409:test result: ok. 81 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+2418:test repositories::content_repository::tests::stylesheet_and_error_pages_are_global_content ... ok
+2421:test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2427:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2433:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2439:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2445:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2451:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2457:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2463:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2469:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2475:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2481:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 # Tail
-[1m[92m   Compiling[0m hybrid-array v0.4.13
-[1m[92m   Compiling[0m zstd-safe v7.2.4
-[1m[92m   Compiling[0m tower-layer v0.3.3
-[1m[92m   Compiling[0m gix-object v0.62.0
-[1m[92m   Compiling[0m http-body-util v0.1.3
-[1m[92m   Compiling[0m option-ext v0.2.0
-[1m[92m   Compiling[0m rustversion v1.0.22
-[1m[92m   Compiling[0m dirs-sys v0.5.0
-[1m[92m   Compiling[0m tower v0.5.3
-[1m[92m   Compiling[0m block-buffer v0.12.1
-[1m[92m   Compiling[0m crypto-common v0.2.2
-[1m[92m   Compiling[0m rustls-native-certs v0.8.3
-[1m[92m   Compiling[0m fdeflate v0.3.7
-[1m[92m   Compiling[0m memmap2 v0.9.11
-[1m[92m   Compiling[0m digest v0.11.3
-[1m[92m   Compiling[0m zstd v0.13.3
-[1m[92m   Compiling[0m dirs v6.0.0
-[1m[92m   Compiling[0m serde_urlencoded v0.7.1
-[1m[92m   Compiling[0m cpufeatures v0.3.0
-[1m[92m   Compiling[0m iri-string v0.7.10
-[1m[92m   Compiling[0m compression-core v0.4.31
-[1m[92m   Compiling[0m compression-codecs v0.4.37
-[1m[92m   Compiling[0m tower-http v0.6.8
-[1m[92m   Compiling[0m sha2 v0.11.0
-[1m[92m   Compiling[0m embed-resource v3.0.6
-[1m[92m   Compiling[0m heck v0.5.0
-[1m[92m   Compiling[0m tauri-winres v0.3.5
-[1m[92m   Compiling[0m async-compression v0.4.41
-[1m[92m   Compiling[0m tempfile v3.26.0
-[1m[92m   Compiling[0m cargo_toml v0.22.3
-[1m[92m   Compiling[0m gix-chunk v0.7.2
-[1m[92m   Compiling[0m gix-fs v0.21.2
-[1m[92m   Compiling[0m static_assertions v1.1.0
-[1m[92m   Compiling[0m tauri-build v2.5.5
-[1m[92m   Compiling[0m gix-tempfile v23.0.2
-[1m[92m   Compiling[0m objc2-core-data v0.3.2
-[1m[92m   Compiling[0m objc2-quartz-core v0.3.2
-[1m[92m   Compiling[0m objc2-cloud-kit v0.3.2
-[1m[92m   Compiling[0m objc2-core-image v0.3.2
-[1m[92m   Compiling[0m tauri-plugin v2.6.3
-[1m[92m   Compiling[0m objc2-core-graphics v0.3.2
-[1m[92m   Compiling[0m objc2-core-text v0.3.2
-[1m[92m   Compiling[0m objc2-core-video v0.3.2
-[1m[92m   Compiling[0m gix-quote v0.7.2
-[1m[92m   Compiling[0m icu_locale_data v2.1.2
-[1m[92m   Compiling[0m nonempty v0.12.0
-[1m[92m   Compiling[0m either v1.15.0
-[1m[92m   Compiling[0m objc2-app-kit v0.3.2
-[1m[92m   Compiling[0m itertools v0.14.0
-[1m[92m   Compiling[0m png v0.17.16
-[1m[92m   Compiling[0m icu_collator_data v2.1.1
-[1m[92m   Compiling[0m unicode-segmentation v1.12.0
-[1m[92m   Compiling[0m prost-derive v0.13.5
-[1m[92m   Compiling[0m gix-commitgraph v0.37.1
-[1m[92m   Compiling[0m tauri v2.10.2
-[1m[92m   Compiling[0m gix-glob v0.26.1
-[1m[92m   Compiling[0m filetime v0.2.29
-[1m[92m   Compiling[0m gix-revwalk v0.33.0
-[1m[92m   Compiling[0m icu_locale v2.1.1
-[1m[92m   Compiling[0m gix-lock v23.0.1
-[1m[92m   Compiling[0m raw-window-handle v0.6.2
-[1m[92m   Compiling[0m beef v0.5.2
-[1m[92m   Compiling[0m logos-codegen v0.14.4
-[1m[92m   Compiling[0m icu_collator v2.1.1
-[1m[92m   Compiling[0m prost v0.13.5
-[1m[92m   Compiling[0m curve25519-dalek v4.1.3
-[1m[92m   Compiling[0m dpi v0.1.2
-[1m[92m   Compiling[0m cookie v0.18.1
-[1m[92m   Compiling[0m unicode-bom v2.0.3
-[1m[92m   Compiling[0m sys-locale v0.3.2
-[1m[92m   Compiling[0m prost-types v0.13.5
-[1m[92m   Compiling[0m logos-derive v0.14.4
-[1m[92m   Compiling[0m arc-swap v1.9.1
-[1m[92m   Compiling[0m crossbeam-channel v0.5.15
-[1m[92m   Compiling[0m objc2-security v0.3.2
-[1m[92m   Compiling[0m objc2-javascript-core v0.3.2
-[1m[92m   Compiling[0m gix-config-value v0.18.1
-[1m[92m   Compiling[0m miette-derive v7.6.0
-[1m[92m   Compiling[0m foreign-types-macros v0.2.3
-[1m[92m   Compiling[0m shell-words v1.1.1
-[1m[92m   Compiling[0m signature v2.2.0
-[1m[92m   Compiling[0m unicode-width v0.1.14
-[1m[92m   Compiling[0m foreign-types-shared v0.3.1
-[1m[92m   Compiling[0m foreign-types v0.5.0
-[1m[92m   Compiling[0m objc2-web-kit v0.3.2
-[1m[92m   Compiling[0m miette v7.6.0
-[1m[92m   Compiling[0m ed25519 v2.2.3
-[1m[92m   Compiling[0m gix-command v0.9.1
-[1m[92m   Compiling[0m logos v0.14.4
-[1m[92m   Compiling[0m tt-adapter-storage-core v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-core)
-[1m[92m   Compiling[0m kstring v2.0.2
-[1m[92m   Compiling[0m core-graphics-types v0.2.0
-[1m[92m   Compiling[0m darling_core v0.20.11
-[1m[92m   Compiling[0m sha2 v0.10.9
-[1m[92m   Compiling[0m gix-sec v0.14.1
-[1m[92m   Compiling[0m ring v0.17.14
-[1m[92m   Compiling[0m prettyplease v0.2.37
-[1m[92m   Compiling[0m tauri-runtime v2.10.0
-[1m[92m   Compiling[0m wry v0.54.2
-[1m[92m   Compiling[0m ed25519-dalek v2.2.0
-[1m[92m   Compiling[0m darling_macro v0.20.11
-[1m[92m   Compiling[0m core-graphics v0.24.0
-[1m[92m   Compiling[0m gix-attributes v0.33.2
-[1m[92m   Compiling[0m ico v0.5.0
-[1m[92m   Compiling[0m crossbeam-epoch v0.9.18
-[1m[92m   Compiling[0m tauri-runtime-wry v2.10.0
-[1m[92m   Compiling[0m dispatch v0.2.0
-[1m[92m   Compiling[0m rayon-core v1.13.0
-[1m[92m   Compiling[0m fixedbitset v0.5.7
-[1m[92m   Compiling[0m petgraph v0.7.1
-[1m[92m   Compiling[0m tao v0.34.5
-[1m[92m   Compiling[0m crossbeam-deque v0.8.6
-[1m[92m   Compiling[0m tauri-codegen v2.5.4
-[1m[92m   Compiling[0m darling v0.20.11
-[1m[92m   Compiling[0m ttsync-core v2.3.1
-[1m[92m   Compiling[0m rustls-webpki v0.103.9
-[1m[92m   Compiling[0m protox-parse v0.7.0
-[1m[92m   Compiling[0m prost-reflect v0.14.7
-[1m[92m   Compiling[0m gix-ref v0.65.0
-[1m[92m   Compiling[0m keyboard-types v0.7.0
-[1m[92m   Compiling[0m tokio-rustls v0.26.4
-[1m[92m   Compiling[0m hyper-rustls v0.27.7
-[1m[92m   Compiling[0m rustls-platform-verifier v0.6.2
-[1m[92m   Compiling[0m reqwest v0.13.2
-[1m[92m   Compiling[0m gix-packetline v0.21.5
-[1m[92m   Compiling[0m yasna v0.5.2
-[1m[92m   Compiling[0m onig_sys v69.9.1
-[1m[92m   Compiling[0m gix-url v0.36.1
-[1m[92m   Compiling[0m fs-err v3.3.0
-[1m[92m   Compiling[0m pem v3.0.6
-[1m[92m   Compiling[0m serialize-to-javascript-impl v0.1.2
-[1m[92m   Compiling[0m weezl v0.1.12
-[1m[92m   Compiling[0m heck v0.4.1
-[1m[92m   Compiling[0m paste v1.0.15
-[1m[92m   Compiling[0m multimap v0.10.1
-[1m[92m   Compiling[0m color_quant v1.1.0
-[1m[92m   Compiling[0m gif v0.13.3
-[1m[92m   Compiling[0m prost-build v0.13.5
-[1m[92m   Compiling[0m tt-adapter-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-http)
-[1m[92m   Compiling[0m serialize-to-javascript v0.1.2
-[1m[92m   Compiling[0m rcgen v0.13.2
-[1m[92m   Compiling[0m muda v0.17.1
-[1m[92m   Compiling[0m protox v0.7.2
-[1m[92m   Compiling[0m tauri-macros v2.5.4
-[1m[92m   Compiling[0m derive_builder_core v0.20.2
-[1m[92m   Compiling[0m gix-prompt v0.15.1
-[1m[92m   Compiling[0m window-vibrancy v0.6.0
-[1m[92m   Compiling[0m gix-revision v0.47.0
-[1m[92m   Compiling[0m gix-traverse v0.59.0
-[1m[92m   Compiling[0m gix-bitmap v0.3.2
-[1m[92m   Compiling[0m ahash v0.8.12
-[1m[92m   Compiling[0m serde_repr v0.1.20
-[1m[92m   Compiling[0m bit-vec v0.6.3
-[1m[92m   Compiling[0m typed-path v0.12.3
-[1m[92m   Compiling[0m embed_plist v1.2.2
-[1m[92m   Compiling[0m esaxx-rs v0.1.10
-[1m[92m   Compiling[0m bytemuck v1.25.0
-[1m[92m   Compiling[0m jpeg-decoder v0.3.2
-[1m[92m   Compiling[0m http-range v0.1.5
-[1m[92m   Compiling[0m unsafe-libyaml v0.2.11
-[1m[92m   Compiling[0m minimal-lexical v0.2.1
-[1m[92m   Compiling[0m nom v7.1.3
-[1m[92m   Compiling[0m serde_yaml v0.9.34+deprecated
-[1m[92m   Compiling[0m image v0.24.9
-[1m[92m   Compiling[0m zip v8.2.0
-[1m[92m   Compiling[0m bit-set v0.5.3
-[1m[92m   Compiling[0m gix-index v0.53.0
-[1m[92m   Compiling[0m gix-refspec v0.43.0
-[1m[92m   Compiling[0m gix-credentials v0.38.1
-[1m[92m   Compiling[0m rayon v1.11.0
-[1m[92m   Compiling[0m derive_builder_macro v0.20.2
-[1m[92m   Compiling[0m sentencepiece-model v0.1.4
-[1m[92m   Compiling[0m gix-ignore v0.21.1
-[1m[92m   Compiling[0m castaway v0.2.4
-[1m[92m   Compiling[0m axum-core v0.5.6
-[1m[92m   Compiling[0m clru v0.6.3
-[1m[92m   Compiling[0m monostate-impl v0.1.18
-[1m[92m   Compiling[0m serde_path_to_error v0.1.20
-[1m[92m   Compiling[0m encoding_rs v0.8.35
-[1m[92m   Compiling[0m macro_rules_attribute-proc_macro v0.2.2
-[1m[92m   Compiling[0m base64 v0.13.1
-[1m[92m   Compiling[0m matchit v0.8.4
-[1m[92m   Compiling[0m axum v0.8.9
-[1m[92m   Compiling[0m spm_precompiled v0.1.4
-[1m[92m   Compiling[0m macro_rules_attribute v0.2.2
-[1m[92m   Compiling[0m rayon-cond v0.4.0
-[1m[92m   Compiling[0m gix-filter v0.32.0
-[1m[92m   Compiling[0m monostate v0.1.18
-[1m[92m   Compiling[0m gix-pack v0.72.0
-[1m[92m   Compiling[0m compact_str v0.9.0
-[1m[92m   Compiling[0m gix-worktree v0.54.0
-[1m[92m   Compiling[0m axum-server v0.8.0
-[1m[92m   Compiling[0m derive_builder v0.20.2
-[1m[92m   Compiling[0m gix-transport v0.57.2
-[1m[92m   Compiling[0m fancy-regex v0.13.0
-[1m[92m   Compiling[0m onig v6.5.1
-[1m[92m   Compiling[0m gix-config v0.58.0
-[1m[92m   Compiling[0m gix-pathspec v0.18.1
-[1m[92m   Compiling[0m gix-shallow v0.12.1
-[1m[92m   Compiling[0m gix-negotiate v0.33.0
-[1m[92m   Compiling[0m tauri-plugin-fs v2.5.0
-[1m[92m   Compiling[0m rustls-pemfile v2.2.0
-[1m[92m   Compiling[0m webpki-roots v1.0.6
-[1m[92m   Compiling[0m dary_heap v0.3.8
-[1m[92m   Compiling[0m maybe-async v0.2.11
-[1m[92m   Compiling[0m unicode-normalization-alignments v0.1.12
-[1m[92m   Compiling[0m io-close v0.3.7
-[1m[92m   Compiling[0m data-encoding v2.11.0
-[1m[92m   Compiling[0m rustc-hash v1.1.0
-[1m[92m   Compiling[0m unicode_categories v0.1.1
-[1m[92m   Compiling[0m gix-protocol v0.63.0
-[1m[92m   Compiling[0m tokenizers v0.22.2
-[1m[92m   Compiling[0m tungstenite v0.29.0
-[1m[92m   Compiling[0m tiktoken-rs v0.9.1
-[1m[92m   Compiling[0m gix-worktree-state v0.32.0
-[1m[92m   Compiling[0m ttsync-http v2.3.1
-[1m[92m   Compiling[0m gix-submodule v0.32.0
-[1m[92m   Compiling[0m gix-odb v0.82.0
-[1m[92m   Compiling[0m gix-discover v0.53.0
-[1m[92m   Compiling[0m gix-diff v0.65.0
-[1m[92m   Compiling[0m headers-core v0.3.0
-[1m[92m   Compiling[0m mac-notification-sys v0.6.9
-[1m[92m   Compiling[0m seahash v4.1.0
-[1m[92m   Compiling[0m yup-oauth2 v12.1.2
-[1m[92m   Compiling[0m miktik v0.3.0
-[1m[92m   Compiling[0m gix v0.85.0
-[1m[92m   Compiling[0m headers v0.4.1
-[1m[92m   Compiling[0m ttsync-client v2.3.1
-[1m[92m   Compiling[0m tokio-tungstenite v0.29.0
-[1m[92m   Compiling[0m tar v0.4.45
-[1m[92m   Compiling[0m tauri-plugin-dialog v2.7.0
-[1m[92m   Compiling[0m tauri-plugin-opener v2.5.3
-[1m[92m   Compiling[0m tauri-plugin-notification v2.3.3
-[1m[92m   Compiling[0m tauri-plugin-window-state v2.4.1
-[1m[92m   Compiling[0m regress v0.11.1
-[1m[92m   Compiling[0m local-ip-address v0.6.10
-[1m[92m   Compiling[0m rfd v0.16.0
-[1m[92m   Compiling[0m parking v2.2.1
-[1m[92m   Compiling[0m futures-lite v2.6.1
-[1m[92m   Compiling[0m dispatch2 v0.3.1
-[1m[92m   Compiling[0m sharded-slab v0.1.7
-[1m[92m   Compiling[0m matchers v0.2.0
-[1m[92m   Compiling[0m thread_local v1.1.9
-[1m[92m   Compiling[0m nu-ansi-term v0.50.3
-[1m[92m   Compiling[0m pathdiff v0.2.3
-[1m[92m   Compiling[0m open v5.3.3
-[1m[92m   Compiling[0m tracing-subscriber v0.3.22
-[1m[92m   Compiling[0m tt-application v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-application)
-[1m[92m   Compiling[0m notify-rust v4.12.0
-[1m[92m   Compiling[0m tt-adapter-extension v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-extension)
-[1m[92m   Compiling[0m tt-adapter-sync v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-sync)
-[1m[92m   Compiling[0m tt-adapter-archive v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-archive)
-[1m[92m   Compiling[0m tt-adapter-provider-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-provider-http)
-[1m[92m   Compiling[0m tt-adapter-tokenization v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-tokenization)
-[1m[92m   Compiling[0m tt-adapter-storage-userdata v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-userdata)
-[1m[92m   Compiling[0m tt-adapter-media v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-media)
-[1m[92m   Compiling[0m tauritavern v2.2.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern)
-[1m[92m   Compiling[0m tracing-appender v0.2.4
-[1m[92m   Compiling[0m tauri-plugin-single-instance v2.4.3
-[1m[92m   Compiling[0m qrcode v0.14.1
+test services::settings_service::tests::clear_cache_drops_settings_aggregate_cache_even_when_signature_is_stable ... ok
+test services::settings_service::tests::chat_backup_cleanup_failure_does_not_fail_settings_update ... ok
+test services::settings_service::tests::compression_only_update_applies_and_schedules_format_reconciliation ... ok
+test services::settings_service::tests::save_user_settings_clears_settings_aggregate_cache_when_payload_changes ... ok
+test services::settings_service::tests::save_user_settings_patch_applies_set_and_delete ... ok
+test services::settings_service::tests::save_user_settings_patch_rejects_stale_base_hash ... ok
+test services::settings_service::tests::save_user_settings_patch_persists_repaired_noop ... ok
+test services::settings_service::tests::save_user_settings_skips_disk_read_when_revision_cache_matches ... ok
+test services::settings_service::tests::save_user_settings_skips_unchanged_payload ... ok
+test services::settings_service::tests::tauritavern_settings_update_applies_request_proxy_runtime ... ok
+test services::settings_service::tests::sillytavern_settings_aggregate_uses_cache_until_signature_changes ... ok
+test services::settings_service::tests::tauritavern_settings_update_persists_and_applies_chat_backup_policy ... ok
+test services::settings_service::tests::tauritavern_settings_update_persists_chat_virtualization_switch ... ok
+test services::settings_service::tests::unavailable_chat_backup_storage_stats_do_not_block_settings ... ok
+test services::settings_service::tests::user_settings_hash_is_stable_for_object_key_order ... ok
+test services::skill_service::tests::resolve_effective_skills_fails_when_explicit_visible_skill_is_missing ... ok
+test services::skill_service::tests::download_import_url_fetches_skill_md_with_limit_and_sanitized_source ... ok
+test services::skill_service::tests::resolve_effective_skills_prefers_later_scopes ... ok
+test services::skill_service::tests::sanitized_source_url_drops_secret_parts ... ok
+test services::skill_service::tests::skill_import_url_requires_https_skill_md ... ok
+test services::sync_automation_service::tests::completed_transfer_updates_last_success ... ok
+test services::sync_automation_service::tests::lan_request_acceptance_does_not_count_as_success ... ok
+test services::sync_automation_service::tests::legacy_rule_migration_keeps_existing_lan_auto_start ... ok
+test services::sync_automation_service::tests::legacy_rule_migration_moves_auto_start_and_manual_mode ... ok
+test services::sync_automation_service::tests::scheduled_job_uses_current_global_overwrite_policy ... ok
+test services::sync_job_coordinator::tests::active_guard_only_clears_its_own_job ... ok
+test services::sync_job_coordinator::tests::busy_report_mentions_running_job ... ok
+test services::sync_job_coordinator::tests::completed_with_reconcile_failure_is_failed ... ok
+test services::sync_job_coordinator::tests::partial_failure_reports_reconcile_error ... ok
+test services::sync_job_coordinator::tests::remote_pull_request_does_not_wait_for_transfer_gate ... ok
+test services::sync_job_coordinator::tests::resolves_lan_replicate_as_remote_pull_request ... ok
+test services::sync_job_coordinator::tests::shared_local_mutation_gate_blocks_sync_but_not_remote_pull_request ... ok
+test services::sync_job_coordinator::tests::terminal_event_publishes_after_job_guard_releases ... ok
+test services::sync_policy::tests::invalid_sync_selection_is_rejected ... ok
+test services::sync_policy::tests::default_sync_options_validate ... ok
+test services::sync_policy::tests::scheduled_rule_accepts_default_selection_with_target ... ok
+test services::sync_policy::tests::scheduled_rule_rejects_enabled_rule_without_target ... ok
+test services::sync_policy::tests::scheduled_rule_rejects_too_frequent_interval ... ok
+test services::tool_request_gate::tests::gate_counts_canonical_tool_ids_at_the_exact_per_tool_boundary ... ok
+test services::tool_request_gate::tests::gate_enforces_turn_choice_before_reserving_budget ... ok
+test services::translate_service::tests::deepl_endpoint_defaults_to_free_when_missing ... ok
+test services::translate_service::tests::deepl_endpoint_rejects_invalid_values ... ok
+test services::translate_service::tests::normalize_deepl_lang_maps_zh_to_uppercase ... ok
+test services::translate_service::tests::normalize_libre_lang_maps_zh_and_pt ... ok
+test services::tts_service::tests::minimax_api_host_accepts_known_hosts_and_normalizes_trailing_slash ... ok
+test services::tts_service::tests::minimax_api_host_defaults_to_official_host ... ok
+test services::tts_service::tests::minimax_api_host_rejects_untrusted_hosts ... ok
+test services::update_service::tests::canary_uses_revision_instead_of_version ... ok
+test services::update_service::tests::different_segment_lengths ... ok
+test services::update_service::tests::check_for_update_uses_injected_product_version ... ok
+test services::update_service::tests::invalid_version_fails_fast ... ok
+test services::update_service::tests::newer_major_version ... ok
+test services::update_service::tests::newer_minor_version ... ok
+test services::update_service::tests::newer_patch_version ... ok
+test services::update_service::tests::older_version ... ok
+test services::update_service::tests::revision_identity_is_exactly_sha12 ... ok
+test services::update_service::tests::same_version ... ok
+test services::user_media_service::tests::remove_last_extension_strips_only_final_suffix ... ok
+test services::user_media_service::tests::delete_user_image_accepts_url_and_rejects_other_routes ... ok
+test services::user_media_service::tests::list_user_images_filters_and_sorts_by_date ... ok
+test services::user_media_service::tests::upload_user_image_writes_sanitized_path_and_returns_client_path ... ok
+
+test result: ok. 680 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+[1m[92m     Running[0m unittests src/lib.rs (src-tauri/target/debug/deps/tt_contracts-08ccddceb5d14d84)
+
+running 30 tests
+test client_asset_paths::tests::normalizes_redundant_third_party_relative_separators ... ok
+test client_asset_paths::tests::normalizes_redundant_relative_separators ... ok
+test client_asset_paths::tests::parses_background_asset_path ... ok
+test client_asset_paths::tests::parses_character_asset_path ... ok
+test client_asset_paths::tests::parses_legacy_c1_background_asset_path ... ok
+test client_asset_paths::tests::parses_legacy_c1_third_party_asset_path_segments ... ok
+test client_asset_paths::tests::parses_nested_user_image_asset_path ... ok
+test client_asset_paths::tests::parses_persona_asset_path_with_encoded_prefix ... ok
+test client_asset_paths::tests::parses_valid_third_party_asset_path ... ok
+test client_asset_paths::tests::rejects_c0_control_path_segments ... ok
+test client_asset_paths::tests::rejects_dot_segments ... ok
+test client_asset_paths::tests::rejects_encoded_path_separators ... ok
+test client_asset_paths::tests::rejects_third_party_c0_control_segments ... ok
+test client_asset_paths::tests::rejects_third_party_encoded_path_separators ... ok
+test client_asset_paths::tests::rejects_third_party_dot_segments ... ok
+test client_asset_paths::tests::validates_browser_asset_path_segments ... ok
+test range::tests::clamps_end_to_total_size ... ok
+test range::tests::parses_explicit_range ... ok
+test range::tests::parses_open_ended_range ... ok
+test range::tests::parses_suffix_range ... ok
+test range::tests::rejects_descending_range ... ok
+test range::tests::rejects_multiple_ranges ... ok
+test range::tests::rejects_unsatisfiable_range_start_beyond_length ... ok
+test range::tests::rejects_unsatisfiable_suffix_zero ... ok
+test sync::tests::failed_report_keeps_legacy_status_with_failure_kind ... ok
+test sync::tests::failed_without_local_mutation_omits_empty_local_summary ... ok
+test sync::tests::operation_options_default_missing_overwrite_policy_to_exact ... ok
+test sync::tests::sync_job_event_exposes_top_level_status ... ok
+test sync::tests::sync_job_progress_event_serializes_contract_shape ... ok
+test sync::tests::sync_job_remote_request_final_serializes_origin_type ... ok
+
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m     Running[0m unittests src/lib.rs (src-tauri/target/debug/deps/tt_domain-855b17dc96ff257c)
+
+running 81 tests
+test errors::tests::generation_cancelled_by_user_is_cancelled_variant ... ok
+test errors::tests::cancelled_constructor_keeps_message ... ok
+test errors::tests::workspace_path_is_directory_constructor_keeps_path ... ok
+test errors::tests::workspace_write_conflict_constructor_keeps_kind ... ok
+test ios_policy::tests::resolves_full_profile_when_ignored ... ok
+test ios_policy::tests::rejects_unknown_keys ... ok
+test json_merge::tests::merge_json_value_with_unset_deletes_nested_keys ... ok
+test ios_policy::tests::applies_overrides_and_tracks_paths ... ok
+test json_merge::tests::merge_json_value_with_unset_prunes_replaced_objects ... ok
+test models::agent::storage::tests::preserves_only_journal_and_local_summary_projection_as_core_history ... ok
+test models::agent::storage::tests::classifies_tt_sync_agent_run_components ... ok
+test models::agent::profile::tests::profile_definition_applies_schema_defaults_for_optional_fields ... ok
+test models::agent::tests::chat_ref_accepts_frontend_abi_shape ... ok
+test models::agent::tests::chat_ref_rejects_internal_field_names_at_abi_boundary ... ok
+test models::agent::tests::chat_ref_serializes_to_frontend_abi_shape ... ok
+test models::agent::tests::workspace_path_normalizes_relative_paths ... ok
+test models::agent::tests::workspace_path_rejects_escape_paths ... ok
+test models::bedrock_model::tests::classifies_known_provider_legacy_families_as_unsupported ... ok
+test models::bedrock_model::tests::classifies_wired_bedrock_model_families ... ok
+test models::bedrock_model::tests::exposes_conservative_capabilities_by_family ... ok
+test models::bedrock_model::tests::extract_provider_strips_inference_profile_prefix ... ok
+test models::bedrock_model::tests::strips_inference_profile_prefix_before_classification ... ok
+test models::character::tests::into_shallow_drops_heavy_character_payload ... ok
+test models::chat::tests::keeps_uppercase_jsonl_as_part_of_the_chat_stem ... ok
+test models::character::tests::talkativeness_serializes_as_clean_json_number ... ok
+test models::chat::tests::normalizes_epoch_seconds_from_json_number ... ok
+test models::chat::tests::normalizes_complete_chat_file_name_before_utf8_byte_truncation ... ok
+test models::chat::tests::parses_legacy_humanized_timestamp ... ok
+test models::chat::tests::parses_rfc3339_timestamp ... ok
+test models::chat::tests::preserves_upstream_chat_file_spacing_semantics ... ok
+test models::chat::tests::sanitizes_chat_file_stem_without_repository_fallback ... ok
+test models::chat::tests::strips_jsonl_extension_like_upstream_case_sensitively ... ok
+test models::chat::tests::truncates_generated_chat_stem_prefix_without_splitting_utf8 ... ok
+test models::chat_completion_source::tests::parse_new_openai_compatible_sources ... ok
+test models::claude_model::tests::detects_vertex_claude_ids ... ok
+test models::claude_model::tests::normalizes_vertex_revision_suffix_for_contract_matching ... ok
+test models::claude_model::tests::one_hour_prompt_cache_support_excludes_known_old_series ... ok
+test models::filename::tests::sanitize_filename_keeps_upstream_reserved_name_ordering ... ok
+test models::filename::tests::sanitize_filename_preserves_leading_spaces_like_upstream ... ok
+test models::filename::tests::sanitize_filename_removes_control_codes ... ok
+test models::filename::tests::sanitize_filename_removes_illegal_characters ... ok
+test models::filename::tests::sanitize_filename_removes_reserved_names ... ok
+test models::filename::tests::sanitize_filename_strips_trailing_dots_and_spaces ... ok
+test models::filename::tests::sanitize_filename_truncates_by_utf8_bytes ... ok
+test models::preset::tests::test_preset_data_with_name ... ok
+test models::preset::tests::test_preset_type_directory_name ... ok
+test models::preset::tests::test_preset_type_from_api_id ... ok
+test models::preset::tests::test_preset_validation ... ok
+test models::quick_reply::tests::validate_rejects_empty_name ... ok
+test models::quick_reply::tests::validate_rejects_non_object_payload ... ok
+test models::secret::tests::rotate_delete_and_rename_secret ... ok
+test models::secret::tests::write_secret_sets_latest_active ... ok
+test models::settings::tests::agent_retention_defaults_to_recent_terminal_history_policy ... ok
+test models::settings::tests::agent_retention_validation_caps_run_counts_and_requires_full_subset ... ok
+test models::settings::tests::agent_settings_defaults_when_loading_older_settings ... ok
+test models::settings::tests::avatar_persona_original_images_enabled_migrates_legacy_thumbnail_setting ... ok
+test models::settings::tests::chat_backup_settings_accept_documented_sentinels_and_reject_lower_values ... ok
+test models::settings::tests::chat_backup_settings_default_missing_nested_fields ... ok
+test models::settings::tests::chat_backup_settings_default_when_loading_older_settings ... ok
+test models::settings::tests::chat_virtualization_defaults_to_disabled_and_accepts_enabled ... ok
+test models::settings::tests::effective_llm_api_keep_has_minimum_of_one ... ok
+test models::settings::tests::llm_api_keep_validation_requires_positive_values ... ok
+test models::settings::tests::native_regex_backend_enabled_defaults_to_true ... ok
+test models::settings::tests::removed_chat_history_mode_is_ignored ... ok
+test models::tool::tests::tool_catalog_can_be_empty ... ok
+test models::tool::tests::snapshot_preserves_binding_order_and_rejects_duplicate_aliases ... ok
+test models::tool::tests::tool_catalog_orders_by_id_and_keeps_provider_namespaces_distinct ... ok
+test models::tool::tests::tool_catalog_rejects_duplicate_ids ... ok
+test models::tool::tests::tool_choice_uses_canonical_domain_shape ... ok
+test models::tool::tests::tool_identity_is_stable_and_opaque ... ok
+test models::tool::tests::tool_identity_rejects_invalid_serialized_values ... ok
+test models::tool::tests::turn_uses_the_complete_snapshot_and_validates_choice ... ok
+test models::world_info::tests::sanitize_world_info_import_name_uses_original_filename_contract ... ok
+test models::world_info::tests::sanitize_world_info_name_matches_upstream_full_filename_sanitization ... ok
+test models::world_info::tests::sanitize_world_info_name_preserves_upstream_significant_whitespace_and_dots ... ok
+test text_metrics::tests::counts_ascii_words_and_chars ... ok
+test text_metrics::tests::counts_cjk_characters_as_word_units ... ok
+test text_metrics::tests::counts_mixed_script_text ... ok
+test text_metrics::tests::ignores_punctuation_and_emoji_for_words ... ok
+test text_search::tests::returns_line_numbered_snippets ... ok
+test text_search::tests::searches_case_insensitive_ascii ... ok
+
+test result: ok. 81 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+[1m[92m     Running[0m unittests src/lib.rs (src-tauri/target/debug/deps/tt_ports-a3859ff692d5ca2e)
+
+running 6 tests
+test repositories::agent_run_repository::tests::legacy_invocation_fields_still_match_without_canonical_scope ... ok
+test repositories::agent_run_repository::tests::canonical_event_scope_matches_primary_and_related_invocations ... ok
+test repositories::chat_completion_repository::tests::parse_new_openai_compatible_sources ... ok
+test repositories::content_repository::tests::ordinary_default_content_remains_user_scoped ... ok
+test repositories::content_repository::tests::stylesheet_and_error_pages_are_global_content ... ok
+test repositories::tokenizer_repository::tests::openai_text_token_threshold_excludes_the_message_wrapper_offset ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tauritavern_lib
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_archive
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_extension
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_http
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_media
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_provider_http
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_storage_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_storage_userdata
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_sync
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_tokenization
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_application
