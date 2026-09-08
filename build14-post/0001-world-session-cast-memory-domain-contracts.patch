@@ -1,0 +1,535 @@
+diff --git a/src-tauri/crates/tt-domain/src/models/mod.rs b/src-tauri/crates/tt-domain/src/models/mod.rs
+index ec6c7ee..b9a79ba 100644
+--- a/src-tauri/crates/tt-domain/src/models/mod.rs
++++ b/src-tauri/crates/tt-domain/src/models/mod.rs
+@@ -17,6 +17,7 @@ pub mod lan_sync;
+ pub mod llm_connection;
+ pub mod preset;
+ pub mod quick_reply;
++pub mod rp_architecture;
+ pub mod secret;
+ pub mod settings;
+ pub mod skill;
+diff --git a/src-tauri/crates/tt-domain/src/models/rp_architecture.rs b/src-tauri/crates/tt-domain/src/models/rp_architecture.rs
+new file mode 100644
+index 0000000..e95ff0f
+--- /dev/null
++++ b/src-tauri/crates/tt-domain/src/models/rp_architecture.rs
+@@ -0,0 +1,517 @@
++use std::collections::BTreeMap;
++
++use serde::{Deserialize, Serialize};
++use serde_json::Value;
++
++pub const RP_ARCHITECTURE_SCHEMA_VERSION: u32 = 1;
++
++#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
++#[serde(transparent)]
++pub struct WorldId(pub String);
++
++#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
++#[serde(transparent)]
++pub struct SessionId(pub String);
++
++#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
++#[serde(transparent)]
++pub struct BranchId(pub String);
++
++#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
++#[serde(transparent)]
++pub struct CharacterId(pub String);
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum SessionStatus {
++    Active,
++    Paused,
++    Archived,
++    Completed,
++    Forked,
++    Incompatible,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum NarrativeRole {
++    Incidental,
++    Recurring,
++    Supporting,
++    Main,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum ControlOwner {
++    Ai,
++    User,
++    Shared,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum ControlPolicy {
++    Normal,
++    ExplicitOnly,
++    Delegated,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum CharacterOriginKind {
++    WorldCanon,
++    SessionCreated,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum LifecycleStatus {
++    Active,
++    Offscreen,
++    Inactive,
++    Missing,
++    Departed,
++    Retired,
++    Dead,
++    Archived,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum KnowledgeState {
++    Knows,
++    Partial,
++    Suspects,
++    Believes,
++    FalseBelief,
++    DoesNotKnow,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum KnowledgeSourceKind {
++    UserAsserted,
++    DirectObservation,
++    ReliableDocument,
++    EventDerived,
++    ExistingCanon,
++    ToldBy,
++    Public,
++    Inferred,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum MemoryTier {
++    Working,
++    Episodic,
++    Semantic,
++    Archive,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum RelationKind {
++    Trust,
++    Affection,
++    Rivalry,
++    Debt,
++    Authority,
++    Family,
++    Custom,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum WorldBindingDecision {
++    Match,
++    WorldBindingMismatch,
++    WorldRevisionDiverged,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct WorldManifest {
++    pub schema_version: u32,
++    pub world_id: WorldId,
++    pub title: String,
++    pub manifest_revision: u64,
++    pub canon_revision: u64,
++    pub canon_fingerprint: String,
++    #[serde(default)]
++    pub immutable_rules: Vec<String>,
++    #[serde(default)]
++    pub canon_entity_refs: Vec<String>,
++    #[serde(default)]
++    pub lore_pack_refs: Vec<String>,
++    #[serde(default)]
++    pub compatibility: BTreeMap<String, Value>,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct SessionIdentity {
++    pub schema_version: u32,
++    pub session_id: SessionId,
++    pub world_id: WorldId,
++    pub bound_canon_revision: u64,
++    pub bound_canon_fingerprint: String,
++    pub session_status: SessionStatus,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub host_chat_id: Option<String>,
++    pub active_branch_id: BranchId,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CharacterOrigin {
++    pub kind: CharacterOriginKind,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub world_ref: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub source_session_id: Option<SessionId>,
++}
++
++#[derive(Debug, Clone, Default, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CharacterIdentity {
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub canonical_name: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub display_name: Option<String>,
++    #[serde(default)]
++    pub aliases: Vec<String>,
++}
++
++#[derive(Debug, Clone, Default, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct TraitBoundary {
++    #[serde(default)]
++    pub immutable: Vec<String>,
++    #[serde(default)]
++    pub mutable: Vec<String>,
++}
++
++#[derive(Debug, Clone, Default, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CharacterProfile {
++    #[serde(default)]
++    pub identity: CharacterIdentity,
++    #[serde(default)]
++    pub appearance: BTreeMap<String, Value>,
++    #[serde(default)]
++    pub personality_invariants: Vec<String>,
++    #[serde(default)]
++    pub values: Vec<String>,
++    #[serde(default)]
++    pub speech_voice: BTreeMap<String, Value>,
++    #[serde(default)]
++    pub long_term_motivations: Vec<String>,
++    #[serde(default)]
++    pub capabilities: Vec<String>,
++    #[serde(default)]
++    pub limitations: Vec<String>,
++    #[serde(default)]
++    pub backstory: Vec<String>,
++    #[serde(default)]
++    pub trait_boundaries: TraitBoundary,
++}
++
++#[derive(Debug, Clone, Default, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CharacterRuntimeState {
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub emotion: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub current_goal: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub location: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub physical_status: Option<String>,
++    #[serde(default)]
++    pub temporary_conditions: Vec<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub relationship: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub trust: Option<i64>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub last_updated_turn: Option<u64>,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CharacterEntity {
++    pub schema_version: u32,
++    pub character_id: CharacterId,
++    pub origin: CharacterOrigin,
++    pub narrative_role: NarrativeRole,
++    pub control_owner: ControlOwner,
++    pub control_policy: ControlPolicy,
++    pub lifecycle_status: LifecycleStatus,
++    pub first_seen_turn: u64,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub promoted_at_turn: Option<u64>,
++    pub profile_revision: u64,
++    #[serde(default)]
++    pub profile: CharacterProfile,
++}
++
++#[derive(Debug, Clone, Default, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CastRegistry {
++    #[serde(default)]
++    pub characters: BTreeMap<CharacterId, CharacterEntity>,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct KnowledgeSource {
++    pub kind: KnowledgeSourceKind,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub reference: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub turn: Option<u64>,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CharacterKnowledge {
++    pub character_id: CharacterId,
++    pub subject: String,
++    pub predicate: String,
++    pub state: KnowledgeState,
++    pub source: KnowledgeSource,
++    #[serde(default)]
++    pub canon_authority: bool,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct RelationEdge {
++    pub from_character_id: CharacterId,
++    pub to_character_id: CharacterId,
++    pub kind: RelationKind,
++    #[serde(default)]
++    pub state: BTreeMap<String, Value>,
++    pub source_turn: u64,
++    pub last_updated_turn: u64,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct MemorySourceRef {
++    pub kind: String,
++    pub reference: String,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct MemoryRecord {
++    pub id: String,
++    pub tier: MemoryTier,
++    pub summary: String,
++    #[serde(default)]
++    pub source_refs: Vec<MemorySourceRef>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub confidence: Option<u8>,
++    #[serde(default)]
++    pub character_refs: Vec<CharacterId>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub source_turn: Option<u64>,
++    #[serde(default)]
++    pub retracted: bool,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CanonizationProposal {
++    pub character_id: CharacterId,
++    pub source_session_id: SessionId,
++    pub source_branch_id: BranchId,
++    pub requested_world_id: WorldId,
++    pub requested_world_revision: u64,
++    #[serde(default)]
++    pub profile_delta: BTreeMap<String, Value>,
++    #[serde(default)]
++    pub canon_facts: Vec<Value>,
++    #[serde(default)]
++    pub excluded_session_state: Vec<String>,
++    #[serde(default)]
++    pub provenance: Vec<MemorySourceRef>,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct WorldMigrationReport {
++    pub world_id: WorldId,
++    pub from_revision: u64,
++    pub to_revision: u64,
++    #[serde(default)]
++    pub compatible_changes: Vec<String>,
++    #[serde(default)]
++    pub conflicts: Vec<String>,
++    #[serde(default)]
++    pub orphaned_entities: Vec<String>,
++    #[serde(default)]
++    pub required_user_decisions: Vec<String>,
++}
++
++pub fn check_world_binding(
++    session: &SessionIdentity,
++    manifest: &WorldManifest,
++) -> WorldBindingDecision {
++    if session.world_id != manifest.world_id {
++        return WorldBindingDecision::WorldBindingMismatch;
++    }
++
++    if session.bound_canon_revision != manifest.canon_revision
++        || session.bound_canon_fingerprint != manifest.canon_fingerprint
++    {
++        return WorldBindingDecision::WorldRevisionDiverged;
++    }
++
++    WorldBindingDecision::Match
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn manifest(world: &str, revision: u64, fingerprint: &str) -> WorldManifest {
++        WorldManifest {
++            schema_version: RP_ARCHITECTURE_SCHEMA_VERSION,
++            world_id: WorldId(world.to_string()),
++            title: world.to_string(),
++            manifest_revision: 1,
++            canon_revision: revision,
++            canon_fingerprint: fingerprint.to_string(),
++            immutable_rules: Vec::new(),
++            canon_entity_refs: Vec::new(),
++            lore_pack_refs: Vec::new(),
++            compatibility: BTreeMap::new(),
++        }
++    }
++
++    fn session(world: &str, revision: u64, fingerprint: &str) -> SessionIdentity {
++        SessionIdentity {
++            schema_version: RP_ARCHITECTURE_SCHEMA_VERSION,
++            session_id: SessionId("session-1".to_string()),
++            world_id: WorldId(world.to_string()),
++            bound_canon_revision: revision,
++            bound_canon_fingerprint: fingerprint.to_string(),
++            session_status: SessionStatus::Active,
++            host_chat_id: Some("chat-1".to_string()),
++            active_branch_id: BranchId("main".to_string()),
++        }
++    }
++
++    #[test]
++    fn world_binding_distinguishes_world_mismatch_from_revision_divergence() {
++        let bound = session("world-a", 17, "fp-17");
++        assert_eq!(
++            check_world_binding(&bound, &manifest("world-b", 17, "fp-17")),
++            WorldBindingDecision::WorldBindingMismatch
++        );
++        assert_eq!(
++            check_world_binding(&bound, &manifest("world-a", 18, "fp-18")),
++            WorldBindingDecision::WorldRevisionDiverged
++        );
++        assert_eq!(
++            check_world_binding(&bound, &manifest("world-a", 17, "fp-17")),
++            WorldBindingDecision::Match
++        );
++    }
++
++    #[test]
++    fn narrative_role_and_control_owner_are_independent() {
++        let entity = CharacterEntity {
++            schema_version: RP_ARCHITECTURE_SCHEMA_VERSION,
++            character_id: CharacterId("char-eve".to_string()),
++            origin: CharacterOrigin {
++                kind: CharacterOriginKind::SessionCreated,
++                world_ref: None,
++                source_session_id: Some(SessionId("session-1".to_string())),
++            },
++            narrative_role: NarrativeRole::Main,
++            control_owner: ControlOwner::Ai,
++            control_policy: ControlPolicy::Normal,
++            lifecycle_status: LifecycleStatus::Active,
++            first_seen_turn: 1,
++            promoted_at_turn: Some(42),
++            profile_revision: 1,
++            profile: CharacterProfile::default(),
++        };
++        assert_eq!(entity.narrative_role, NarrativeRole::Main);
++        assert_eq!(entity.control_owner, ControlOwner::Ai);
++    }
++
++    #[test]
++    fn cast_registry_keys_by_immutable_character_id_not_display_name() {
++        let mut registry = CastRegistry::default();
++        let id = CharacterId("char-eve".to_string());
++        let mut profile = CharacterProfile::default();
++        profile.identity.display_name = Some("伊芙".to_string());
++        registry.characters.insert(
++            id.clone(),
++            CharacterEntity {
++                schema_version: RP_ARCHITECTURE_SCHEMA_VERSION,
++                character_id: id.clone(),
++                origin: CharacterOrigin {
++                    kind: CharacterOriginKind::WorldCanon,
++                    world_ref: Some("world-a:characters/eve".to_string()),
++                    source_session_id: None,
++                },
++                narrative_role: NarrativeRole::Supporting,
++                control_owner: ControlOwner::Ai,
++                control_policy: ControlPolicy::Normal,
++                lifecycle_status: LifecycleStatus::Active,
++                first_seen_turn: 1,
++                promoted_at_turn: None,
++                profile_revision: 1,
++                profile,
++            },
++        );
++        registry
++            .characters
++            .get_mut(&id)
++            .expect("character must exist")
++            .profile
++            .identity
++            .display_name = Some("Eve".to_string());
++        assert!(registry.characters.contains_key(&id));
++    }
++
++    #[test]
++    fn inferred_character_knowledge_has_no_canon_authority_by_default() {
++        let knowledge = CharacterKnowledge {
++            character_id: CharacterId("char-eve".to_string()),
++            subject: "BX-100".to_string(),
++            predicate: "may be an earlier batch".to_string(),
++            state: KnowledgeState::Suspects,
++            source: KnowledgeSource {
++                kind: KnowledgeSourceKind::Inferred,
++                reference: None,
++                turn: Some(9),
++            },
++            canon_authority: false,
++        };
++        assert!(!knowledge.canon_authority);
++    }
++
++    #[test]
++    fn archive_memory_is_distinct_from_retraction() {
++        let record = MemoryRecord {
++            id: "memory-1".to_string(),
++            tier: MemoryTier::Archive,
++            summary: "cold but historically valid".to_string(),
++            source_refs: vec![],
++            confidence: None,
++            character_refs: vec![],
++            source_turn: Some(3),
++            retracted: false,
++        };
++        assert_eq!(record.tier, MemoryTier::Archive);
++        assert!(!record.retracted);
++    }
++}
