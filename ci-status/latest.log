@@ -1,3 +1,7 @@
 # Diagnostic matches
 
 # Tail
+
+> tauritavern@2.2.0 check:types /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> tsc -p tsconfig.host.json
+
