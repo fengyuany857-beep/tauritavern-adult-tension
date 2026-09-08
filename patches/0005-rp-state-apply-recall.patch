@@ -1,0 +1,99 @@
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -591,6 +651,14 @@
+         validate_id(&k.subject, "knowledge subject")?;
+         bounded_text(&k.predicate, "knowledge predicate", 1, 160)?;
+         enum_value(&k.state, "knowledge state", &["does_not_know","partial","suspects","knows","false_belief"])?;
++        if let Some(fact_id) = k.fact_id.as_deref() { validate_id(fact_id, "knowledge fact_id")?; }
++        if let Some(source) = k.source.as_ref() {
++            enum_value(&source.kind, "knowledge source kind", &["user_asserted","observed","told_by","public","inferred","existing"])?;
++            if let Some(reference) = source.reference.as_deref() { bounded_text(reference, "knowledge source reference", 1, 500)?; }
++            if source.kind == "told_by" && source.reference.as_deref().is_none_or(|value| value.trim().is_empty()) {
++                return Err("knowledge source told_by requires a non-empty reference naming the source character/evidence".to_string());
++            }
++        }
+     }
+     for c in input.commitments.as_deref().unwrap_or(&[]) {
+         validate_id(&c.id, "commitment id")?; validate_id(&c.owner, "commitment owner")?;
+@@ -660,6 +728,19 @@
+         return Err("A turn that sets safety_state=paused must use advances_story=false; do not advance the scene while pausing.".to_string());
+     }
+ 
++    let mut seen_retractions = HashSet::new();
++    for target_turn in input.retract_turns.as_deref().unwrap_or(&[]) {
++        if *target_turn > state.turn {
++            return Err(format!("cannot retract future story turn {target_turn}; current accepted turn is {}", state.turn));
++        }
++        if !seen_retractions.insert(*target_turn) {
++            return Err(format!("retract_turns contains duplicate story turn {target_turn}"));
++        }
++        if state.retractions.iter().any(|item| item.target_turn == *target_turn) {
++            return Err(format!("story turn {target_turn} is already retracted in this branch"));
++        }
++    }
++
+     let Some(authority) = input.authority.as_ref() else { return Ok(()); };
+ 
+     let mut boundary_ids = HashSet::new();
+@@ -720,7 +801,7 @@
+ 
+ fn apply_stage(state: &mut RpState, input: StageTurnArgs, run_id: &str) -> Result<(), ApplicationError> {
+     let advances_story = input.advances_story.unwrap_or(true);
+-    let semantic_mutation = advances_story || input.clock.is_some() || input.scene.is_some() || input.location.is_some() || input.participants.is_some()
++    let semantic_mutation = advances_story || input.retract_turns.as_ref().is_some_and(|v| !v.is_empty()) || input.clock.is_some() || input.scene.is_some() || input.location.is_some() || input.participants.is_some()
+         || input.npc_updates.as_ref().is_some_and(|v| !v.is_empty())
+         || input.events.as_ref().is_some_and(|v| !v.is_empty())
+         || input.facts.as_ref().is_some_and(|v| !v.is_empty())
+@@ -737,6 +818,10 @@
+     }
+     state.last_run_id = Some(run_id.to_string());
+     let turn = state.turn;
++    if let Some(target_turns) = input.retract_turns.as_deref().filter(|turns| !turns.is_empty()) {
++        let reason = input.retraction_reason.as_deref().unwrap_or_default().trim();
++        apply_retractions(state, target_turns, reason, turn);
++    }
+     let previous_location = state.location.clone();
+     let previous_participants = state.participants.clone();
+     let previous_scene = state.scene.clone();
+@@ -751,6 +836,7 @@
+     }
+     for update in input.npc_updates.unwrap_or_default() {
+         let entry = state.npcs.entry(update.id).or_default();
++        entry.last_updated_turn = Some(turn);
+         if update.emotion.is_some() { entry.emotion = update.emotion; }
+         if update.goal.is_some() { entry.goal = update.goal; }
+         if update.autonomy.is_some() { entry.autonomy = update.autonomy; }
+@@ -789,7 +875,15 @@
+         });
+     }
+     for k in input.knowledge.unwrap_or_default() {
+-        state.knowledge.push(RpKnowledge { character_id: k.character_id, subject: k.subject, predicate: k.predicate, state: k.state, turn });
++        state.knowledge.push(RpKnowledge {
++            character_id: k.character_id,
++            subject: k.subject,
++            predicate: k.predicate,
++            state: k.state,
++            fact_id: k.fact_id,
++            source: k.source.map(|source| RpKnowledgeSource { kind: source.kind, reference: source.reference }),
++            turn,
++        });
+     }
+     for c in input.commitments.unwrap_or_default() {
+         upsert_commitment(&mut state.commitments, RpCommitment { id:c.id, owner:c.owner, summary:c.summary, status:c.status, due:c.due, turn });
+@@ -894,6 +988,7 @@
+         open_threads: state.threads.iter().filter(|v| v.status == "open" || v.status == "dormant").collect(),
+         living_world: &state.living_world,
+         recent_beats: state.recent_beats.iter().rev().take(12).collect::<Vec<_>>().into_iter().rev().collect(),
++        recent_retractions: state.retractions.iter().rev().take(8).collect::<Vec<_>>().into_iter().rev().collect(),
+         authority_note: "Fixed Canon remains user/Author-owned. Historical continuity never grants current consent, boundary, safety, permission, or player internal state.",
+     }
+ }
+@@ -904,7 +999,7 @@
+ 
+ fn recall_hits(state: &RpState, query: &str, limit: usize) -> Vec<Value> {
+     let mut records = Vec::<(u64, Value, String)>::new();
+-    for fact in &state.facts {
++    for fact in state.facts.iter().filter(|fact| fact_is_active(fact)) {
+         records.push((fact.recorded_at_turn, json!({"kind":"fact","record":fact}), format!("{} {} {}", fact.subject, fact.predicate, fact.value)));
+     }
+     for k in &state.knowledge {
