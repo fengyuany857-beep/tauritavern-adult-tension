@@ -21,6 +21,7 @@ jobs:
     env:
       UPSTREAM_SHA: 3a8c5401c859ac15ac11f3339846360615232896
       PATCH_SHA256: ab08a021d5ff0158b283ef25bfc6aa7f0efec05328ca99e489eea130d566fe10
+      BUILD11_PATCH_SHA256: f32fced72ac46136d17ef0e4a916d0285bff178aaaccdd1e6ef17aa7e33f36c7
       TAURITAVERN_IOS_POLICY_PROFILE: full
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -36,20 +37,30 @@ jobs:
           ref: 3a8c5401c859ac15ac11f3339846360615232896
           path: source
 
-      - name: Reconstruct and verify native patch
+      - name: Reconstruct and verify native patches
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import base64, gzip, hashlib
+
           parts = sorted(Path('control/patch64').glob('p*.txt'))
-          assert len(parts) == 12, f'expected 12 patch chunks, found {len(parts)}'
+          assert len(parts) == 12, f'expected 12 native patch chunks, found {len(parts)}'
           encoded = ''.join(p.read_text().strip() for p in parts)
           patch = gzip.decompress(base64.b64decode(encoded))
           Path('/tmp/native.patch').write_bytes(patch)
           digest = hashlib.sha256(patch).hexdigest()
-          print('patch sha256:', digest)
+          print('native patch sha256:', digest)
           assert digest == 'ab08a021d5ff0158b283ef25bfc6aa7f0efec05328ca99e489eea130d566fe10', digest
+
+          parts = sorted(Path('control/build11patch64').glob('p*.txt'))
+          assert len(parts) == 5, f'expected 5 Build 11 patch chunks, found {len(parts)}'
+          encoded = ''.join(p.read_text().strip() for p in parts)
+          patch = gzip.decompress(base64.b64decode(encoded))
+          Path('/tmp/build11.patch').write_bytes(patch)
+          digest = hashlib.sha256(patch).hexdigest()
+          print('Build 11 patch sha256:', digest)
+          assert digest == 'f32fced72ac46136d17ef0e4a916d0285bff178aaaccdd1e6ef17aa7e33f36c7', digest
           PY
 
       - name: Apply native RP patch stack
@@ -65,6 +76,9 @@ jobs:
             git apply --check "$patch"
             git apply "$patch"
           done
+          echo "Applying Build 11 integrity patch"
+          git apply --check /tmp/build11.patch
+          git apply /tmp/build11.patch
           git diff --check
 
       - name: Install Rust toolchain
