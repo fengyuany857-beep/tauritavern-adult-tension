@@ -1,8 +1,8 @@
 # TauriTavern Adult Tension iOS build status
 
-- State: **PASS**
-- Stage: **Frontend guardrails**
+- State: **RUNNING**
+- Stage: **TypeScript**
 - Exit code: **0**
 - Run: **4 / attempt 1**
 - Upstream: `3a8c5401c859ac15ac11f3339846360615232896`
-- Updated: **2026-09-08T01:56:12Z**
+- Updated: **2026-09-08T01:56:14Z**
