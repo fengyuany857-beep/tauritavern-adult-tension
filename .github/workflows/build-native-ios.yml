@@ -52,12 +52,19 @@ jobs:
           assert digest == 'ab08a021d5ff0158b283ef25bfc6aa7f0efec05328ca99e489eea130d566fe10', digest
           PY
 
-      - name: Apply native RP patch
+      - name: Apply native RP patch stack
         working-directory: source
         shell: bash
         run: |
+          set -euo pipefail
           git apply --check /tmp/native.patch
           git apply /tmp/native.patch
+          shopt -s nullglob
+          for patch in ../control/patches/*.patch; do
+            echo "Applying incremental patch: $patch"
+            git apply --check "$patch"
+            git apply "$patch"
+          done
           git diff --check
 
       - name: Install Rust toolchain
