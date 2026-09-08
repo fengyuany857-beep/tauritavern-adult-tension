@@ -90,13 +90,34 @@ run_stage() {
   local title="$2"
   local command="$3"
   local log="$LOG_DIR/${slug}.log"
+  local heartbeat_seconds=30
+  local tick_seconds=2
+  local elapsed=0
 
-  publish_status "$title" "RUNNING" 0 ""
+  : > "$log"
+  publish_status "$title" "RUNNING" 0 "$log"
   echo "===== $title ====="
+
   set +e
-  (cd "$SOURCE_DIR" && bash -lc "$command") 2>&1 | tee "$log"
-  local rc=${PIPESTATUS[0]}
+  (cd "$SOURCE_DIR" && bash -lc "$command") >"$log" 2>&1 &
+  local pid=$!
   set -e
+
+  while kill -0 "$pid" 2>/dev/null; do
+    sleep "$tick_seconds"
+    elapsed=$((elapsed + tick_seconds))
+    if (( elapsed >= heartbeat_seconds )) && kill -0 "$pid" 2>/dev/null; then
+      publish_status "$title" "RUNNING" 0 "$log"
+      elapsed=0
+    fi
+  done
+
+  set +e
+  wait "$pid"
+  local rc=$?
+  set -e
+
+  cat "$log"
   if [[ "$rc" -ne 0 ]]; then
     publish_status "$title" "FAIL" "$rc" "$log"
     exit "$rc"
