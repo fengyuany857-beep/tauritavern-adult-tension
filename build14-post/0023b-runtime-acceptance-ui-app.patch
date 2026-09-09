@@ -1,0 +1,176 @@
+diff --git a/src/scripts/tauri/setting/acceptance-app/AcceptanceApp.js b/src/scripts/tauri/setting/acceptance-app/AcceptanceApp.js
+new file mode 100644
+index 0000000..12d95df
+--- /dev/null
++++ b/src/scripts/tauri/setting/acceptance-app/AcceptanceApp.js
+@@ -0,0 +1,170 @@
++const POLL_MS = 350;
++
++function normalizeState(value) {
++    return String(value || 'idle').toLowerCase();
++}
++
++export function createTauriTavernAcceptanceApp(options) {
++    const { api, tr, exportReport } = options || {};
++    if (!api || typeof api.start !== 'function' || typeof api.getStatus !== 'function') {
++        throw new Error('Auto Acceptance API client is required');
++    }
++    if (typeof tr !== 'function') {
++        throw new Error('Auto Acceptance translator is required');
++    }
++    return {
++        name: 'TauriTavernAcceptanceApp',
++        data() {
++            return {
++                api,
++                tr,
++                exportReport,
++                runId: null,
++                status: null,
++                loadingInitial: true,
++                exporting: false,
++                actionError: '',
++                expanded: false,
++                pollTimer: null,
++            };
++        },
++        computed: {
++            state() { return normalizeState(this.status?.state); },
++            isRunning() { return this.state === 'running'; },
++            isTerminal() { return ['pass', 'pass_with_warnings', 'fail', 'cancelled'].includes(this.state); },
++            canStart() { return !this.isRunning; },
++            canExport() { return this.isTerminal && Boolean(this.runId); },
++            completed() { return Number(this.status?.completedCases || 0); },
++            total() { return Number(this.status?.totalCases || 0); },
++            percent() { return this.total > 0 ? Math.min(100, Math.round(this.completed * 100 / this.total)) : 0; },
++            stateLabel() {
++                const map = {
++                    idle: 'Ready', running: 'Running', pass: 'PASS',
++                    pass_with_warnings: 'PASS WITH WARNINGS', fail: 'FAIL', cancelled: 'CANCELLED',
++                };
++                return map[this.state] || this.state.toUpperCase();
++            },
++            cases() { return Array.isArray(this.status?.cases) ? this.status.cases : []; },
++        },
++        async mounted() {
++            try {
++                await this.refresh(null);
++            } catch (error) {
++                this.actionError = String(error?.message || error);
++            } finally {
++                this.loadingInitial = false;
++            }
++        },
++        beforeUnmount() { this.stopPolling(); },
++        methods: {
++            acceptStatus(next) {
++                if (!next || typeof next !== 'object') return;
++                const currentRevision = Number(this.status?.revision ?? -1);
++                const nextRevision = Number(next.revision ?? 0);
++                if (this.status && nextRevision < currentRevision) return;
++                this.status = next;
++                if (next.runId) this.runId = next.runId;
++                if (this.isTerminal) this.stopPolling();
++            },
++            async refresh(runId = this.runId) {
++                this.acceptStatus(await this.api.getStatus(runId || null));
++            },
++            startPolling() {
++                this.stopPolling();
++                const tick = async () => {
++                    try {
++                        await this.refresh();
++                        this.actionError = '';
++                    } catch (error) {
++                        this.actionError = String(error?.message || error);
++                    }
++                    if (this.isRunning) this.pollTimer = setTimeout(tick, POLL_MS);
++                };
++                this.pollTimer = setTimeout(tick, POLL_MS);
++            },
++            stopPolling() {
++                if (this.pollTimer) clearTimeout(this.pollTimer);
++                this.pollTimer = null;
++            },
++            async start() {
++                this.actionError = '';
++                try {
++                    const result = await this.api.start();
++                    this.runId = result.runId;
++                    this.acceptStatus(result.status);
++                    this.startPolling();
++                } catch (error) {
++                    const text = String(error?.message || error);
++                    this.actionError = text;
++                    try {
++                        await this.refresh(null);
++                        if (this.isRunning) this.startPolling();
++                    } catch { /* keep original error */ }
++                }
++            },
++            async cancel() {
++                if (!this.runId) return;
++                this.actionError = '';
++                try {
++                    await this.api.cancel(this.runId);
++                    await this.refresh();
++                    if (this.isRunning) this.startPolling();
++                } catch (error) {
++                    this.actionError = String(error?.message || error);
++                }
++            },
++            async exportCurrentReport() {
++                if (!this.runId || typeof this.exportReport !== 'function') return;
++                this.exporting = true;
++                this.actionError = '';
++                try {
++                    await this.exportReport(this.runId);
++                } catch (error) {
++                    this.actionError = String(error?.message || error);
++                } finally {
++                    this.exporting = false;
++                }
++            },
++            caseClass(state) { return `tt-acceptance-case-${normalizeState(state)}`; },
++        },
++        template: `
++          <section class="tt-acceptance" aria-live="polite">
++            <header class="tt-acceptance-header">
++              <div>
++                <h2>{{ tr('Auto Acceptance') }}</h2>
++                <p>{{ tr('Quickly checks this build\'s Agent, RP state, persistence and branch isolation. Test data is isolated and does not modify normal chats.') }}</p>
++              </div>
++              <span class="tt-acceptance-state" :data-state="state">{{ stateLabel }}</span>
++            </header>
++
++            <div v-if="loadingInitial" class="tt-acceptance-muted">{{ tr('Loading...') }}</div>
++            <template v-else>
++              <div class="tt-acceptance-progress">
++                <div class="tt-acceptance-progress-track"><div class="tt-acceptance-progress-fill" :style="{ width: percent + '%' }"></div></div>
++                <span>{{ completed }} / {{ total }}</span>
++              </div>
++              <div class="tt-acceptance-current" v-if="status?.currentCaseId">
++                {{ tr('Current') }}: <code>{{ status.currentCaseId }}</code>
++              </div>
++              <div class="tt-acceptance-error" v-if="actionError">{{ actionError }}</div>
++
++              <div class="tt-acceptance-actions">
++                <button class="menu_button" v-if="canStart" @click="start">{{ isTerminal ? tr('Run Again') : tr('Start Auto Acceptance') }}</button>
++                <button class="menu_button" v-if="isRunning" @click="cancel">{{ tr('Stop Test') }}</button>
++                <button class="menu_button" v-if="canExport" :disabled="exporting" @click="exportCurrentReport">{{ exporting ? tr('Exporting...') : tr('Export Report') }}</button>
++                <button class="menu_button" v-if="cases.length" @click="expanded = !expanded">{{ expanded ? tr('Hide Details') : tr('View Details') }}</button>
++              </div>
++
++              <div v-if="expanded" class="tt-acceptance-cases">
++                <div v-for="item in cases" :key="item.id" class="tt-acceptance-case" :class="caseClass(item.state)">
++                  <div class="tt-acceptance-case-main">
++                    <code>{{ item.id }}</code><strong>{{ String(item.state || '').toUpperCase() }}</strong>
++                  </div>
++                  <div class="tt-acceptance-case-detail" v-if="item.detail || item.code">{{ item.code || '' }}{{ item.code && item.detail ? ': ' : '' }}{{ item.detail || '' }}</div>
++                </div>
++              </div>
++            </template>
++          </section>
++        `,
++    };
++}
