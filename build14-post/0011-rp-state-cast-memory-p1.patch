@@ -1,0 +1,281 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+index 289c101..c93b568 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -25,6 +25,10 @@ const MAX_BEATS: usize = 128;
+ const MAX_NPCS: usize = 128;
+ const MAX_STATE_BYTES: usize = 1_000_000;
+ const MAX_RUNTIME_CHECKPOINTS: usize = 32;
++const MAX_ARCHIVED_NPCS: usize = 1024;
++const MAX_MEMORIES: usize = 1024;
++const MAX_PROFILE_EVIDENCE: usize = 1024;
++const MAX_CANONIZATION_PROPOSALS: usize = 64;
+ 
+ #[derive(Debug, Clone, Serialize, Deserialize)]
+ #[serde(rename_all = "camelCase", deny_unknown_fields)]
+@@ -50,6 +54,16 @@ struct RpState {
+     #[serde(default)]
+     npcs: BTreeMap<String, RpNpcState>,
+     #[serde(default)]
++    archived_npcs: BTreeMap<String, RpNpcState>,
++    #[serde(default)]
++    cast_registry: BTreeMap<String, RpCharacterEntity>,
++    #[serde(default)]
++    memories: Vec<RpMemoryRecord>,
++    #[serde(default)]
++    profile_evidence: Vec<RpProfileEvidence>,
++    #[serde(default)]
++    canonization_proposals: Vec<RpCanonizationProposal>,
++    #[serde(default)]
+     boundaries: Vec<RpBoundary>,
+     #[serde(default)]
+     grants: Vec<RpGrant>,
+@@ -90,6 +104,11 @@ impl Default for RpState {
+             location: None,
+             participants: Vec::new(),
+             npcs: BTreeMap::new(),
++            archived_npcs: BTreeMap::new(),
++            cast_registry: BTreeMap::new(),
++            memories: Vec::new(),
++            profile_evidence: Vec::new(),
++            canonization_proposals: Vec::new(),
+             boundaries: Vec::new(),
+             grants: Vec::new(),
+             events: Vec::new(),
+@@ -123,6 +142,103 @@ struct RpNpcState {
+     trust: Option<i64>,
+ }
+ 
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++struct RpCharacterEntity {
++    character_id: String,
++    display_name: String,
++    #[serde(default)]
++    aliases: Vec<String>,
++    narrative_role: String,
++    control_owner: String,
++    lifecycle_status: String,
++    origin: String,
++    first_seen_turn: u64,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    promoted_at_turn: Option<u64>,
++    profile_revision: u64,
++    #[serde(default)]
++    author_canon: BTreeMap<String, Value>,
++    #[serde(default)]
++    stable_profile: BTreeMap<String, RpStableTrait>,
++    #[serde(default)]
++    inferred_profile: BTreeMap<String, RpProfileCandidate>,
++}
++
++#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++struct RpStableTrait {
++    statement: String,
++    #[serde(default)]
++    evidence_refs: Vec<String>,
++    status: String,
++    updated_turn: u64,
++}
++
++#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++struct RpProfileCandidate {
++    statement: String,
++    #[serde(default)]
++    evidence_refs: Vec<String>,
++    #[serde(default)]
++    contradiction_refs: Vec<String>,
++    #[serde(default)]
++    contexts: Vec<String>,
++    confidence: u8,
++    status: String,
++    first_observed_turn: u64,
++    last_evaluated_turn: u64,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++struct RpProfileEvidence {
++    id: String,
++    character_id: String,
++    trait_key: String,
++    statement: String,
++    source_kind: String,
++    context: String,
++    source_ref: String,
++    turn: u64,
++    #[serde(default)]
++    contradicts: bool,
++    #[serde(default)]
++    retracted: bool,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++struct RpMemoryRecord {
++    id: String,
++    tier: String,
++    summary: String,
++    #[serde(default)]
++    character_refs: Vec<String>,
++    #[serde(default)]
++    source_refs: Vec<String>,
++    turn: u64,
++    #[serde(default)]
++    retracted: bool,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++struct RpCanonizationProposal {
++    proposal_id: String,
++    character_id: String,
++    status: String,
++    requested_world_id: String,
++    requested_world_revision: u64,
++    created_turn: u64,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    confirmed_turn: Option<u64>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    applied_turn: Option<u64>,
++}
++
+ #[derive(Debug, Clone, Serialize, Deserialize)]
+ #[serde(rename_all = "camelCase", deny_unknown_fields)]
+ struct RpBoundary {
+@@ -320,6 +436,14 @@ struct StageTurnArgs {
+     #[serde(default)]
+     npc_updates: Option<Vec<NpcUpdate>>,
+     #[serde(default)]
++    cast_updates: Option<Vec<CastUpdateInput>>,
++    #[serde(default)]
++    profile_evidence: Option<Vec<ProfileEvidenceInput>>,
++    #[serde(default)]
++    memory_updates: Option<Vec<MemoryInput>>,
++    #[serde(default)]
++    canonization_proposals: Option<Vec<CanonizationProposalInput>>,
++    #[serde(default)]
+     events: Option<Vec<EventInput>>,
+     #[serde(default)]
+     facts: Option<Vec<FactInput>>,
+@@ -347,6 +471,52 @@ struct NpcUpdate {
+     #[serde(default)] trust: Option<i64>,
+ }
+ 
++
++#[derive(Debug, Clone, Deserialize)]
++#[serde(rename_all = "snake_case", deny_unknown_fields)]
++struct CastUpdateInput {
++    character_id: String,
++    #[serde(default)] display_name: Option<String>,
++    #[serde(default)] aliases: Option<Vec<String>>,
++    #[serde(default)] narrative_role: Option<String>,
++    #[serde(default)] control_owner: Option<String>,
++    #[serde(default)] lifecycle_status: Option<String>,
++    #[serde(default)] archive: Option<bool>,
++    #[serde(default)] rehydrate: Option<bool>,
++    #[serde(default)] expected_profile_revision: Option<u64>,
++    #[serde(default)] author_canon: Option<BTreeMap<String, Value>>,
++}
++
++#[derive(Debug, Clone, Deserialize)]
++#[serde(rename_all = "snake_case", deny_unknown_fields)]
++struct ProfileEvidenceInput {
++    #[serde(default)] id: Option<String>,
++    character_id: String,
++    trait_key: String,
++    statement: String,
++    source_kind: String,
++    #[serde(default)] context: Option<String>,
++    #[serde(default)] source_ref: Option<String>,
++    #[serde(default)] contradicts: Option<bool>,
++}
++
++#[derive(Debug, Clone, Deserialize)]
++#[serde(rename_all = "snake_case", deny_unknown_fields)]
++struct MemoryInput {
++    #[serde(default)] id: Option<String>,
++    tier: String,
++    summary: String,
++    #[serde(default)] character_refs: Option<Vec<String>>,
++    #[serde(default)] source_refs: Option<Vec<String>>,
++}
++
++#[derive(Debug, Clone, Deserialize)]
++#[serde(rename_all = "snake_case", deny_unknown_fields)]
++struct CanonizationProposalInput {
++    #[serde(default)] proposal_id: Option<String>,
++    character_id: String,
++}
++
+ #[derive(Debug, Clone, Deserialize)]
+ #[serde(rename_all = "snake_case", deny_unknown_fields)]
+ struct EventInput {
+@@ -468,6 +638,10 @@ struct StateResult<'a> {
+     location: &'a Option<String>,
+     participants: &'a [String],
+     npcs: &'a BTreeMap<String, RpNpcState>,
++    archived_npc_count: usize,
++    cast_registry: &'a BTreeMap<String, RpCharacterEntity>,
++    memories: &'a [RpMemoryRecord],
++    canonization_proposals: &'a [RpCanonizationProposal],
+     active_boundaries: Vec<&'a RpBoundary>,
+     active_grants: Vec<&'a RpGrant>,
+     pending_events: Vec<&'a RpEvent>,
+@@ -586,22 +760,8 @@ pub(in crate::services::agent_tools) async fn stage_turn(
+             AgentToolEffect::None,
+         ));
+     }
+-    let new_npc_count = input
+-        .npc_updates
+-        .as_deref()
+-        .unwrap_or(&[])
+-        .iter()
+-        .map(|item| item.id.as_str())
+-        .collect::<HashSet<_>>()
+-        .into_iter()
+-        .filter(|id| !state.npcs.contains_key(*id))
+-        .count();
+-    if state.npcs.len().saturating_add(new_npc_count) > MAX_NPCS {
+-        return Ok((
+-            tool_error(call, "rp.npc_capacity_exceeded", "RP state supports at most 128 tracked NPC runtime records; resolve/archive unused NPC state before adding more."),
+-            AgentToolEffect::None,
+-        ));
+-    }
++    // MAX_NPCS limits hot runtime only. apply_stage archives the coldest safe NPC
++    // before admitting another active runtime record; Cast identity remains durable.
+     if let Some(duplicate) = duplicate_fact_id(&state, input.facts.as_deref().unwrap_or(&[])) {
+         return Ok((
+             tool_error(call, "rp.fact_id_conflict", &format!("fact id `{duplicate}` already exists or is duplicated in this stage; create a new fact id and use supersedes for replacement history.")),
+@@ -651,6 +811,28 @@ async fn load_state(workspace_repository: &dyn WorkspaceRepository, run_id: &str
+ }
+ 
+ fn validate_stage_input(input: &StageTurnArgs) -> Result<(), String> {
++    for update in input.cast_updates.as_deref().unwrap_or(&[]) {
++        validate_id(&update.character_id, "cast_updates.character_id")?;
++        if let Some(role) = update.narrative_role.as_deref() {
++            enum_value(role, "cast_updates.narrative_role", &["incidental", "recurring", "supporting", "main"])?;
++        }
++        if let Some(owner) = update.control_owner.as_deref() {
++            enum_value(owner, "cast_updates.control_owner", &["ai", "user", "shared"])?;
++        }
++        if let Some(status) = update.lifecycle_status.as_deref() {
++            enum_value(status, "cast_updates.lifecycle_status", &["active", "offscreen", "inactive", "missing", "departed", "retired", "dead", "archived"])?;
++        }
++    }
++    for evidence in input.profile_evidence.as_deref().unwrap_or(&[]) {
++        validate_id(&evidence.character_id, "profile_evidence.character_id")?;
++        validate_id(&evidence.trait_key, "profile_evidence.trait_key")?;
++        bounded_text(&evidence.statement, "profile_evidence.statement", 1, 512)?;
++        enum_value(&evidence.source_kind, "profile_evidence.source_kind", &["user_asserted", "behavior", "reaction", "decision", "statement", "relation_pattern", "capability", "limitation", "other_character_report"])?;
++    }
++    for memory in input.memory_updates.as_deref().unwrap_or(&[]) {
++        enum_value(&memory.tier, "memory_updates.tier", &["working", "episodic", "semantic", "archive"])?;
++        bounded_text(&memory.summary, "memory_updates.summary", 1, 1024)?;
++    }
+     bounded_text(&input.beat_summary, "beat_summary", 1, 2000)?;
+     let retract_turns = input.retract_turns.as_deref().unwrap_or(&[]);
+     if retract_turns.len() > 16 {
