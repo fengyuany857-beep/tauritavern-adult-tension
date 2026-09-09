@@ -1,13 +1,13 @@
 {
-  "run_id": "34309133703",
-  "run_number": "22",
+  "run_id": "34309657572",
+  "run_number": "24",
   "run_attempt": "1",
   "repository": "fengyuany857-beep/tauritavern-adult-tension",
-  "trigger_sha": "83514427c4524e5493267a656882a7920a98daa1",
+  "trigger_sha": "cffed71597787ac12343d4f1d8259267a5aff492",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
-  "stage": "Rust Clippy",
-  "state": "FAIL",
-  "exit_code": 101,
-  "updated_at": "2026-09-09T04:03:17Z",
+  "stage": "Environment ready",
+  "state": "RUNNING",
+  "exit_code": 0,
+  "updated_at": "2026-09-09T04:07:07Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-15-a1"
 }
