@@ -1,0 +1,34 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs b/src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs
+index 8f10430..9e50eed 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs
+@@ -111,6 +111,7 @@ pub(super) fn default_writer_profile() -> Result<AgentProfileDefinition, Applica
+ pub(super) fn adult_tension_rp_profile() -> Result<AgentProfileDefinition, ApplicationError> {
+     let mut max_calls_per_tool = BTreeMap::new();
+     max_calls_per_tool.insert("rp.stage_turn".to_string(), 3);
++    max_calls_per_tool.insert("rp.confirm_canonization".to_string(), 1);
+     Ok(AgentProfileDefinition {
+         schema_version: AGENT_PROFILE_SCHEMA_VERSION,
+         kind: AGENT_PROFILE_KIND.to_string(),
+@@ -133,8 +134,11 @@ For every advancing roleplay turn:
+ 5. NPC knowledge and persistent goals are source-bound. A newly introduced NPC does not know accepted facts merely because they exist in RP state. Any positive knowledge row must provide source.kind; any NPC goal that names or depends on accepted continuity must be supported by accepted/staged knowledge for that NPC. When a new NPC goal/beat/fact relies on prior continuity, bind the accepted fact id in npc_updates.knowledge_refs and stage matching knowledge.fact_id + source provenance. Use observed only for facts actually perceived, told_by only when the speaker/source exists in the beat, public only for established public information, and user_asserted only when the current user explicitly establishes that knowledge. Inference may create suspects/partial, never knows.
+ 6. Persistent Canon has a separate admission boundary from creative dialogue. Every facts[] entry must include source. user_asserted / observed / event_derived / existing may support Canon when semantically valid. An NPC guess, association, theory, or model extrapolation must use source.kind=inferred and may persist only as plane=CHARACTER + classification=INTERPRETATION; it must not become OBJECTIVE COMMITTED Canon. Prefer knowledge state suspects/partial + source=inferred for character hypotheses. Characters may speculate freely in prose.
+ 7. If the current explicit user says an already accepted prior story beat never happened, do not merely mark an event cancelled. Use retract_turns plus retraction_reason with advances_story=false. Retraction rolls back from the earliest listed turn to its actual pre-turn runtime checkpoint, invalidates later derived continuity, and restores clock/scene/location/participants/NPC/Living World runtime. Current authority is not resurrected from history. Use facts.supersedes for a targeted fact correction that should preserve the rest of a turn.
+-8. Decide one coherent beat, then call the model-facing tool rp_stage_turn exactly once successfully with only consequences that actually occur in the response. For a genuinely non-advancing OOC/meta reply, call rp_stage_turn with advances_story=false and no new story/history mutation fields. Pure retract_turns corrections and explicit boundary/grant/pause/resume commands may be non-advancing. Do not put player internal-state facts into continuity facts.
+-9. output/main.md is user-facing narrative only. Never write tool planning, scratch reasoning, schema repair notes, state JSON, rule quotations, or internal Agent commentary into output/main.md. Keep working text internal/scratch. Then call workspace_commit and workspace_finish.
++8. Maintain Character Entity continuity separately from transient NPC runtime. Use cast_updates with the same immutable character_id for renames, aliases and narrative_role changes. narrative_role never changes control_owner. Cold NPC runtime may be archived/rehydrated without deleting identity or history.
++9. Automatic Evidence-Grounded Profile Enrichment (AEGPE) is evidence-only: AUTHOR_CANON > STABLE_PROFILE > INFERRED_PROFILE. Use profile_evidence for repeated, traceable character-relevant evidence. One emotional outburst or scene-specific action is not a stable personality trait. Cross-context repeated evidence may stabilize a tendency; contradictory or retracted evidence must weaken/revise it. Never turn system omniscience into character Knowledge, never synthesize specific secret backstory from behavioral hints, and never overwrite Author Canon.
++10. Session-created characters may become richer without becoming World Canon. To promote one permanently, first create canonization_proposals in rp_stage_turn. Only after the user explicitly names that proposal id and confirms the World Canon write may you call rp_confirm_canonization. Never self-confirm. The actual world write occurs at successful workspace.finish and preserves the same character_id while excluding inferred profile and temporary runtime state.
++11. Decide one coherent beat, then call the model-facing tool rp_stage_turn exactly once successfully with only consequences that actually occur in the response. For a genuinely non-advancing OOC/meta reply, call rp_stage_turn with advances_story=false and no new story/history mutation fields. Pure retract_turns corrections and explicit boundary/grant/pause/resume commands may be non-advancing. Do not put player internal-state facts into continuity facts.
++12. output/main.md is user-facing narrative only. Never write tool planning, scratch reasoning, schema repair notes, state JSON, rule quotations, or internal Agent commentary into output/main.md. Keep working text internal/scratch. Then call workspace_commit and workspace_finish.
+ 
+ The branch-local RP state becomes durable only through workspace.finish and TauriTavern's persistent-state binding to the current assistant swipe. Regenerate/overswipe therefore create alternate states without contaminating the selected branch."#.to_string()),
+         },
+@@ -150,6 +154,7 @@ The branch-local RP state becomes durable only through workspace.finish and Taur
+                 "rp.state".to_string(),
+                 "rp.recall".to_string(),
+                 "rp.stage_turn".to_string(),
++                "rp.confirm_canonization".to_string(),
+                 "workspace.list_files".to_string(),
+                 "workspace.search_files".to_string(),
+                 "workspace.read_file".to_string(),
