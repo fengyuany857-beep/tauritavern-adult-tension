@@ -1,0 +1,128 @@
+diff --git a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+index c29dca6..7894982 100644
+--- a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
++++ b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+@@ -358,3 +358,123 @@ impl RuntimeAcceptanceService {
+         let run = self.create_run(ctx, "empty", None, &ctx.base_prompt).await?;
+         let result = self.rp_call(ctx, &run.id, &ctx.base_prompt, "rp.state", json!({})).await?;
+         require_success(&result, "rp.empty_state")?;
++        if result.structured.get("schemaVersion").is_none() || result.structured.get("runtimeRevision").is_none() {
++            return Err(ApplicationError::ValidationError("acceptance.rp_state_mismatch: state payload lacks schemaVersion/runtimeRevision".to_string()));
++        }
++        Ok(CaseRunResult::pass("Fresh file-backed RP state is readable and structured."))
++    }
++
++    async fn case_stage_recall(&self, ctx: &SuiteContext) -> Result<CaseRunResult, ApplicationError> {
++        let run = self.create_run(ctx, "stage-recall", None, &ctx.base_prompt).await?;
++        let staged = self.rp_call(ctx, &run.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Acceptance NPC observes blue key.",
++            "advances_story":true,
++            "facts":[{"id":"acceptance-fact-a","subject":"blue-key","predicate":"serial","value":"KT-71839","source":{"kind":"user_asserted","reference":"synthetic acceptance user fact"}}]
++        })).await?;
++        require_success(&staged, "rp.stage_recall_roundtrip.stage")?;
++        let readback = self.rp_call(ctx, &run.id, &ctx.base_prompt, "rp.state", json!({})).await?;
++        require_success(&readback, "rp.stage_recall_roundtrip.state")?;
++        let recall = self.rp_call(ctx, &run.id, &ctx.base_prompt, "rp.recall", json!({"query":"blue-key","limit":5})).await?;
++        require_success(&recall, "rp.stage_recall_roundtrip.recall")?;
++        let hits = recall.structured.get("hits").and_then(Value::as_array).map(Vec::len).unwrap_or(0);
++        if hits == 0 { return Err(ApplicationError::ValidationError("acceptance.rp_recall_empty: staged fact was not recalled".to_string())); }
++        Ok(CaseRunResult::pass("Stage, state readback, and recall traversed the production RP path."))
++    }
++
++    async fn case_knowledge_provenance(&self, ctx: &SuiteContext) -> Result<CaseRunResult, ApplicationError> {
++        let run = self.create_run(ctx, "knowledge", None, &ctx.base_prompt).await?;
++        let rejected = self.rp_call(ctx, &run.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Synthetic unsupported knowledge.","advances_story":true,
++            "knowledge":[{"character_id":"npc-a","subject":"blue-key","predicate":"serial","state":"knows"}]
++        })).await?;
++        require_error_code(&rejected, "rp.knowledge_provenance_required")?;
++        let accepted = self.rp_call(ctx, &run.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"NPC A directly observes the blue key.","advances_story":true,
++            "facts":[{"id":"acceptance-knowledge-fact","subject":"blue-key","predicate":"serial","value":"KT-71839","source":{"kind":"observed","reference":"current beat"}}],
++            "knowledge":[{"character_id":"npc-a","subject":"blue-key","predicate":"serial","state":"knows","fact_id":"acceptance-knowledge-fact","source":{"kind":"observed","reference":"current beat"}}]
++        })).await?;
++        require_success(&accepted, "rp.knowledge_provenance_pair.accepted")?;
++        Ok(CaseRunResult::pass("Missing provenance is rejected and explicit observed provenance is accepted."))
++    }
++
++    async fn case_retraction(&self, ctx: &SuiteContext) -> Result<CaseRunResult, ApplicationError> {
++        let root = self.create_run(ctx, "retract-root", None, &ctx.base_prompt).await?;
++        let staged = self.rp_call(ctx, &root.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Synthetic beat to retract.","advances_story":true,
++            "events":[{"id":"acceptance-event-r","summary":"temporary event","status":"resolved"}],
++            "facts":[{"id":"acceptance-fact-r","subject":"red-door","predicate":"opened","value":true,"source":{"kind":"user_asserted","reference":"synthetic input"}}]
++        })).await?;
++        require_success(&staged, "rp.retraction_pair.root")?;
++        let committed = ctx.sandbox.workspace_repository.commit_persistent_changes(&root.id).await?;
++
++        let correction = self.create_run(ctx, "retract-correction", Some(committed.state_id.clone()), &ctx.base_prompt).await?;
++        let corrected = self.rp_call(ctx, &correction.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Retract synthetic prior beat.","advances_story":false,
++            "retract_turns":[1],"retraction_reason":"synthetic user correction"
++        })).await?;
++        require_success(&corrected, "rp.retraction_pair.correct")?;
++        let state = self.rp_call(ctx, &correction.id, &ctx.base_prompt, "rp.state", json!({})).await?;
++        require_success(&state, "rp.retraction_pair.state")?;
++        if state.structured.get("recentRetractions").and_then(Value::as_array).map(Vec::len).unwrap_or(0) == 0 {
++            return Err(ApplicationError::ValidationError("acceptance.retraction_missing: successful correction did not record a retraction".to_string()));
++        }
++
++        let invalid = self.create_run(ctx, "retract-invalid", Some(committed.state_id), &ctx.base_prompt).await?;
++        let future = self.rp_call(ctx, &invalid.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Invalid future retraction.","advances_story":false,
++            "retract_turns":[99],"retraction_reason":"invalid synthetic target"
++        })).await?;
++        if !future.is_error { return Err(ApplicationError::ValidationError("acceptance.invalid_retraction_accepted".to_string())); }
++        Ok(CaseRunResult::pass("Accepted history retracts through the runtime checkpoint path and an invalid future target is rejected."))
++    }
++
++    async fn case_pause_gate(&self, ctx: &SuiteContext) -> Result<CaseRunResult, ApplicationError> {
++        let root = self.create_run(ctx, "pause-root", None, &ctx.base_prompt).await?;
++        let paused = self.rp_call(ctx, &root.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Pause synthetic session.","advances_story":false,
++            "authority":{"safety_state":"paused"}
++        })).await?;
++        require_success(&paused, "rp.authority_pause_gate.pause")?;
++        let committed = ctx.sandbox.workspace_repository.commit_persistent_changes(&root.id).await?;
++        let child = self.create_run(ctx, "pause-child", Some(committed.state_id), &ctx.base_prompt).await?;
++        let blocked = self.rp_call(ctx, &child.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Attempt to advance while paused.","advances_story":true
++        })).await?;
++        require_error_code(&blocked, "rp.stage_rejected")?;
++        Ok(CaseRunResult::pass("Paused authority blocks story advancement until an explicit resume."))
++    }
++
++    async fn case_world_binding(&self, ctx: &SuiteContext) -> Result<CaseRunResult, ApplicationError> {
++        let root = self.create_run(ctx, "world-root", None, &ctx.base_prompt).await?;
++        let bind = self.rp_call(ctx, &root.id, &ctx.base_prompt, "rp.stage_turn", json!({"beat_summary":"Bind synthetic world.","advances_story":true})).await?;
++        require_success(&bind, "world.binding_matrix.bind")?;
++        let committed = ctx.sandbox.workspace_repository.commit_persistent_changes(&root.id).await?;
++
++        let same = self.create_run(ctx, "world-same", Some(committed.state_id.clone()), &ctx.base_prompt).await?;
++        require_success(&self.rp_call(ctx, &same.id, &ctx.base_prompt, "rp.state", json!({})).await?, "world.binding_matrix.same")?;
++
++        let other_prompt = prompt_for_world("acceptance-world-b", 1, "acceptance-fp-a", false, "Synthetic acceptance input.");
++        let other = self.create_run(ctx, "world-other", Some(committed.state_id.clone()), &other_prompt).await?;
++        let mismatch = self.rp_call(ctx, &other.id, &other_prompt, "rp.state", json!({})).await?;
++        require_error_code(&mismatch, "rp.world_binding_mismatch")?;
++
++        let divergent_prompt = prompt_for_world("acceptance-world-a", 2, "acceptance-fp-b", false, "Synthetic acceptance input.");
++        let divergent = self.create_run(ctx, "world-divergent", Some(committed.state_id.clone()), &divergent_prompt).await?;
++        let divergence = self.rp_call(ctx, &divergent.id, &divergent_prompt, "rp.state", json!({})).await?;
++        require_error_code(&divergence, "rp.world_revision_diverged")?;
++
++        let ambiguous_prompt = prompt_for_world("acceptance-world-a", 1, "acceptance-fp-a", true, "Synthetic acceptance input.");
++        let ambiguous = self.create_run(ctx, "world-ambiguous", Some(committed.state_id), &ambiguous_prompt).await?;
++        let ambiguity = self.rp_call(ctx, &ambiguous.id, &ambiguous_prompt, "rp.state", json!({})).await?;
++        require_error_code(&ambiguity, "rp.world_manifest_ambiguous")?;
++        Ok(CaseRunResult::pass("Matching, world mismatch, revision divergence, and ambiguous-manifest paths are distinguished."))
++    }
++
++    async fn case_cast_lifecycle(&self, ctx: &SuiteContext) -> Result<CaseRunResult, ApplicationError> {
++        let root = self.create_run(ctx, "cast-root", None, &ctx.base_prompt).await?;
++        let created = self.rp_call(ctx, &root.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Create synthetic NPC.","advances_story":true,
++            "cast_updates":[{"character_id":"acceptance-npc-a","display_name":"Aster","narrative_role":"supporting","author_canon":{"origin":"acceptance"}}],
++            "npc_updates":[{"id":"acceptance-npc-a","emotion":"calm"}]
++        })).await?;
++        require_success(&created, "cast.lifecycle_revision.create")?;
