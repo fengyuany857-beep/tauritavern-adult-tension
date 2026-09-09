@@ -1,0 +1,128 @@
+diff --git a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+index 4c73b5a..da6f5ee 100644
+--- a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
++++ b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+@@ -718,3 +718,123 @@ impl RuntimeAcceptanceService {
+                 Ok(Ok(()))
+             )
+         } else {
++            false
++        };
++        let _ = self
++            .finalize_terminal(run_id, build, desired, cleaned, isolation_verified, stale, model_ready)
++            .await;
++    }
++
++    async fn finish_suite(&self, run_id: &str, build: AcceptanceBuildInfoDto, sandbox: Option<Arc<AcceptanceSandbox>>, desired: AcceptanceSuiteState, stale: usize, model_ready: bool) -> Result<(), ApplicationError> {
++        {
++            let mut hub = self.hub.lock().await;
++            let active = active_mut(&mut hub, run_id)?;
++            active.status.phase = AcceptancePhase::Cleanup;
++            active.status.current_case_id = None;
++            for case in &mut active.status.cases {
++                if matches!(case.state, AcceptanceCaseState::Pending | AcceptanceCaseState::Running) {
++                    case.state = if desired == AcceptanceSuiteState::Cancelled { AcceptanceCaseState::Cancelled } else { AcceptanceCaseState::Skip };
++                    if case.detail.is_none() { case.detail = Some(if desired == AcceptanceSuiteState::Cancelled { "Not run because cancellation was requested.".to_string() } else { "Not run because an earlier core prerequisite failed.".to_string() }); }
++                }
++            }
++            active.status.completed_cases = active.status.cases.len();
++            touch_status(&mut active.status);
++        }
++        let cleaned = if let Some(sandbox) = sandbox {
++            match tokio::time::timeout(CLEANUP_TIMEOUT, self.sandbox_factory.cleanup(&sandbox.sandbox_id)).await {
++                Ok(Ok(())) => true,
++                _ => false,
++            }
++        } else { false };
++        let final_state = if !cleaned { AcceptanceSuiteState::Fail } else { desired };
++        self.finalize_terminal(run_id, build, final_state, cleaned, true, stale, model_ready).await
++    }
++
++    async fn finalize_terminal(&self, run_id: &str, build: AcceptanceBuildInfoDto, mut desired: AcceptanceSuiteState, cleaned: bool, isolation_verified: bool, stale: usize, model_ready: bool) -> Result<(), ApplicationError> {
++        let mut hub = self.hub.lock().await;
++        let mut active = hub.active.take().ok_or_else(|| ApplicationError::NotFound("acceptance.run_not_found".to_string()))?;
++        if active.status.run_id.as_deref() != Some(run_id) {
++            hub.active = Some(active);
++            return Err(ApplicationError::NotFound("acceptance.run_not_found".to_string()));
++        }
++        let has_fail = active.status.cases.iter().any(|case| case.state == AcceptanceCaseState::Fail);
++        let has_warn = active.status.cases.iter().any(|case| case.state == AcceptanceCaseState::Warn);
++        if !cleaned { desired = AcceptanceSuiteState::Fail; }
++        else if has_fail { desired = AcceptanceSuiteState::Fail; }
++        else if desired == AcceptanceSuiteState::Pass && has_warn { desired = AcceptanceSuiteState::PassWithWarnings; }
++        let finished = Utc::now().to_rfc3339();
++        active.status.state = desired.clone();
++        active.status.phase = AcceptancePhase::Complete;
++        active.status.finished_at = Some(finished.clone());
++        active.status.updated_at = finished.clone();
++        active.status.current_case_id = None;
++        active.status.revision = active.status.revision.saturating_add(1);
++        let summary = summarize(&active.status.cases);
++        let report = AcceptanceReportDto {
++            schema_version: REPORT_SCHEMA_VERSION,
++            suite_version: ACCEPTANCE_SUITE_VERSION.to_string(),
++            run_id: run_id.to_string(),
++            started_at: active.status.started_at.clone().unwrap_or_default(),
++            finished_at: finished,
++            overall: desired,
++            build,
++            environment: AcceptanceEnvironmentDto {
++                platform: active.build.platform.clone(),
++                profile_id: ADULT_TENSION_RP_PROFILE_ID.to_string(),
++                profile_runtime_ready: !has_fail,
++                model_configuration_ready: model_ready,
++                stale_sandbox_count_cleaned: stale,
++            },
++            summary,
++            cases: active.status.cases.clone(),
++            sandbox: AcceptanceSandboxReportDto { isolation_verified, cleaned },
++            capabilities: AcceptanceCapabilitiesDto { process_death_recovery_tested: false, live_llm_api_tested: false, large_state_stress_tested: false, long_context_tested: false },
++        };
++        let status = active.status.clone();
++        hub.last_terminal = Some(TerminalRun { status, report });
++        Ok(())
++    }
++}
++
++#[derive(Clone, Copy)]
++struct RuntimeAcceptanceTaskView;
++
++impl RuntimeAcceptanceTaskView {
++    async fn create_run(&self, ctx: &SuiteContext, suffix: &str, base_state_id: Option<String>, prompt: &Value) -> Result<AgentRun, ApplicationError> {
++        create_synthetic_run(&ctx.sandbox, &ctx.profile, &ctx.suite_run_id, suffix, base_state_id, prompt).await
++    }
++
++    async fn rp_call(&self, ctx: &SuiteContext, run_id: &str, prompt: &Value, name: &str, args: Value) -> Result<tt_domain::models::agent::AgentToolResult, ApplicationError> {
++        let call = tool_call(name, args)?;
++        let (result, _) = rp::dispatch_tool(ctx.sandbox.run_repository.as_ref(), ctx.sandbox.workspace_repository.as_ref(), run_id, prompt, &call).await?;
++        Ok(result)
++    }
++}
++
++async fn create_synthetic_run(
++    sandbox: &AcceptanceSandbox,
++    profile: &ResolvedAgentProfile,
++    suite_run_id: &str,
++    suffix: &str,
++    base_state_id: Option<String>,
++    prompt: &Value,
++) -> Result<AgentRun, ApplicationError> {
++    let now = Utc::now();
++    let run = AgentRun {
++        id: format!("{suite_run_id}-{suffix}"),
++        workspace_id: "acceptance-workspace".to_string(),
++        stable_chat_id: "acceptance-chat".to_string(),
++        chat_ref: AgentChatRef::Character { character_id: "acceptance-character".to_string(), file_name: "acceptance-character.png".to_string() },
++        generation_type: "acceptance".to_string(),
++        profile_id: Some(profile.id.as_str().to_string()),
++        skill_scope_refs: AgentRunSkillScopeRefs::default(),
++        persist_base_state_id: base_state_id,
++        input_message_count: Some(1),
++        presentation: AgentRunPresentation::Foreground,
++        status: AgentRunStatus::Created,
++        created_at: now,
++        updated_at: now,
++    };
++    sandbox.run_repository.create_run(&run).await?;
++    let manifest = build_agent_manifest(&run, profile);
++    sandbox.workspace_repository.initialize_run(&run, &manifest, prompt, profile).await?;
