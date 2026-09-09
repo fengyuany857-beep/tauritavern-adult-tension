@@ -1,0 +1,19 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -1404,12 +1404,12 @@ fn apply_cast_updates(
+             if !alias.is_empty() && alias != character.display_name && !character.aliases.contains(&alias.to_string()) { character.aliases.push(alias.to_string()); }
+         }
+-        if let Some(name) = update.display_name.as_deref().map(str::trim).filter(|value| !value.is_empty()) {
+-            if name != character.display_name {
+-                if !character.aliases.contains(&character.display_name) { character.aliases.push(character.display_name.clone()); }
+-                character.display_name = name.to_string();
+-            }
++        if let Some(name) = update.display_name.as_deref().map(str::trim).filter(|value| !value.is_empty())
++            && name != character.display_name
++        {
++            if !character.aliases.contains(&character.display_name) { character.aliases.push(character.display_name.clone()); }
++            character.display_name = name.to_string();
+         }
+         if let Some(status) = update.status.as_deref().map(str::trim).filter(|value| !value.is_empty()) { character.status = status.to_string(); }
+         if let Some(role) = update.role.as_deref().map(str::trim).filter(|value| !value.is_empty()) { character.role = Some(role.to_string()); }
