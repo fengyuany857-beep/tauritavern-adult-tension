@@ -1,0 +1,12 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/registry.rs b/src-tauri/crates/tt-application/src/services/agent_tools/registry.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/registry.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/registry.rs
+@@ -391,7 +391,7 @@ mod tests {
+     fn registry_declares_canonical_builtin_descriptors() {
+         let registry = BuiltinAgentToolRegistry::all();
+ 
+-        assert_eq!(registry.catalog().len(), 22);
++        assert_eq!(registry.catalog().len(), 23);
+         for descriptor in registry.catalog().iter() {
+             assert!(descriptor.id.is_builtin());
+             assert!(
