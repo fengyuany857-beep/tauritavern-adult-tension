@@ -1,0 +1,23 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service/commit.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service/commit.rs
+index 5176040..6622af6 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_runtime_service/commit.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service/commit.rs
+@@ -354,6 +354,10 @@ impl AgentRuntimeService {
+             .await?;
+         let run = self.run_repository.load_run(run_id).await?;
+ 
++        // Explicit Session Character → World Canon transactions are applied only
++        // at the successful finish boundary. If persistent-state commit fails,
++        // restore the original WorldInfo bytes so Session and World cannot split.
++        let rp_world_rollbacks = self.apply_pending_rp_canonizations(run_id).await?;
+         let persistent_changes = match self
+             .workspace_repository
+             .commit_persistent_changes(run_id)
+@@ -361,6 +365,7 @@ impl AgentRuntimeService {
+         {
+             Ok(changes) => changes,
+             Err(error) => {
++                self.rollback_rp_world_canonizations(&rp_world_rollbacks).await;
+                 self.event(
+                     run_id,
+                     AgentRunEventLevel::Error,
