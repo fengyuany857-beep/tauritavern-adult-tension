@@ -6,8 +6,8 @@
   "trigger_sha": "ec88d120581dd74176c73f35f572b5522068bc88",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
   "stage": "Rust tests",
-  "state": "RUNNING",
-  "exit_code": 0,
-  "updated_at": "2026-09-09T02:14:42Z",
+  "state": "FAIL",
+  "exit_code": 101,
+  "updated_at": "2026-09-09T02:15:14Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-15-a1"
 }
