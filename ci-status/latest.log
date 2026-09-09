@@ -1,3 +1,39 @@
 # Diagnostic matches
 
 # Tail
+✔ api.agent.profiles forwards profile commands with camelCase DTOs (29.393708ms)
+✔ api.agent.profiles publishes profile change events after successful mutations (0.636625ms)
+✔ api.agent.profiles fails fast on invalid profile inputs (0.603792ms)
+✔ api.agent.tools lists canonical catalog items (0.175375ms)
+✔ api.agent.promptAssembly prepares backend broker requests (0.248209ms)
+✔ api.agent.promptAssembly normalizes current model connection through backend commands (0.327709ms)
+✔ api.agent.startRunWithPromptSnapshot refreshes Model Target LLM connection before starting run (4.096291ms)
+✔ api.agent.readEvents requests timeline projection only when asked (0.3485ms)
+✔ api.agent.submitGuidance forwards camelCase DTO and fails fast on invalid input (0.536125ms)
+✔ api.agent.listRuns forwards run history filters with camelCase DTOs (10.547917ms)
+✔ api.agent.listRuns fails fast on invalid history filters (0.640417ms)
+✔ api.agent.retention forwards settings and prune contracts (0.471083ms)
+✔ api.agent.retention fails fast on invalid retention inputs (0.399875ms)
+✔ api.agent.readModelTurn forwards camelCase DTO and fails fast on invalid input (0.338666ms)
+✔ api.agent.pruneChatPersistentStates forwards explicit candidate state ids (6.676417ms)
+✔ api.agent.pruneChatPersistentStates fails fast on invalid candidate state ids (0.262875ms)
+✔ agent chat commit bridge detaches on partial success terminal event (0.943125ms)
+✔ agent chat commit bridge runs generated output cleanup before saving (1.852ms)
+✔ agent chat commit bridge cleans append commits as one raw target message (1.452333ms)
+✔ agent prompt assembly bridge reads pending request by assembly id (3.1145ms)
+✔ shared agent run event subscription fans out over one backend poller (1.258167ms)
+✔ Auto Acceptance is wired through production Settings and Host ABI (4.878ms)
+✔ Auto Acceptance inline Vue expressions are syntactically parseable (0.819333ms)
+✔ Auto Acceptance uses isolated file storage and the production RP path (2.665875ms)
+✔ Auto Acceptance remains quick, bounded, and offline by default (0.387792ms)
+✔ Acceptance report export reuses the existing safe export chain (0.49175ms)
+✔ Adult Tension self-sign distribution blocks upstream update drift (1.265583ms)
+✔ Acceptance build identity includes fork and CI provenance fields (0.801583ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 170.908833
