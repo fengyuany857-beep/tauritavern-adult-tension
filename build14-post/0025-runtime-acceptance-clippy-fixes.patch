@@ -1,0 +1,78 @@
+diff --git a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+--- a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
++++ b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+@@ -229,7 +229,6 @@ impl RuntimeAcceptanceService {
+     async fn execute_suite(&self, run_id: &str, build: &AcceptanceBuildInfoDto, cancel: &CancellationToken) -> Result<(), ApplicationError> {
+         let mut stale_cleaned = 0usize;
+         let mut sandbox: Option<Arc<AcceptanceSandbox>> = None;
+-        let mut profile: Option<Arc<ResolvedAgentProfile>> = None;
+         let mut model_configuration_ready = true;
+ 
+         let env = if build.distribution_flavor == "adult_tension_selfsign" {
+@@ -277,7 +276,7 @@ impl RuntimeAcceptanceService {
+             return self.finish_suite(run_id, build.clone(), sandbox, AcceptanceSuiteState::Fail, stale_cleaned, model_configuration_ready).await;
+         }
+         let resolved = self.profile_service.resolve_profile_for_preview(AgentProfileResolveInput { profile_id: Some(ADULT_TENSION_RP_PROFILE_ID), tool_catalog: self.agent_runtime_service.tool_catalog() }).await?;
+-        profile = Some(Arc::new(resolved));
++        let profile = Arc::new(resolved);
+         if let Some(diagnostic) = health.diagnostics.iter().find(|item| config_codes.contains(&item.code.as_str())) {
+             model_configuration_ready = false;
+             self.finish_case(run_id, "agent.profile_contract", CaseRunResult::warn(diagnostic.code.clone(), sanitize_text(&diagnostic.message)), started.elapsed().as_millis()).await?;
+@@ -291,7 +290,6 @@ impl RuntimeAcceptanceService {
+         }
+ 
+         let sandbox = sandbox.expect("sandbox prepared");
+-        let profile = profile.expect("profile resolved");
+         let context = SuiteContext { sandbox: sandbox.clone(), profile: profile.clone(), base_prompt: prompt_for_world("acceptance-world-a", 1, "acceptance-fp-a", false, "Synthetic acceptance input."), suite_run_id: run_id.to_string() };
+ 
+         for (case_id, _, _, _, timeout) in CASES.iter().skip(3) {
+@@ -684,6 +682,7 @@ impl RuntimeAcceptanceService {
+         }
+     }
+ 
++    #[allow(clippy::too_many_arguments)]
+     async fn core_fail_and_finish(&self, run_id: &str, build: AcceptanceBuildInfoDto, sandbox: Option<Arc<AcceptanceSandbox>>, stale: usize, model_ready: bool, case_id: &str, code: &str, detail: &str) -> Result<(), ApplicationError> {
+         self.complete_case(run_id, case_id, CaseRunResult { state: AcceptanceCaseState::Fail, code: Some(code.to_string()), detail: detail.to_string() }).await?;
+         self.finish_suite(run_id, build, sandbox, AcceptanceSuiteState::Fail, stale, model_ready).await
+@@ -741,10 +740,10 @@ impl RuntimeAcceptanceService {
+             }
+             active.status.completed_cases = active.status.cases.len();
+             touch_status(&mut active.status);
+         }
+         let cleaned = if let Some(sandbox) = sandbox {
+-            match tokio::time::timeout(CLEANUP_TIMEOUT, self.sandbox_factory.cleanup(&sandbox.sandbox_id)).await {
+-                Ok(Ok(())) => true,
+-                _ => false,
+-            }
++            matches!(
++                tokio::time::timeout(CLEANUP_TIMEOUT, self.sandbox_factory.cleanup(&sandbox.sandbox_id)).await,
++                Ok(Ok(()))
++            )
+         } else { false };
+         let final_state = if !cleaned { AcceptanceSuiteState::Fail } else { desired };
+         self.finalize_terminal(run_id, build, final_state, cleaned, true, stale, model_ready).await
+     }
+ 
++    #[allow(clippy::too_many_arguments)]
+     async fn finalize_terminal(&self, run_id: &str, build: AcceptanceBuildInfoDto, mut desired: AcceptanceSuiteState, cleaned: bool, isolation_verified: bool, stale: usize, model_ready: bool) -> Result<(), ApplicationError> {
+         let mut hub = self.hub.lock().await;
+         let mut active = hub.active.take().ok_or_else(|| ApplicationError::NotFound("acceptance.run_not_found".to_string()))?;
+@@ -759,8 +758,7 @@ impl RuntimeAcceptanceService {
+         }
+         let has_fail = active.status.cases.iter().any(|case| case.state == AcceptanceCaseState::Fail);
+         let has_warn = active.status.cases.iter().any(|case| case.state == AcceptanceCaseState::Warn);
+-        if !cleaned { desired = AcceptanceSuiteState::Fail; }
+-        else if has_fail { desired = AcceptanceSuiteState::Fail; }
++        if !cleaned || has_fail { desired = AcceptanceSuiteState::Fail; }
+         else if desired == AcceptanceSuiteState::Pass && has_warn { desired = AcceptanceSuiteState::PassWithWarnings; }
+         let finished = Utc::now().to_rfc3339();
+         active.status.state = desired.clone();
+@@ -942,7 +940,7 @@ fn summarize(cases: &[AcceptanceCaseStatusDto]) -> AcceptanceSummaryDto {
+ }
+ 
+ fn sanitize_text(value: &str) -> String {
+-    let mut text = value.replace('\n', " ").replace('\r', " ");
++    let mut text = value.replace(['\n', '\r'], " ");
+     for marker in ["Bearer ", "Authorization:", "api_key", "apiKey", "secret", "token="] {
+         if text.to_ascii_lowercase().contains(&marker.to_ascii_lowercase()) {
+             return "Sensitive detail redacted; see backend logs for local diagnostics.".to_string();
