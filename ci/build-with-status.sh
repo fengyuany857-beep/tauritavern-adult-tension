@@ -128,7 +128,7 @@ run_stage() {
 publish_status "Environment ready" "RUNNING" 0 ""
 
 run_stage "native-contracts" "Native RP and Agent contracts" \
-  "node --test tests/agent-rp-native-contract.test.mjs tests/agent-api-contract.test.mjs tests/personal-ios-unsigned-build.test.mjs"
+  "node --test tests/agent-rp-native-contract.test.mjs tests/agent-api-contract.test.mjs tests/personal-ios-unsigned-build.test.mjs tests/ios-runtime-acceptance-contract.test.mjs"
 run_stage "frontend-guardrails" "Frontend guardrails" "pnpm run check:frontend"
 run_stage "typescript" "TypeScript" "pnpm run check:types"
 run_stage "logging-boundaries" "Logging boundaries" "pnpm run check:logging-boundaries"
@@ -139,7 +139,7 @@ run_stage "clippy" "Rust Clippy" "pnpm run check:rust:clippy"
 run_stage "frontend-build" "Frontend production build" "pnpm run web:build"
 run_stage "mobile-http" "iOS mobile HTTP compatibility" "./scripts/ci/configure-mobile-http.sh enable ios"
 run_stage "ios-arm64" "Unsigned iPhone arm64 build" \
-  "TAURITAVERN_BUILD_BRANCH=adult-tension-native-v1.1 TAURITAVERN_BUILD_REVISION=${UPSTREAM_SHA}+adult-tension-native-v1.1 TAURITAVERN_IOS_POLICY_PROFILE=full ./scripts/ci/build-ios-unsigned.sh"
+  "TAURITAVERN_CONTROL_SHA=${GITHUB_SHA} TAURITAVERN_BUILD_RUN_ID=${GITHUB_RUN_ID} TAURITAVERN_BUILD_RUN_NUMBER=${GITHUB_RUN_NUMBER} TAURITAVERN_UPSTREAM_SHA=${UPSTREAM_SHA} TAURITAVERN_BUILD_BRANCH=adult-tension-native-v1.1 TAURITAVERN_BUILD_REVISION=${UPSTREAM_SHA}+adult-tension-native-v1.1 TAURITAVERN_IOS_POLICY_PROFILE=full ./scripts/ci/build-ios-unsigned.sh"
 run_stage "ipa-verify" "Unsigned IPA verification" \
   "./scripts/ci/verify-ios-unsigned.sh dist/ios-unsigned/TauriTavern-unsigned.ipa"
 
