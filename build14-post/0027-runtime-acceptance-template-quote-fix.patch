@@ -1,0 +1,35 @@
+diff --git a/src/scripts/tauri/setting/acceptance-app/AcceptanceApp.js b/src/scripts/tauri/setting/acceptance-app/AcceptanceApp.js
+--- a/src/scripts/tauri/setting/acceptance-app/AcceptanceApp.js
++++ b/src/scripts/tauri/setting/acceptance-app/AcceptanceApp.js
+@@ -129,7 +129,7 @@ export function createTauriTavernAcceptanceApp(options) {
+               <div>
+                 <h2>{{ tr('Auto Acceptance') }}</h2>
+-                <p>{{ tr('Quickly checks this build\'s Agent, RP state, persistence and branch isolation. Test data is isolated and does not modify normal chats.') }}</p>
++                <p>{{ tr("Quickly checks this build's Agent, RP state, persistence and branch isolation. Test data is isolated and does not modify normal chats.") }}</p>
+               </div>
+               <span class="tt-acceptance-state" :data-state="state">{{ stateLabel }}</span>
+             </header>
+diff --git a/tests/ios-runtime-acceptance-contract.test.mjs b/tests/ios-runtime-acceptance-contract.test.mjs
+--- a/tests/ios-runtime-acceptance-contract.test.mjs
++++ b/tests/ios-runtime-acceptance-contract.test.mjs
+@@ -24,6 +24,19 @@ test('Auto Acceptance is wired through production Settings and Host ABI', () => {
+     }
+ });
+ 
++test('Auto Acceptance inline Vue expressions are syntactically parseable', () => {
++    const app = read('src/scripts/tauri/setting/acceptance-app/AcceptanceApp.js');
++    const expressions = [...app.matchAll(/\{\{([\s\S]*?)\}\}/g)]
++        .map((match) => match[1].trim());
++
++    assert.ok(expressions.length > 0, 'expected Vue interpolation expressions');
++    for (const expression of expressions) {
++        assert.doesNotThrow(
++            () => new Function(`return (${expression});`),
++            `invalid Vue interpolation: ${expression}`,
++        );
++    }
++});
++
+ test('Auto Acceptance uses isolated file storage and the production RP path', () => {
+     const port = read('src-tauri/crates/tt-ports/src/repositories/acceptance_sandbox_factory.rs');
+     const adapter = read('src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_acceptance_sandbox_factory.rs');
