@@ -1,0 +1,128 @@
+diff --git a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+index cc23f43..1965554 100644
+--- a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
++++ b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+@@ -118,3 +118,123 @@ impl RuntimeAcceptanceService {
+         let run_id = format!("accept-{}", Uuid::new_v4());
+         let now = Utc::now().to_rfc3339();
+         let status = AcceptanceStatusDto {
++            schema_version: STATUS_SCHEMA_VERSION,
++            suite_version: ACCEPTANCE_SUITE_VERSION.to_string(),
++            run_id: Some(run_id.clone()),
++            revision: 1,
++            state: AcceptanceSuiteState::Running,
++            phase: AcceptancePhase::Environment,
++            started_at: Some(now.clone()),
++            updated_at: now,
++            finished_at: None,
++            current_case_id: None,
++            completed_cases: 0,
++            total_cases: CASES.len(),
++            cancellation_requested: false,
++            cases: CASES.iter().map(|(id, title, kind, phase, _)| AcceptanceCaseStatusDto {
++                id: (*id).to_string(),
++                title: (*title).to_string(),
++                kind: kind.clone(),
++                phase: phase.clone(),
++                state: AcceptanceCaseState::Pending,
++                duration_ms: None,
++                code: None,
++                detail: None,
++            }).collect(),
++        };
++        let cancel = CancellationToken::new();
++        {
++            let mut hub = self.hub.lock().await;
++            if let Some(active) = hub.active.as_ref() {
++                return Err(ApplicationError::Conflict(format!(
++                    "acceptance.already_running: {}", active.status.run_id.as_deref().unwrap_or("unknown")
++                )));
++            }
++            hub.active = Some(ActiveRun {
++                status: status.clone(),
++                cancel: cancel.clone(),
++                build: build.clone(),
++                sandbox_id: None,
++            });
++        }
++        let service = self.clone();
++        let spawned_run_id = run_id.clone();
++        tokio::spawn(async move {
++            service.run_suite(spawned_run_id, build, cancel).await;
++        });
++        Ok(AcceptanceStartResultDto { run_id, status })
++    }
++
++    pub async fn get_status(&self, run_id: Option<&str>) -> Result<AcceptanceStatusDto, ApplicationError> {
++        let hub = self.hub.lock().await;
++        if let Some(active) = hub.active.as_ref() {
++            let active_id = active.status.run_id.as_deref().unwrap_or_default();
++            if run_id.is_none() || run_id == Some(active_id) {
++                return Ok(active.status.clone());
++            }
++        }
++        if let Some(last) = hub.last_terminal.as_ref() {
++            let last_id = last.status.run_id.as_deref().unwrap_or_default();
++            if run_id.is_none() || run_id == Some(last_id) {
++                return Ok(last.status.clone());
++            }
++        }
++        if run_id.is_some() {
++            return Err(ApplicationError::NotFound("acceptance.run_not_found".to_string()));
++        }
++        Ok(idle_status())
++    }
++
++    pub async fn cancel(&self, run_id: &str) -> Result<AcceptanceCancelResultDto, ApplicationError> {
++        let mut hub = self.hub.lock().await;
++        let active = hub.active.as_mut().ok_or_else(|| ApplicationError::NotFound("acceptance.run_not_found".to_string()))?;
++        if active.status.run_id.as_deref() != Some(run_id) {
++            return Err(ApplicationError::NotFound("acceptance.run_not_found".to_string()));
++        }
++        active.cancel.cancel();
++        active.status.cancellation_requested = true;
++        touch_status(&mut active.status);
++        Ok(AcceptanceCancelResultDto { run_id: run_id.to_string(), cancellation_requested: true })
++    }
++
++    pub async fn get_report(&self, run_id: &str) -> Result<AcceptanceReportDto, ApplicationError> {
++        let hub = self.hub.lock().await;
++        if hub.active.as_ref().is_some_and(|active| active.status.run_id.as_deref() == Some(run_id)) {
++            return Err(ApplicationError::Conflict("acceptance.report_not_ready".to_string()));
++        }
++        let terminal = hub.last_terminal.as_ref().ok_or_else(|| ApplicationError::NotFound("acceptance.run_not_found".to_string()))?;
++        if terminal.status.run_id.as_deref() != Some(run_id) {
++            return Err(ApplicationError::NotFound("acceptance.run_not_found".to_string()));
++        }
++        Ok(terminal.report.clone())
++    }
++
++    async fn run_suite(self: Arc<Self>, run_id: String, build: AcceptanceBuildInfoDto, cancel: CancellationToken) {
++        let suite = tokio::time::timeout(SUITE_EXECUTION_TIMEOUT, self.execute_suite(&run_id, &build, &cancel)).await;
++        match suite {
++            Ok(result) => {
++                if let Err(error) = result {
++                    self.fail_current(&run_id, "acceptance.internal", &sanitize_error(&error)).await;
++                    self.finish_without_sandbox(&run_id, build, AcceptanceSuiteState::Fail, false, 0, false).await;
++                }
++            }
++            Err(_) => {
++                cancel.cancel();
++                self.fail_current(&run_id, "acceptance.suite_timeout", "Suite exceeded the 25 second execution deadline.").await;
++                self.finish_without_sandbox(&run_id, build, AcceptanceSuiteState::Fail, false, 0, false).await;
++            }
++        }
++    }
++
++    async fn execute_suite(&self, run_id: &str, build: &AcceptanceBuildInfoDto, cancel: &CancellationToken) -> Result<(), ApplicationError> {
++        let mut stale_cleaned = 0usize;
++        let mut sandbox: Option<Arc<AcceptanceSandbox>> = None;
++        let mut profile: Option<Arc<ResolvedAgentProfile>> = None;
++        let mut model_configuration_ready = true;
++
++        let env = if build.distribution_flavor == "adult_tension_selfsign" {
++            if build.control_sha.is_none() || build.github_run_id.is_none() || build.upstream_sha.is_none() {
++                CaseRunResult::warn("acceptance.build_provenance_partial", "Fork distribution identity is correct; some CI provenance fields are unavailable.")
++            } else {
++                CaseRunResult::pass("Adult Tension self-sign distribution and build provenance are available.")
++            }
