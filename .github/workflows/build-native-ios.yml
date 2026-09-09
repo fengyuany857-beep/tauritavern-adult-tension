@@ -24,16 +24,22 @@ jobs:
       BUILD11_PATCH_SHA256: f32fced72ac46136d17ef0e4a916d0285bff178aaaccdd1e6ef17aa7e33f36c7
       TAURITAVERN_IOS_POLICY_PROFILE: full
       TAURITAVERN_DISTRIBUTION_FLAVOR: adult_tension_selfsign
-      TAURITAVERN_CONTROL_SHA: ${{ github.sha }}
-      TAURITAVERN_BUILD_RUN_ID: ${{ github.run_id }}
-      TAURITAVERN_BUILD_RUN_NUMBER: ${{ github.run_number }}
-      TAURITAVERN_UPSTREAM_SHA: 3a8c5401c859ac15ac11f3339846360615232896
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout build control repository
         uses: actions/checkout@v4
         with:
           path: control
+
+      - name: Export build provenance
+        shell: bash
+        run: |
+          {
+            echo "TAURITAVERN_CONTROL_SHA=$GITHUB_SHA"
+            echo "TAURITAVERN_BUILD_RUN_ID=$GITHUB_RUN_ID"
+            echo "TAURITAVERN_BUILD_RUN_NUMBER=$GITHUB_RUN_NUMBER"
+            echo "TAURITAVERN_UPSTREAM_SHA=$UPSTREAM_SHA"
+          } >> "$GITHUB_ENV"
 
       - name: Checkout exact TauriTavern baseline
         uses: actions/checkout@v4
