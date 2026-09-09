@@ -1,0 +1,93 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+index 289c101..c93b568 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -940,15 +1122,53 @@ fn apply_stage(state: &mut RpState, input: StageTurnArgs, run_id: &str) -> Resul
+         withdraw_all_current_grants(&mut state.grants, turn);
+         state.scene_id = Some(format!("scene-{turn}-{}", compact(run_id)));
+     }
+-    for update in input.npc_updates.unwrap_or_default() {
+-        let entry = state.npcs.entry(update.id).or_default();
++    for update in input.cast_updates.as_deref().unwrap_or(&[]) {
++        apply_cast_update(state, update, turn)?;
++    }
++    for update in input.npc_updates.as_deref().unwrap_or(&[]) {
++        ensure_character_entity(state, &update.id, turn);
++        if state.archived_npcs.contains_key(&update.id) {
++            rehydrate_npc(state, &update.id)?;
++        }
++        ensure_hot_runtime_capacity(state, Some(&update.id))?;
++        let entry = state.npcs.entry(update.id.clone()).or_default();
+         entry.last_updated_turn = Some(turn);
+-        if update.emotion.is_some() { entry.emotion = update.emotion; }
+-        if update.goal.is_some() { entry.goal = update.goal; }
+-        if update.autonomy.is_some() { entry.autonomy = update.autonomy; }
+-        if update.relationship.is_some() { entry.relationship = update.relationship; }
+-        if update.trust.is_some() { entry.trust = update.trust; }
++        if let Some(value) = update.emotion.as_ref() { entry.emotion = Some(value.clone()); }
++        if let Some(value) = update.goal.as_ref() { entry.goal = Some(value.clone()); }
++        if let Some(value) = update.autonomy.as_ref() { entry.autonomy = Some(value.clone()); }
++        if let Some(value) = update.relationship.as_ref() { entry.relationship = Some(value.clone()); }
++        if let Some(value) = update.trust { entry.trust = Some(value); }
++    }
++    for evidence in input.profile_evidence.as_deref().unwrap_or(&[]) {
++        apply_profile_evidence(state, evidence, turn)?;
++    }
++    for memory in input.memory_updates.as_deref().unwrap_or(&[]) {
++        state.memories.push(RpMemoryRecord {
++            id: memory.id.clone().unwrap_or_else(|| format!("memory-{turn}-{}", state.memories.len())),
++            tier: memory.tier.clone(), summary: memory.summary.clone(),
++            character_refs: dedupe(memory.character_refs.clone().unwrap_or_default()),
++            source_refs: dedupe(memory.source_refs.clone().unwrap_or_default()), turn, retracted: false,
++        });
+     }
++    for proposal in input.canonization_proposals.as_deref().unwrap_or(&[]) {
++        let session = state.session.as_ref().ok_or_else(|| ApplicationError::ValidationError("rp.session_not_bound: canonization requires a bound World Session".to_string()))?;
++        let character = state.cast_registry.get(&proposal.character_id).ok_or_else(|| ApplicationError::ValidationError(format!("rp.character_missing: unknown character_id `{}`", proposal.character_id)))?;
++        if character.origin != "session_created" {
++            return Err(ApplicationError::ValidationError(format!("rp.canonization_invalid_origin: `{}` is already world-scoped", proposal.character_id)));
++        }
++        let proposal_id = proposal.proposal_id.clone().unwrap_or_else(|| format!("canonize-{}-{}", proposal.character_id, Uuid::new_v4().simple()));
++        if state.canonization_proposals.iter().any(|existing| existing.proposal_id == proposal_id) {
++            return Err(ApplicationError::ValidationError(format!("rp.canonization_proposal_conflict: proposal `{proposal_id}` already exists")));
++        }
++        state.canonization_proposals.push(RpCanonizationProposal {
++            proposal_id, character_id: proposal.character_id.clone(), status: "proposed".to_string(),
++            requested_world_id: session.world_id.0.clone(), requested_world_revision: session.bound_canon_revision,
++            created_turn: turn, confirmed_turn: None, applied_turn: None,
++        });
++    }
++    trim_front(&mut state.memories, MAX_MEMORIES);
++    trim_front(&mut state.profile_evidence, MAX_PROFILE_EVIDENCE);
++    trim_front(&mut state.canonization_proposals, MAX_CANONIZATION_PROPOSALS);
+     for (index, event) in input.events.unwrap_or_default().into_iter().enumerate() {
+         let id = event.id.unwrap_or_else(|| format!("event-{turn}-{index}"));
+         upsert_event(&mut state.events, RpEvent { id, summary: event.summary, status: event.status.unwrap_or_else(|| "pending".to_string()), turn });
+@@ -1049,7 +1269,14 @@ fn apply_stage(state: &mut RpState, input: StageTurnArgs, run_id: &str) -> Resul
+     if advances_story {
+         state.recent_beats.push(RpBeat { turn, summary: input.beat_summary, run_id: run_id.to_string() });
+     }
+-    trim_front(&mut state.recent_beats, MAX_BEATS);
++    if state.recent_beats.len() > MAX_BEATS {
++        let overflow = state.recent_beats.len() - MAX_BEATS;
++        let drained = state.recent_beats.drain(..overflow).collect::<Vec<_>>();
++        for beat in drained {
++            state.memories.push(RpMemoryRecord { id: format!("episode-{}", beat.turn), tier: "episodic".to_string(), summary: beat.summary, character_refs: Vec::new(), source_refs: vec![format!("turn:{}", beat.turn)], turn: beat.turn, retracted: false });
++        }
++    }
++    compact_memory(state);
+     trim_front(&mut state.living_world.repetition_keys, 64);
+     Ok(())
+ }
+@@ -1074,6 +1301,11 @@ fn state_has_continuity(state: &RpState) -> bool {
+         || state.location.is_some()
+         || !state.participants.is_empty()
+         || !state.npcs.is_empty()
++        || !state.archived_npcs.is_empty()
++        || !state.cast_registry.is_empty()
++        || !state.memories.is_empty()
++        || !state.profile_evidence.is_empty()
++        || !state.canonization_proposals.is_empty()
+         || !state.boundaries.is_empty()
+         || !state.grants.is_empty()
+         || !state.events.is_empty()
