@@ -1,0 +1,90 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
+@@ -27,6 +27,7 @@ use tt_ports::repositories::group_chat_repository::GroupChatRepository;
+ use tt_ports::repositories::workspace_repository::WorkspaceRepository;
++use tt_ports::repositories::world_info_repository::WorldInfoRepository;
+ 
+ mod artifacts;
+ mod commit;
+@@ -47,6 +48,7 @@ mod prompt_snapshot;
++mod rp_canonization;
+ mod scheduler;
+ mod skill_scope;
+ mod timeline_projection;
+@@ -91,6 +93,7 @@ pub struct AgentRuntimeService {
+     workspace_repository: Arc<dyn WorkspaceRepository>,
++    world_info_repository: Arc<dyn WorldInfoRepository>,
+     checkpoint_repository: Arc<dyn CheckpointRepository>,
+     chat_repository: Arc<dyn ChatRepository>,
+@@ -114,6 +117,7 @@ impl AgentRuntimeService {
+         invocation_repository: Arc<dyn AgentInvocationRepository>,
+         workspace_repository: Arc<dyn WorkspaceRepository>,
++        world_info_repository: Arc<dyn WorldInfoRepository>,
+         checkpoint_repository: Arc<dyn CheckpointRepository>,
+         chat_repository: Arc<dyn ChatRepository>,
+@@ -132,6 +136,7 @@ impl AgentRuntimeService {
+             run_repository,
+             invocation_repository,
+             workspace_repository,
++            world_info_repository,
+             checkpoint_repository,
+             chat_repository,
+             group_chat_repository,
+diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/agent.rs b/src-tauri/crates/tauritavern/src/app/composition/services/agent.rs
+--- a/src-tauri/crates/tauritavern/src/app/composition/services/agent.rs
++++ b/src-tauri/crates/tauritavern/src/app/composition/services/agent.rs
+@@ -53,6 +53,7 @@ pub(super) fn build(
+         repositories.agent_run_repository.clone(),
+         repositories.agent_invocation_repository.clone(),
+         repositories.workspace_repository.clone(),
++        repositories.world_info_repository.clone(),
+         repositories.checkpoint_repository.clone(),
+         repositories.chat_repository.clone(),
+         repositories.group_chat_repository.clone(),
+diff --git a/src-tauri/crates/tauritavern/src/app/contract_tests/mod.rs b/src-tauri/crates/tauritavern/src/app/contract_tests/mod.rs
+--- a/src-tauri/crates/tauritavern/src/app/contract_tests/mod.rs
++++ b/src-tauri/crates/tauritavern/src/app/contract_tests/mod.rs
+@@ -177,6 +177,7 @@ fn agent_runtime_fixture_with_results(
+         agent_repository.clone() as Arc<dyn AgentRunRepository>,
+         agent_repository.clone() as Arc<dyn AgentInvocationRepository>,
+         agent_repository.clone() as Arc<dyn WorkspaceRepository>,
++        Arc::new(FileWorldInfoRepository::new(default_user.join("worlds"))) as Arc<dyn WorldInfoRepository>,
+         agent_repository.clone() as Arc<dyn CheckpointRepository>,
+         chat_file_repository.clone() as Arc<dyn ChatRepository>,
+         chat_file_repository.clone() as Arc<dyn GroupChatRepository>,
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -651,6 +651,20 @@ async fn load_state(workspace_repository: &dyn WorkspaceRepository, run_id: &str
+     }
+ }
+ 
++async fn save_state(
++    workspace_repository: &dyn WorkspaceRepository,
++    run_id: &str,
++    state: &RpState,
++) -> Result<(), ApplicationError> {
++    let path = WorkspacePath::parse(RP_STATE_PATH)?;
++    let text = serde_json::to_string_pretty(state).map_err(|error| {
++        ApplicationError::InternalError(format!("rp.state_serialize_failed: {error}"))
++    })?;
++    if text.len() > MAX_STATE_BYTES {
++        return Err(ApplicationError::ValidationError("rp.state_capacity_exceeded: the branch-local RP state exceeded the 1 MB mobile safety bound".to_string()));
++    }
++    workspace_repository.write_text(run_id, &path, &text).await?;
++    Ok(())
++}
++
+ fn validate_stage_input(input: &StageTurnArgs) -> Result<(), String> {
+@@ -1168,6 +1182,10 @@ fn state_payload<'a>(
+         location: &state.location,
+         participants: &state.participants,
+         npcs: &state.npcs,
++        archived_npc_count: state.archived_npcs.len(),
++        cast_registry: &state.cast_registry,
++        memories: &state.memories,
++        canonization_proposals: &state.canonization_proposals,
+         active_boundaries: state.boundaries.iter().filter(|v| v.status == "active").collect(),
+         active_grants: state.grants.iter().filter(|v| v.status == "granted" && state.scene_id.as_deref() == Some(v.scene_id.as_str())).collect(),
+         pending_events: state.events.iter().filter(|v| v.status == "pending").collect(),
