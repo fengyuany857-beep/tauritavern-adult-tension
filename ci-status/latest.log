@@ -1,6 +1,10 @@
 # Diagnostic matches
 15:[1m[91merror[E0603][0m[1m: module `rp` is private[0m
 29:[1m[91merror[E0603][0m[1m: module `rp` is private[0m
+61:[1mFor more information about this error, try `rustc --explain E0603`.[0m
+63:[1m[91merror[0m: could not compile `tt-application` (lib) due to 2 previous errors; 2 warnings emitted
+64:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+65: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
 
@@ -63,3 +67,8 @@
 
 [1m[92m   Compiling[0m tt-adapter-storage-userdata v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-userdata)
 [1m[92m   Compiling[0m tt-adapter-sync v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-sync)
+[1mFor more information about this error, try `rustc --explain E0603`.[0m
+[1m[33mwarning[0m: `tt-application` (lib) generated 2 warnings
+[1m[91merror[0m: could not compile `tt-application` (lib) due to 2 previous errors; 2 warnings emitted
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+ ELIFECYCLE  Command failed with exit code 101.
