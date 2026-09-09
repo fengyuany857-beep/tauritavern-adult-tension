@@ -1,0 +1,34 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -1474,11 +1474,6 @@ fn apply_profile_evidence(state: &mut RpState, input: &ProfileEvidenceInput, tur
+     Ok(())
+ }
+ 
+-fn rebuild_profiles_from_evidence(state: &mut RpState) {
+-    let ids = state.cast_registry.keys().cloned().collect::<Vec<_>>();
+-    for id in ids { rebuild_character_profile(state, &id); }
+-}
+-
+ fn rebuild_character_profile(state: &mut RpState, character_id: &str) {
+     let relevant = state.profile_evidence.iter().filter(|e| e.character_id == character_id && !e.retracted).cloned().collect::<Vec<_>>();
+     let Some(character) = state.cast_registry.get_mut(character_id) else { return; };
+@@ -2115,7 +2110,7 @@ mod tests {
+     use super::*;
+ 
+     fn input(predicate: &str, subject: &str) -> StageTurnArgs {
+-        StageTurnArgs { beat_summary:"one beat".to_string(), advances_story:None, retract_turns:None, retraction_reason:None, clock:None, scene:None, location:None, participants:None, npc_updates:None, events:None, facts:Some(vec![FactInput{id:None,subject:subject.to_string(),predicate:predicate.to_string(),value:json!(true),supersedes:None,knowledge_refs:None,plane:None,classification:None,source:Some(KnowledgeSourceInput{kind:"user_asserted".to_string(),reference:Some("test user assertion".to_string())})}]), knowledge:None, commitments:None, threads:None, living_world:None, authority:None }
++        StageTurnArgs { beat_summary:"one beat".to_string(), advances_story:None, retract_turns:None, retraction_reason:None, clock:None, scene:None, location:None, participants:None, npc_updates:None, cast_updates:None, profile_evidence:None, memory_updates:None, canonization_proposals:None, events:None, facts:Some(vec![FactInput{id:None,subject:subject.to_string(),predicate:predicate.to_string(),value:json!(true),supersedes:None,knowledge_refs:None,plane:None,classification:None,source:Some(KnowledgeSourceInput{kind:"user_asserted".to_string(),reference:Some("test user assertion".to_string())})}]), knowledge:None, commitments:None, threads:None, living_world:None, authority:None }
+     }
+ 
+     #[test]
+@@ -2149,7 +2144,8 @@ mod tests {
+             advances_story: Some(false),
+             retract_turns: None, retraction_reason: None,
+             clock: None, scene: None, location: None, participants: None, npc_updates: None,
+-            events: None, facts: None, knowledge: None, commitments: None, threads: None,
++            cast_updates: None, profile_evidence: None, memory_updates: None, canonization_proposals: None,
++            events: None, facts: None, knowledge: None, commitments: None, threads: None,
+             living_world: None,
+             authority: Some(AuthorityInput {
+                 safety_state: None, boundaries_add: None, boundaries_revoke: None,
