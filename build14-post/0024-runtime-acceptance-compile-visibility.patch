@@ -1,0 +1,35 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools.rs b/src-tauri/crates/tt-application/src/services/agent_tools.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_tools.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools.rs
+@@ -4,7 +4,7 @@ mod common;
+ mod dice;
+ mod dispatcher;
+ mod policy;
+-mod rp;
++pub(crate) mod rp;
+ mod registry;
+ mod session;
+ mod skill;
+diff --git a/src-tauri/crates/tt-adapter-storage-userdata/src/lib.rs b/src-tauri/crates/tt-adapter-storage-userdata/src/lib.rs
+--- a/src-tauri/crates/tt-adapter-storage-userdata/src/lib.rs
++++ b/src-tauri/crates/tt-adapter-storage-userdata/src/lib.rs
+@@ -4,6 +4,7 @@ mod repositories;
+ mod zipkit;
+ 
+ pub use repositories::{
++    FileAcceptanceSandboxFactory,
+     FileAgentProfileRepository, FileAgentRepository, FileCharacterRepository, FileSkillRepository,
+     FileWorldInfoRepository,
+ };
+diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
+--- a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
++++ b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
+@@ -10,7 +10,7 @@ use tokio::sync::Semaphore;
+ 
+ use crate::app::{AppServices, StartupProfile};
+ use crate::infrastructure::apis::http_external_import_downloader::HttpExternalImportDownloader;
+-use tt_adapter_storage_userdata::repositories::FileAcceptanceSandboxFactory;
++use tt_adapter_storage_userdata::FileAcceptanceSandboxFactory;
+ use tt_adapter_http::HttpClientPool;
+ use tt_adapter_storage_core::file_system::DataDirectory;
+ use tt_application::services::asset_service::AssetService;
