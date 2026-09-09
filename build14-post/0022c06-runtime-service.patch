@@ -1,0 +1,128 @@
+diff --git a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+index 3de7620..4c73b5a 100644
+--- a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
++++ b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+@@ -598,3 +598,123 @@ impl RuntimeAcceptanceService {
+         for _ in 0..6 { require_success(&self.rp_call(ctx, &run.id, &ctx.base_prompt, "rp.recall", json!({"query":"burst-key","limit":3})).await?, "burst.recall")?; }
+         let committed = ctx.sandbox.workspace_repository.commit_persistent_changes(&run.id).await?;
+         for index in 0..4 {
++            let reopened = self.create_run(ctx, &format!("burst-reopen-{index}"), Some(committed.state_id.clone()), &ctx.base_prompt).await?;
++            require_success(&self.rp_call(ctx, &reopened.id, &ctx.base_prompt, "rp.state", json!({})).await?, "burst.reopen")?;
++        }
++        let mut tasks = Vec::new();
++        for index in 0..4 {
++            let sandbox = ctx.sandbox.clone();
++            let profile = ctx.profile.clone();
++            let prompt = ctx.base_prompt.clone();
++            let suite_run_id = ctx.suite_run_id.clone();
++            let service = self.clone_for_task();
++            let state_id = committed.state_id.clone();
++            tasks.push(tokio::spawn(async move {
++                let local = SuiteContext { sandbox, profile, base_prompt: prompt.clone(), suite_run_id };
++                let reopened = service.create_run(&local, &format!("burst-par-{index}"), Some(state_id), &prompt).await?;
++                service.rp_call(&local, &reopened.id, &prompt, "rp.state", json!({})).await
++            }));
++        }
++        for task in tasks {
++            let result = task.await.map_err(|error| ApplicationError::InternalError(format!("acceptance.burst_join_failed: {error}")))??;
++            require_success(&result, "burst.parallel")?;
++        }
++        Ok(CaseRunResult::pass("Bounded 24-operation local burst completed without timeout, panic, or state corruption."))
++    }
++
++    fn clone_for_task(&self) -> RuntimeAcceptanceTaskView {
++        RuntimeAcceptanceTaskView
++    }
++
++    async fn create_run(&self, ctx: &SuiteContext, suffix: &str, base_state_id: Option<String>, prompt: &Value) -> Result<AgentRun, ApplicationError> {
++        create_synthetic_run(&ctx.sandbox, &ctx.profile, &ctx.suite_run_id, suffix, base_state_id, prompt).await
++    }
++
++    async fn rp_call(&self, ctx: &SuiteContext, run_id: &str, prompt: &Value, name: &str, args: Value) -> Result<tt_domain::models::agent::AgentToolResult, ApplicationError> {
++        self.rp_call_raw(ctx, run_id, prompt, name, args).await
++    }
++
++    async fn rp_call_raw(&self, ctx: &SuiteContext, run_id: &str, prompt: &Value, name: &str, args: Value) -> Result<tt_domain::models::agent::AgentToolResult, ApplicationError> {
++        let call = tool_call(name, args)?;
++        let (result, _) = rp::dispatch_tool(ctx.sandbox.run_repository.as_ref(), ctx.sandbox.workspace_repository.as_ref(), run_id, prompt, &call).await?;
++        Ok(result)
++    }
++
++    async fn start_case(&self, run_id: &str, case_id: &str) -> Result<(), ApplicationError> {
++        let mut hub = self.hub.lock().await;
++        let active = active_mut(&mut hub, run_id)?;
++        let case = active.status.cases.iter_mut().find(|item| item.id == case_id).ok_or_else(|| ApplicationError::InternalError(format!("acceptance.case_status_missing: {case_id}")))?;
++        case.state = AcceptanceCaseState::Running;
++        active.status.phase = case.phase.clone();
++        active.status.current_case_id = Some(case_id.to_string());
++        touch_status(&mut active.status);
++        Ok(())
++    }
++
++    async fn complete_case(&self, run_id: &str, case_id: &str, result: CaseRunResult) -> Result<(), ApplicationError> {
++        self.start_case(run_id, case_id).await?;
++        self.finish_case(run_id, case_id, result, 0).await
++    }
++
++    async fn finish_case(&self, run_id: &str, case_id: &str, result: CaseRunResult, duration_ms: u128) -> Result<(), ApplicationError> {
++        let mut hub = self.hub.lock().await;
++        let active = active_mut(&mut hub, run_id)?;
++        let case = active.status.cases.iter_mut().find(|item| item.id == case_id).ok_or_else(|| ApplicationError::InternalError(format!("acceptance.case_status_missing: {case_id}")))?;
++        case.state = result.state;
++        case.code = result.code;
++        case.detail = Some(sanitize_text(&result.detail));
++        case.duration_ms = Some(duration_ms);
++        active.status.completed_cases = active.status.cases.iter().filter(|item| !matches!(item.state, AcceptanceCaseState::Pending | AcceptanceCaseState::Running)).count();
++        active.status.current_case_id = None;
++        touch_status(&mut active.status);
++        Ok(())
++    }
++
++    async fn fail_current(&self, run_id: &str, code: &str, detail: &str) {
++        let mut hub = self.hub.lock().await;
++        if let Ok(active) = active_mut(&mut hub, run_id) {
++            if let Some(case_id) = active.status.current_case_id.clone()
++                && let Some(case) = active.status.cases.iter_mut().find(|item| item.id == case_id)
++            {
++                case.state = AcceptanceCaseState::Fail;
++                case.code = Some(code.to_string());
++                case.detail = Some(sanitize_text(detail));
++            }
++            touch_status(&mut active.status);
++        }
++    }
++
++    async fn core_fail_and_finish(&self, run_id: &str, build: AcceptanceBuildInfoDto, sandbox: Option<Arc<AcceptanceSandbox>>, stale: usize, model_ready: bool, case_id: &str, code: &str, detail: &str) -> Result<(), ApplicationError> {
++        self.complete_case(run_id, case_id, CaseRunResult { state: AcceptanceCaseState::Fail, code: Some(code.to_string()), detail: detail.to_string() }).await?;
++        self.finish_suite(run_id, build, sandbox, AcceptanceSuiteState::Fail, stale, model_ready).await
++    }
++
++    async fn cancel_and_finish(&self, run_id: &str, build: AcceptanceBuildInfoDto, sandbox: Option<Arc<AcceptanceSandbox>>, stale: usize, model_ready: bool) -> Result<(), ApplicationError> {
++        self.finish_suite(run_id, build, sandbox, AcceptanceSuiteState::Cancelled, stale, model_ready).await
++    }
++
++    async fn finish_without_sandbox(
++        &self,
++        run_id: &str,
++        build: AcceptanceBuildInfoDto,
++        desired: AcceptanceSuiteState,
++        already_cleaned: bool,
++        stale: usize,
++        model_ready: bool,
++    ) {
++        let sandbox_id = {
++            let hub = self.hub.lock().await;
++            hub.active
++                .as_ref()
++                .filter(|active| active.status.run_id.as_deref() == Some(run_id))
++                .and_then(|active| active.sandbox_id.clone())
++        };
++        let isolation_verified = sandbox_id.is_some();
++        let cleaned = if already_cleaned {
++            true
++        } else if let Some(sandbox_id) = sandbox_id.as_deref() {
++            matches!(
++                tokio::time::timeout(CLEANUP_TIMEOUT, self.sandbox_factory.cleanup(sandbox_id)).await,
++                Ok(Ok(()))
++            )
++        } else {
