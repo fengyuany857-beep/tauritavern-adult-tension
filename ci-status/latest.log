@@ -1,4 +1,6 @@
 # Diagnostic matches
+28:[1m[91merror[E0063][0m[1m: missing fields `canonization_proposals`, `cast_updates`, `memory_updates` and 1 other field in initializer of `state::StageTurnArgs`[0m
+34:[1m[91merror[E0063][0m[1m: missing fields `canonization_proposals`, `cast_updates`, `memory_updates` and 1 other field in initializer of `state::StageTurnArgs`[0m
 
 # Tail
 
@@ -19,3 +21,24 @@
 [1m[92m   Compiling[0m tt-adapter-tokenization v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-tokenization)
 [1m[92m   Compiling[0m tt-adapter-archive v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-archive)
 [1m[92m   Compiling[0m tt-application v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-application)
+[1m[33mwarning[0m[1m: function `rebuild_profiles_from_evidence` is never used[0m
+    [1m[94m--> [0mcrates/tt-application/src/services/agent_tools/rp/state.rs:1477:4
+     [1m[94m|[0m
+[1m[94m1477[0m [1m[94m|[0m fn rebuild_profiles_from_evidence(state: &mut RpState) {
+     [1m[94m|[0m    [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+     [1m[94m|[0m
+     [1m[94m= [0m[1mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m: `tt-application` (lib) generated 1 warning
+[1m[91merror[E0063][0m[1m: missing fields `canonization_proposals`, `cast_updates`, `memory_updates` and 1 other field in initializer of `state::StageTurnArgs`[0m
+    [1m[94m--> [0mcrates/tt-application/src/services/agent_tools/rp/state.rs:2118:9
+     [1m[94m|[0m
+[1m[94m2118[0m [1m[94m|[0m [1m[94m...[0m   StageTurnArgs { beat_summary:"one beat".to_string(), advances_story:None, retract_turns:None, retraction_reason:None, clock:[1m[94m...[0m
+     [1m[94m|[0m       [1m[91m^^^^^^^^^^^^^[0m [1m[91mmissing `canonization_proposals`, `cast_updates`, `memory_updates` and 1 other field[0m
+
+[1m[91merror[E0063][0m[1m: missing fields `canonization_proposals`, `cast_updates`, `memory_updates` and 1 other field in initializer of `state::StageTurnArgs`[0m
+    [1m[94m--> [0mcrates/tt-application/src/services/agent_tools/rp/state.rs:2148:9
+     [1m[94m|[0m
+[1m[94m2148[0m [1m[94m|[0m         StageTurnArgs {
+     [1m[94m|[0m         [1m[91m^^^^^^^^^^^^^[0m [1m[91mmissing `canonization_proposals`, `cast_updates`, `memory_updates` and 1 other field[0m
+
