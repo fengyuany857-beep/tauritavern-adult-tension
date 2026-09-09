@@ -23,19 +23,17 @@ diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs 
 +++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs
 @@ -4,7 +4,7 @@ mod state;
  
- pub(crate) use descriptors::{recall_descriptor, stage_turn_descriptor, state_descriptor};
- pub(crate) use state::{recall, stage_turn, state};
+ pub(super) use descriptors::{rp_confirm_canonization_descriptor, rp_recall_descriptor, rp_stage_turn_descriptor, rp_state_descriptor};
+ pub(super) use state::{confirm_canonization, recall, stage_turn, staged_for_run, state};
 -pub(crate) use state::{mark_canonizations_applied, pending_canonizations_for_run, PendingCanonization};
 +pub(crate) use state::{mark_canonizations_applied, pending_canonizations_for_run};
- pub(crate) use confirm::{confirm_canonization, confirm_canonization_descriptor};
+ 
+ pub(super) const RP_STATE: &str = "rp.state";
+ pub(super) const RP_RECALL: &str = "rp.recall";
 diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
 --- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
 +++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
-@@ -1544,7 +1544,7 @@ pub(crate) async fn confirm_canonization(
-     proposal_id: &str,
-     user_confirmation: &str,
- ) -> Result<AgentToolResult, ApplicationError> {
+@@ -1547,2 +1547,2 @@
 -    let run = run_repository.load_run(run_id).await?;
 +    let _run = run_repository.load_run(run_id).await?;
      let mut state = load_state(workspace_repository, run_id).await?;
-     let proposal = state
