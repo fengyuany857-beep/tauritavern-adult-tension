@@ -4,6 +4,7 @@
 40:[1mFor more information about this error, try `rustc --explain E0063`.[0m
 41:[1m[91merror[0m: could not compile `tt-application` (lib test) due to 2 previous errors
 42:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+43: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
 
@@ -48,3 +49,4 @@
 [1mFor more information about this error, try `rustc --explain E0063`.[0m
 [1m[91merror[0m: could not compile `tt-application` (lib test) due to 2 previous errors
 [1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+ ELIFECYCLE  Command failed with exit code 101.
