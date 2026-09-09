@@ -1,0 +1,316 @@
+diff --git a/src-tauri/crates/tt-application/src/dto/mod.rs b/src-tauri/crates/tt-application/src/dto/mod.rs
+index 4cc410d..1104097 100644
+--- a/src-tauri/crates/tt-application/src/dto/mod.rs
++++ b/src-tauri/crates/tt-application/src/dto/mod.rs
+@@ -23,3 +23,5 @@ pub mod tts_dto;
+ pub mod user_directory_dto;
+ pub mod user_dto;
+ pub mod world_info_dto;
++
++pub mod runtime_acceptance_dto;
+diff --git a/src-tauri/crates/tt-application/src/dto/runtime_acceptance_dto.rs b/src-tauri/crates/tt-application/src/dto/runtime_acceptance_dto.rs
+new file mode 100644
+index 0000000..d4b677f
+--- /dev/null
++++ b/src-tauri/crates/tt-application/src/dto/runtime_acceptance_dto.rs
+@@ -0,0 +1,172 @@
++use serde::{Deserialize, Serialize};
++
++#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
++#[serde(rename_all = "snake_case")]
++pub enum AcceptanceSuiteState {
++    Idle,
++    Running,
++    Pass,
++    PassWithWarnings,
++    Fail,
++    Cancelled,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
++#[serde(rename_all = "snake_case")]
++pub enum AcceptanceCaseState {
++    Pending,
++    Running,
++    Pass,
++    Warn,
++    Fail,
++    Skip,
++    Cancelled,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
++#[serde(rename_all = "snake_case")]
++pub enum AcceptanceCaseKind {
++    Core,
++    Advisory,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
++#[serde(rename_all = "snake_case")]
++pub enum AcceptancePhase {
++    Idle,
++    Environment,
++    Agent,
++    Rp,
++    World,
++    CastMemory,
++    Persistence,
++    Burst,
++    Cleanup,
++    Complete,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct AcceptanceBuildInfoDto {
++    pub platform: String,
++    pub tauri_version: String,
++    pub integration_revision: Option<String>,
++    pub git_branch: Option<String>,
++    pub distribution_flavor: String,
++    pub control_sha: Option<String>,
++    pub upstream_sha: Option<String>,
++    pub github_run_id: Option<String>,
++    pub github_run_number: Option<String>,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct AcceptanceCaseStatusDto {
++    pub id: String,
++    pub title: String,
++    pub kind: AcceptanceCaseKind,
++    pub phase: AcceptancePhase,
++    pub state: AcceptanceCaseState,
++    pub duration_ms: Option<u128>,
++    pub code: Option<String>,
++    pub detail: Option<String>,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct AcceptanceStatusDto {
++    pub schema_version: u32,
++    pub suite_version: String,
++    pub run_id: Option<String>,
++    pub revision: u64,
++    pub state: AcceptanceSuiteState,
++    pub phase: AcceptancePhase,
++    pub started_at: Option<String>,
++    pub updated_at: String,
++    pub finished_at: Option<String>,
++    pub current_case_id: Option<String>,
++    pub completed_cases: usize,
++    pub total_cases: usize,
++    pub cancellation_requested: bool,
++    pub cases: Vec<AcceptanceCaseStatusDto>,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct AcceptanceStartResultDto {
++    pub run_id: String,
++    pub status: AcceptanceStatusDto,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct AcceptanceCancelResultDto {
++    pub run_id: String,
++    pub cancellation_requested: bool,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct AcceptanceStatusRequestDto {
++    #[serde(default)]
++    pub run_id: Option<String>,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct AcceptanceRunRequestDto {
++    pub run_id: String,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize, Default)]
++#[serde(rename_all = "camelCase")]
++pub struct AcceptanceSummaryDto {
++    pub passed: usize,
++    pub warned: usize,
++    pub failed: usize,
++    pub skipped: usize,
++    pub cancelled: usize,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct AcceptanceEnvironmentDto {
++    pub platform: String,
++    pub profile_id: String,
++    pub profile_runtime_ready: bool,
++    pub model_configuration_ready: bool,
++    pub stale_sandbox_count_cleaned: usize,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct AcceptanceSandboxReportDto {
++    pub isolation_verified: bool,
++    pub cleaned: bool,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct AcceptanceCapabilitiesDto {
++    pub process_death_recovery_tested: bool,
++    pub live_llm_api_tested: bool,
++    pub large_state_stress_tested: bool,
++    pub long_context_tested: bool,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct AcceptanceReportDto {
++    pub schema_version: u32,
++    pub suite_version: String,
++    pub run_id: String,
++    pub started_at: String,
++    pub finished_at: String,
++    pub overall: AcceptanceSuiteState,
++    pub build: AcceptanceBuildInfoDto,
++    pub environment: AcceptanceEnvironmentDto,
++    pub summary: AcceptanceSummaryDto,
++    pub cases: Vec<AcceptanceCaseStatusDto>,
++    pub sandbox: AcceptanceSandboxReportDto,
++    pub capabilities: AcceptanceCapabilitiesDto,
++}
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
+index c9817d9..f366f18 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
+@@ -33,6 +33,7 @@ use tt_ports::repositories::workspace_repository::WorkspaceRepository;
+ use tt_ports::repositories::world_info_repository::WorldInfoRepository;
+ 
+ mod artifacts;
++pub(crate) use artifacts::build_agent_manifest;
+ mod commit;
+ mod commit_ledger;
+ mod delegation;
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service/artifacts.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service/artifacts.rs
+index aabc504..e03fc5a 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_runtime_service/artifacts.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service/artifacts.rs
+@@ -6,7 +6,7 @@ use crate::services::agent_profile_service::{
+ use tt_domain::models::agent::profile::ResolvedAgentProfile;
+ use tt_domain::models::agent::{AgentRun, WorkspaceInputManifest, WorkspaceManifest};
+ 
+-pub(super) fn build_agent_manifest(
++pub(crate) fn build_agent_manifest(
+     run: &AgentRun,
+     profile: &ResolvedAgentProfile,
+ ) -> WorkspaceManifest {
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/dispatcher.rs b/src-tauri/crates/tt-application/src/services/agent_tools/dispatcher.rs
+index 68ca098..0ae4a21 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/dispatcher.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/dispatcher.rs
+@@ -142,42 +142,9 @@ impl AgentToolDispatcher {
+                 world_info::read_activated(&prompt_snapshot, call)?
+             }
+             dice::DICE_ROLL => dice::roll(call).await?,
+-            rp::RP_STATE => {
++            rp::RP_STATE | rp::RP_RECALL | rp::RP_STAGE_TURN | rp::RP_CONFIRM_CANONIZATION => {
+                 let prompt_snapshot = self.read_run_prompt_snapshot(run_id).await?;
+-                rp::state(
+-                    self.run_repository.as_ref(),
+-                    self.workspace_repository.as_ref(),
+-                    run_id,
+-                    &prompt_snapshot,
+-                    call,
+-                )
+-                .await?
+-            }
+-            rp::RP_RECALL => {
+-                let prompt_snapshot = self.read_run_prompt_snapshot(run_id).await?;
+-                rp::recall(
+-                    self.run_repository.as_ref(),
+-                    self.workspace_repository.as_ref(),
+-                    run_id,
+-                    &prompt_snapshot,
+-                    call,
+-                )
+-                .await?
+-            }
+-            rp::RP_STAGE_TURN => {
+-                let prompt_snapshot = self.read_run_prompt_snapshot(run_id).await?;
+-                rp::stage_turn(
+-                    self.run_repository.as_ref(),
+-                    self.workspace_repository.as_ref(),
+-                    run_id,
+-                    &prompt_snapshot,
+-                    call,
+-                )
+-                .await?
+-            }
+-            rp::RP_CONFIRM_CANONIZATION => {
+-                let prompt_snapshot = self.read_run_prompt_snapshot(run_id).await?;
+-                rp::confirm_canonization(
++                rp::dispatch_tool(
+                     self.run_repository.as_ref(),
+                     self.workspace_repository.as_ref(),
+                     run_id,
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs
+index aa29928..b347226 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs
+@@ -2,11 +2,38 @@ mod binding;
+ mod descriptors;
+ mod state;
+ 
++use serde_json::Value;
++
++use crate::errors::ApplicationError;
++use crate::services::agent_tools::dispatcher::AgentToolEffect;
++use tt_domain::models::agent::AgentToolResult;
++use tt_domain::models::tool::ToolInvocation;
++use tt_ports::repositories::agent_run_repository::AgentRunRepository;
++use tt_ports::repositories::workspace_repository::WorkspaceRepository;
++
+ pub(super) use descriptors::{rp_confirm_canonization_descriptor, rp_recall_descriptor, rp_stage_turn_descriptor, rp_state_descriptor};
+-pub(super) use state::{confirm_canonization, recall, stage_turn, staged_for_run, state};
++pub(super) use state::staged_for_run;
+ pub(crate) use state::{mark_canonizations_applied, pending_canonizations_for_run};
+ 
+ pub(super) const RP_STATE: &str = "rp.state";
+ pub(super) const RP_RECALL: &str = "rp.recall";
+ pub(super) const RP_STAGE_TURN: &str = "rp.stage_turn";
+ pub(super) const RP_CONFIRM_CANONIZATION: &str = "rp.confirm_canonization";
++
++pub(crate) async fn dispatch_tool(
++    run_repository: &dyn AgentRunRepository,
++    workspace_repository: &dyn WorkspaceRepository,
++    run_id: &str,
++    prompt_snapshot: &Value,
++    call: &ToolInvocation,
++) -> Result<(AgentToolResult, AgentToolEffect), ApplicationError> {
++    match call.tool_id.native_name() {
++        RP_STATE => state::state(run_repository, workspace_repository, run_id, prompt_snapshot, call).await,
++        RP_RECALL => state::recall(run_repository, workspace_repository, run_id, prompt_snapshot, call).await,
++        RP_STAGE_TURN => state::stage_turn(run_repository, workspace_repository, run_id, prompt_snapshot, call).await,
++        RP_CONFIRM_CANONIZATION => state::confirm_canonization(run_repository, workspace_repository, run_id, prompt_snapshot, call).await,
++        other => Err(ApplicationError::InternalError(format!(
++            "rp.dispatch_handler_missing: admitted RP tool `{other}` has no execution handler"
++        ))),
++    }
++}
+diff --git a/src-tauri/crates/tt-application/src/services/mod.rs b/src-tauri/crates/tt-application/src/services/mod.rs
+index cb61ebb..4a3f626 100644
+--- a/src-tauri/crates/tt-application/src/services/mod.rs
++++ b/src-tauri/crates/tt-application/src/services/mod.rs
+@@ -61,3 +61,5 @@ pub mod user_directory_service;
+ pub mod user_media_service;
+ pub mod user_service;
+ pub mod world_info_service;
++
++pub mod runtime_acceptance_service;
