@@ -1,3 +1,124 @@
 # Diagnostic matches
+2:> tauritavern@2.2.0 check:rust:clippy /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+3:> cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
+19:[1m[91merror[0m[1m: value assigned to `profile` is never read[0m
+31:[1m[91merror[0m[1m: this function has too many arguments (9/7)[0m
+34:[1m[94m687[0m [1m[94m|[0m     async fn core_fail_and_finish(&self, run_id: &str, build: AcceptanceBuildInfoDto, sandbox: Option<Arc<AcceptanceSandbox>>, stale: usize, model_ready: bool, case_id: &str, code: &str, detail: &str) -> Result<(), ApplicationError> {
+37:    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#too_many_arguments
+38:    [1m[94m= [0m[1mnote[0m: `-D clippy::too-many-arguments` implied by `-D warnings`
+39:    [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::too_many_arguments)]`
+41:[1m[91merror[0m[1m: match expression looks like `matches!` macro[0m
+50:    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#match_like_matches_macro
+51:    [1m[94m= [0m[1mnote[0m: `-D clippy::match-like-matches-macro` implied by `-D warnings`
+52:    [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::match_like_matches_macro)]`
+62:[1m[91merror[0m[1m: this function has too many arguments (8/7)[0m
+65:[1m[94m753[0m [1m[94m|[0m     async fn finalize_terminal(&self, run_id: &str, build: AcceptanceBuildInfoDto, mut desired: AcceptanceSuiteState, cleaned: bool, isolation_verified: bool, stale: usize, model_ready: bool) -> Result<(), ApplicationError> {
+68:    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#too_many_arguments
+70:[1m[91merror[0m[1m: this `if` has identical blocks[0m
+81:    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#if_same_then_else
+82:    [1m[94m= [0m[1mnote[0m: `-D clippy::if-same-then-else` implied by `-D warnings`
+83:    [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::if_same_then_else)]`
+85:[1m[91merror[0m[1m: used consecutive `str::replace` call[0m
+91:    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_str_replace
+92:    [1m[94m= [0m[1mnote[0m: `-D clippy::collapsible-str-replace` implied by `-D warnings`
+93:    [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::collapsible_str_replace)]`
+95:[1m[91merror[0m: could not compile `tt-application` (lib) due to 6 previous errors
+96:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
 
 # Tail
+
+> tauritavern@2.2.0 check:rust:clippy /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
+
+[1m[92m   Compiling[0m tt-domain v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-domain)
+[1m[92m   Compiling[0m tauritavern v2.2.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern)
+[1m[92m    Checking[0m tt-contracts v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-contracts)
+[1m[92m    Checking[0m tt-ports v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-ports)
+[1m[92m    Checking[0m tt-adapter-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-http)
+[1m[92m    Checking[0m tt-adapter-storage-core v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-core)
+[1m[92m    Checking[0m tt-adapter-archive v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-archive)
+[1m[92m    Checking[0m tt-application v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-application)
+[1m[92m    Checking[0m tt-adapter-tokenization v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-tokenization)
+[1m[92m    Checking[0m tt-adapter-provider-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-provider-http)
+[1m[92m    Checking[0m tt-adapter-sync v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-sync)
+[1m[92m    Checking[0m tt-adapter-storage-userdata v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-userdata)
+[1m[92m    Checking[0m tt-adapter-media v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-media)
+[1m[92m    Checking[0m tt-adapter-extension v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-extension)
+[1m[91merror[0m[1m: value assigned to `profile` is never read[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/runtime_acceptance_service.rs:232:62
+    [1m[94m|[0m
+[1m[94m232[0m [1m[94m|[0m         let mut profile: Option<Arc<ResolvedAgentProfile>> = None;
+    [1m[94m|[0m                                                              [1m[91m^^^^[0m [1m[91mthis value is reassigned later and never used[0m
+[1m[94m...[0m
+[1m[94m280[0m [1m[94m|[0m         profile = Some(Arc::new(resolved));
+    [1m[94m|[0m         [1m[94m-------[0m [1m[94m`profile` is overwritten here before the previous value is read[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mnote[0m: `-D unused-assignments` implied by `-D warnings`
+    [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(unused_assignments)]`
+
+[1m[91merror[0m[1m: this function has too many arguments (9/7)[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/runtime_acceptance_service.rs:687:5
+    [1m[94m|[0m
+[1m[94m687[0m [1m[94m|[0m     async fn core_fail_and_finish(&self, run_id: &str, build: AcceptanceBuildInfoDto, sandbox: Option<Arc<AcceptanceSandbox>>, stale: usize, model_ready: bool, case_id: &str, code: &str, detail: &str) -> Result<(), ApplicationError> {
+    [1m[94m|[0m     [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#too_many_arguments
+    [1m[94m= [0m[1mnote[0m: `-D clippy::too-many-arguments` implied by `-D warnings`
+    [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::too_many_arguments)]`
+
+[1m[91merror[0m[1m: match expression looks like `matches!` macro[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/runtime_acceptance_service.rs:744:13
+    [1m[94m|[0m
+[1m[94m744[0m [1m[94m|[0m [1m[91m/[0m             match tokio::time::timeout(CLEANUP_TIMEOUT, self.sandbox_factory.cleanup(&sandbox.sandbox_id)).await {
+[1m[94m745[0m [1m[94m|[0m [1m[91m|[0m                 Ok(Ok(())) => true,
+[1m[94m746[0m [1m[94m|[0m [1m[91m|[0m                 _ => false,
+[1m[94m747[0m [1m[94m|[0m [1m[91m|[0m             }
+    [1m[94m|[0m [1m[91m|_____________^[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#match_like_matches_macro
+    [1m[94m= [0m[1mnote[0m: `-D clippy::match-like-matches-macro` implied by `-D warnings`
+    [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::match_like_matches_macro)]`
+[1m[96mhelp[0m: use `matches!` directly
+    [1m[94m|[0m
+[1m[94m744[0m [91m- [0m            [91mmatch tokio::time::timeout(CLEANUP_TIMEOUT, self.sandbox_factory.cleanup(&sandbox.sandbox_id)).await {[0m
+[1m[94m745[0m [91m-                 Ok(Ok(())) => true,[0m
+[1m[94m746[0m [91m-                 _ => false,[0m
+[1m[94m747[0m [91m-             }[0m
+[1m[94m744[0m [92m+ [0m            [92mmatches!(tokio::time::timeout(CLEANUP_TIMEOUT, self.sandbox_factory.cleanup(&sandbox.sandbox_id)).await, Ok(Ok(())))[0m
+    [1m[94m|[0m
+
+[1m[91merror[0m[1m: this function has too many arguments (8/7)[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/runtime_acceptance_service.rs:753:5
+    [1m[94m|[0m
+[1m[94m753[0m [1m[94m|[0m     async fn finalize_terminal(&self, run_id: &str, build: AcceptanceBuildInfoDto, mut desired: AcceptanceSuiteState, cleaned: bool, isolation_verified: bool, stale: usize, model_ready: bool) -> Result<(), ApplicationError> {
+    [1m[94m|[0m     [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#too_many_arguments
+
+[1m[91merror[0m[1m: this `if` has identical blocks[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/runtime_acceptance_service.rs:762:21
+    [1m[94m|[0m
+[1m[94m762[0m [1m[94m|[0m         if !cleaned { desired = AcceptanceSuiteState::Fail; }
+    [1m[94m|[0m                     [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [1m[94m|[0m
+[1m[92mnote[0m: same as this
+   [1m[94m--> [0mcrates/tt-application/src/services/runtime_acceptance_service.rs:763:26
+    [1m[94m|[0m
+[1m[94m763[0m [1m[94m|[0m         else if has_fail { desired = AcceptanceSuiteState::Fail; }
+    [1m[94m|[0m                          [1m[92m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#if_same_then_else
+    [1m[94m= [0m[1mnote[0m: `-D clippy::if-same-then-else` implied by `-D warnings`
+    [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::if_same_then_else)]`
+
+[1m[91merror[0m[1m: used consecutive `str::replace` call[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/runtime_acceptance_service.rs:945:26
+    [1m[94m|[0m
+[1m[94m945[0m [1m[94m|[0m     let mut text = value.replace('\n', " ").replace('\r', " ");
+    [1m[94m|[0m                          [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mhelp: replace with: `replace(['\n', '\r'], " ")`[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_str_replace
+    [1m[94m= [0m[1mnote[0m: `-D clippy::collapsible-str-replace` implied by `-D warnings`
+    [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::collapsible_str_replace)]`
+
+[1m[91merror[0m: could not compile `tt-application` (lib) due to 6 previous errors
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
