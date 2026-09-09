@@ -17,99 +17,6 @@
 681:    export VALIDATE_DEVELOPMENT_ASSET_PATHS\=YES_ERROR
 
 # Tail
-    export LOCAL_DEVELOPER_DIR\=/Library/Developer
-    export LOCAL_LIBRARY_DIR\=/Library
-    export LOCROOT\=/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
-    export LOCSYMROOT\=/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
-    export MACH_O_TYPE\=mh_execute
-    export MAC_OS_X_PRODUCT_BUILD_VERSION\=25G83
-    export MAC_OS_X_VERSION_ACTUAL\=260602
-    export MAC_OS_X_VERSION_MAJOR\=260000
-    export MAC_OS_X_VERSION_MINOR\=260600
-    export MAKE_MERGEABLE\=NO
-    export MERGEABLE_LIBRARY\=NO
-    export MERGED_BINARY_TYPE\=none
-    export MERGE_LINKED_LIBRARIES\=NO
-    export METAL_LIBRARY_FILE_BASE\=default
-    export METAL_LIBRARY_OUTPUT_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app
-    export MODULES_FOLDER_PATH\=TauriTavern.app/Modules
-    export MODULE_CACHE_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/ModuleCache.noindex
-    export MTL_ENABLE_DEBUG_INFO\=NO
-    export MTL_FAST_MATH\=YES
-    export NATIVE_ARCH\=arm64
-    export NATIVE_ARCH_32_BIT\=arm
-    export NATIVE_ARCH_64_BIT\=arm64
-    export NATIVE_ARCH_ACTUAL\=arm64
-    export NO_COMMON\=YES
-    export OBJECT_FILE_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects
-    export OBJECT_FILE_DIR_normal\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal
-    export OBJROOT\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex
-    export ONLY_ACTIVE_ARCH\=NO
-    export OS\=MACOS
-    export OSAC\=/usr/bin/osacompile
-    export PACKAGE_TYPE\=com.apple.package-type.wrapper.application
-    export PASCAL_STRINGS\=YES
-    export PATH\=/Applications/Xcode_26.6.app/Contents/SharedFrameworks/SwiftBuild.framework/Versions/A/PlugIns/SWBBuildService.bundle/Contents/PlugIns/SWBUniversalPlatformPlugin.bundle/Contents/Frameworks/SWBUniversalPlatform.framework/Resources:/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.OFbBOp/Metal.xctoolchain/usr/bin:/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.OFbBOp/Metal.xctoolchain/usr/local/bin:/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.OFbBOp/Metal.xctoolchain/usr/libexec:/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin:/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/local/bin:/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/libexec:/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/usr/bin:/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/usr/local/bin:/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin:/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/local/bin:/Applications/Xcode_26.6.app/Contents/Developer/usr/bin:/Applications/Xcode_26.6.app/Contents/Developer/usr/local/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/opt/homebrew/opt/ruby@3.4/bin:/Users/runner/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/Users/runner/.cargo/bin:/usr/local/opt/curl/bin:/usr/local/bin:/usr/local/sbin:/Users/runner/bin:/Users/runner/.yarn/bin:/Users/runner/Library/Android/sdk/tools:/Users/runner/Library/Android/sdk/platform-tools:/Library/Frameworks/Python.framework/Versions/Current/bin:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/Users/runner/hostedtoolcache/node/22.23.2/arm64/bin:/Users/runner/setup-pnpm/node_modules/.bin:/Users/runner/.dotnet/tools
-    export PATH_PREFIXES_EXCLUDED_FROM_HEADER_DEPENDENCIES\=/usr/include\ /usr/local/include\ /System/Library/Frameworks\ /System/Library/PrivateFrameworks\ /Applications/Xcode_26.6.app/Contents/Developer/Headers\ /Applications/Xcode_26.6.app/Contents/Developer/SDKs\ /Applications/Xcode_26.6.app/Contents/Developer/Platforms
-    export PBDEVELOPMENTPLIST_PATH\=TauriTavern.app/pbdevelopment.plist
-    export PER_ARCH_MODULE_FILE_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/undefined_arch
-    export PER_ARCH_OBJECT_FILE_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/undefined_arch
-    export PER_VARIANT_OBJECT_FILE_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal
-    export PKGINFO_FILE_PATH\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/PkgInfo
-    export PKGINFO_PATH\=TauriTavern.app/PkgInfo
-    export PLATFORM_DEVELOPER_APPLICATIONS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Applications
-    export PLATFORM_DEVELOPER_BIN_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin
-    export PLATFORM_DEVELOPER_LIBRARY_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library
-    export PLATFORM_DEVELOPER_SDK_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs
-    export PLATFORM_DEVELOPER_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Tools
-    export PLATFORM_DEVELOPER_USR_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr
-    export PLATFORM_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform
-    export PLATFORM_DISPLAY_NAME\=iOS
-    export PLATFORM_FAMILY_NAME\=iOS
-    export PLATFORM_NAME\=iphoneos
-    export PLATFORM_PREFERRED_ARCH\=arm64
-    export PLATFORM_PRODUCT_BUILD_VERSION\=23F81a
-    export PLATFORM_REQUIRES_SWIFT_AUTOLINK_EXTRACT\=NO
-    export PLATFORM_REQUIRES_SWIFT_MODULEWRAP\=NO
-    export PLATFORM_USES_DSYMS\=YES
-    export PLIST_FILE_OUTPUT_FORMAT\=binary
-    export PLUGINS_FOLDER_PATH\=TauriTavern.app/PlugIns
-    export PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR\=YES
-    export PRECOMP_DESTINATION_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/PrefixHeaders
-    export PRIVATE_HEADERS_FOLDER_PATH\=TauriTavern.app/PrivateHeaders
-    export PROCESSED_INFOPLIST_PATH\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/undefined_arch/Processed-Info.plist
-    export PRODUCT_BUNDLE_IDENTIFIER\=com.tauritavern.client
-    export PRODUCT_BUNDLE_PACKAGE_TYPE\=APPL
-    export PRODUCT_MODULE_NAME\=TauriTavern
-    export PRODUCT_NAME\=TauriTavern
-    export PRODUCT_SETTINGS_PATH\=/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/tauritavern_iOS/Info.plist
-    export PRODUCT_TYPE\=com.apple.product-type.application
-    export PROFILING_CODE\=NO
-    export PROJECT\=tauritavern
-    export PROJECT_DERIVED_FILE_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/DerivedSources
-    export PROJECT_DIR\=/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
-    export PROJECT_FILE_PATH\=/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple/tauritavern.xcodeproj
-    export PROJECT_GUID\=693105076efbbf1d820ee4b1c8d6b101
-    export PROJECT_NAME\=tauritavern
-    export PROJECT_TEMP_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build
-    export PROJECT_TEMP_ROOT\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex
-    export PROVISIONING_PROFILE_REQUIRED\=YES
-    export PROVISIONING_PROFILE_REQUIRED_YES_YES\=YES
-    export PROVISIONING_PROFILE_SUPPORTED\=YES
-    export PUBLIC_HEADERS_FOLDER_PATH\=TauriTavern.app/Headers
-    export RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET\=15.0
-    export RECURSIVE_SEARCH_PATHS_FOLLOW_SYMLINKS\=YES
-    export REMOVE_CVS_FROM_RESOURCES\=YES
-    export REMOVE_GIT_FROM_RESOURCES\=YES
-    export REMOVE_HEADERS_FROM_EMBEDDED_BUNDLES\=YES
-    export REMOVE_HG_FROM_RESOURCES\=YES
-    export REMOVE_STATIC_EXECUTABLES_FROM_EMBEDDED_BUNDLES\=YES
-    export REMOVE_SVN_FROM_RESOURCES\=YES
-    export RESCHEDULE_INDEPENDENT_HEADERS_PHASES\=YES
-    export REZ_COLLECTOR_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/ResourceManagerResources
-    export REZ_OBJECTS_DIR\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/ResourceManagerResources/Objects
-    export REZ_SEARCH_PATHS\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos\ 
-    export RPATH_ORIGIN\=@loader_path
     export RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES\=NO
     export RUNTIME_EXCEPTION_ALLOW_JIT\=NO
     export RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY\=NO
@@ -277,3 +184,96 @@
     export arch\=undefined_arch
     export variant\=normal
     /bin/sh -c /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Script-95C7284793BDA95D8927B3DA.sh
+
+> tauritavern@2.2.0 tauri /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> node scripts/tauri-app.mjs --prepare-frontend ios xcode-script -v --platform iOS --sdk-root /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk --framework-search-paths '/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos  "."' --header-search-paths '/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/include ' --gcc-preprocessor-definitions '' --configuration release arm64
+
+
+> tauritavern@2.2.0 web:build /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> rspack build --config rspack.config.js
+
+vendor-libs:
+  asset [1m[32mlib.optional.bundle.js[39m[22m 934 KiB [1m[32m[emitted][39m[22m [javascript module] (name: lib.optional)
+  asset [1m[32mlib.core.bundle.js[39m[22m 781 KiB [1m[32m[emitted][39m[22m [javascript module] (name: lib.core)
+  Entrypoint [1mlib.core[39m[22m 781 KiB = [1m[32mlib.core.bundle.js[39m[22m
+  Entrypoint [1mlib.optional[39m[22m 934 KiB = [1m[32mlib.optional.bundle.js[39m[22m
+  chunk (runtime: lib.core) [1m[32mlib.core.bundle.js[39m[22m (lib.core) 3.01 MiB (javascript) 1.02 KiB (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
+  chunk (runtime: lib.optional) [1m[32mlib.optional.bundle.js[39m[22m (lib.optional) 1.5 MiB (javascript) 431 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
+  cached modules 1.15 MiB [1m[32m[cached][39m[22m 435 modules
+  runtime modules 1.44 KiB 7 modules
+  cacheable modules 4.51 MiB
+    modules by path [1m./node_modules/.pnpm/highlight.js@11.11.1/node_modules/highlight.js/lib/[39m[22m 1.5 MiB 194 modules
+    modules by path [1m./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/dist/cjs/[39m[22m 591 KiB 30 modules
+    modules by path [1m./node_modules/.pnpm/source-map@0.6.1/node_modules/source-map/[39m[22m 99.4 KiB 11 modules
+    modules by path [1m./node_modules/.pnpm/seedrandom@3.0.5/node_modules/seedrandom/[39m[22m 26.5 KiB 8 modules
+    modules by path [1m./node_modules/.pnpm/@mozilla+readability@0.6.0/node_modules/@mozilla/readability/*.js[39m[22m 92.2 KiB
+      [1m./node_modules/.pnpm/@mozilla+readability@0.6.0/node_modules/@mozilla/readability/Readability.js[39m[22m 87.9 KiB [1m[33m[code generated][39m[22m
+      + 2 modules
+    modules by path [1m./src/*.js[39m[22m 1.13 MiB
+      [1m./src/lib-bundle-core.js + 427 modules[39m[22m 1.13 MiB [1m[33m[code generated][39m[22m
+      [1m./src/lib-bundle-optional.js + 1 modules[39m[22m 485 bytes [1m[33m[code generated][39m[22m
+    modules by path [1m./node_modules/.pnpm/moment@2.30.1/node_modules/[39m[22m 172 KiB
+      [1m./node_modules/.pnpm/moment@2.30.1/node_modules/moment/moment.js[39m[22m 172 KiB [1m[33m[code generated][39m[22m
+      [1m./node_modules/.pnpm/moment@2.30.1/node_modules/moment|sync[39m[22m 160 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    modules by path [1m./node_modules/.pnpm/localforage@1.10.0/node_modules/localforage/[39m[22m 91.7 KiB
+      [1m./node_modules/.pnpm/localforage@1.10.0/node_modules/localforage/dist/localforage.js[39m[22m 91.6 KiB [1m[33m[code generated][39m[22m
+      [1m./node_modules/.pnpm/localforage@1.10.0/node_modules/localforage/dist|sync[39m[22m 160 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    + 10 modules
+  2026-09-09 [1m18:41:10[39m[22m: [1mvendor-libs[39m[22m (Rspack 2.0.8) compiled [1m[32msuccessfully[39m[22m in 465 ms
+
+agent-system:
+  asset [1m[32mindex.bundle.js[39m[22m 477 KiB [1m[32m[emitted][39m[22m [javascript module] (name: index)
+  Entrypoint [1mindex[39m[22m 477 KiB = [1m[32mindex.bundle.js[39m[22m
+  chunk (runtime: index) [1m[32mindex.bundle.js[39m[22m (index) 1.11 MiB (javascript) 921 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
+  cached modules 1.12 MiB [1m[32m[cached][39m[22m 64 modules
+  runtime modules 921 bytes 4 modules
+  [1m./src/scripts/extensions/agent-system/src/index.js + 62 modules[39m[22m 1.11 MiB [1m[33m[code generated][39m[22m
+  2026-09-09 [1m18:41:10[39m[22m: [1magent-system[39m[22m (Rspack 2.0.8) compiled [1m[32msuccessfully[39m[22m in 84 ms
+
+tauritavern-settings:
+  asset [1m[32msync.bundle.js[39m[22m 210 KiB [1m[32m[emitted][39m[22m [javascript module] (name: sync)
+  asset [1m[32msettings.bundle.js[39m[22m 196 KiB [1m[32m[emitted][39m[22m [javascript module] (name: settings)
+  asset [1m[32mdev-logs.bundle.js[39m[22m 185 KiB [1m[32m[emitted][39m[22m [javascript module] (name: dev-logs)
+  asset [1m[32macceptance.bundle.js[39m[22m 173 KiB [1m[32m[emitted][39m[22m [javascript module] (name: acceptance)
+  Entrypoint [1msettings[39m[22m 196 KiB = [1m[32msettings.bundle.js[39m[22m
+  Entrypoint [1mdev-logs[39m[22m 185 KiB = [1m[32mdev-logs.bundle.js[39m[22m
+  Entrypoint [1macceptance[39m[22m 173 KiB = [1m[32macceptance.bundle.js[39m[22m
+  Entrypoint [1msync[39m[22m 210 KiB = [1m[32msync.bundle.js[39m[22m
+  chunk (runtime: acceptance) [1m[32macceptance.bundle.js[39m[22m (acceptance) 603 KiB (javascript) 921 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
+  chunk (runtime: sync) [1m[32msync.bundle.js[39m[22m (sync) 657 KiB (javascript) 921 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
+  chunk (runtime: dev-logs) [1m[32mdev-logs.bundle.js[39m[22m (dev-logs) 622 KiB (javascript) 921 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
+  chunk (runtime: settings) [1m[32msettings.bundle.js[39m[22m (settings) 633 KiB (javascript) 921 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
+  cached modules 731 KiB [1m[32m[cached][39m[22m 25 modules
+  runtime modules 3.6 KiB 16 modules
+  cacheable modules 2.46 MiB
+    [1m./src/scripts/tauri/setting/sync-app/index.js + 12 modules[39m[22m 657 KiB [1m[33m[code generated][39m[22m
+    [1m./src/scripts/tauri/setting/settings-app/index.js + 10 modules[39m[22m 633 KiB [1m[33m[code generated][39m[22m
+    [1m./src/scripts/tauri/setting/dev-logs-app/index.js + 12 modules[39m[22m 622 KiB [1m[33m[code generated][39m[22m
+    [1m./src/scripts/tauri/setting/acceptance-app/index.js + 8 modules[39m[22m 603 KiB [1m[33m[code generated][39m[22m
+  2026-09-09 [1m18:41:10[39m[22m: [1mtauritavern-settings[39m[22m (Rspack 2.0.8) compiled [1m[32msuccessfully[39m[22m in 124 ms
+       Debug [tauri_cli::helpers::app_paths] Found Tauri project inside /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern on early lookup
+       Debug [jsonrpsee-client] Connecting to target: Target { host: "127.0.0.1", host_header: "127.0.0.1:49367", _mode: Plain, path_and_query: "/", basic_auth: None }
+       Debug [jsonrpsee-client] Connection established to target: Target { host: "127.0.0.1", host_header: "127.0.0.1:49367", _mode: Plain, path_and_query: "/", basic_auth: None }
+[1m[92m   Compiling[0m tt-domain v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-domain)
+[1m[92m   Compiling[0m tauri v2.10.2
+[1m[92m   Compiling[0m tauritavern v2.2.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern)
+[1m[92m   Compiling[0m tt-contracts v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-contracts)
+[1m[92m   Compiling[0m tt-ports v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-ports)
+[1m[92m   Compiling[0m tt-adapter-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-http)
+[1m[92m   Compiling[0m tt-adapter-storage-core v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-core)
+[1m[92m   Compiling[0m tt-adapter-tokenization v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-tokenization)
+Removed unused commands from app: app_show, app_hide, fetch_data_store_identifiers, remove_data_store, default_window_icon, set_app_theme, set_dock_visibility
+[1m[92m   Compiling[0m tauri-plugin-barcode-scanner v2.4.4
+[1m[92m   Compiling[0m tauri-plugin-notification v2.3.3
+[1m[92m   Compiling[0m tauri-plugin-opener v2.5.3
+[1m[92m   Compiling[0m tauri-plugin-fs v2.5.0
+Removed unused commands from fs: size, start_accessing_security_scoped_resource, stop_accessing_security_scoped_resource
+Removed unused commands from opener: open_path
+Removed unused commands from notification: request_permission
+[1m[92m   Compiling[0m tt-adapter-media v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-media)
+[1m[92m   Compiling[0m tt-adapter-storage-userdata v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-userdata)
+[1m[92m   Compiling[0m tt-adapter-extension v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-extension)
+[1m[92m   Compiling[0m tt-adapter-provider-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-provider-http)
+[1m[92m   Compiling[0m tt-adapter-archive v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-archive)
+[1m[92m   Compiling[0m tt-application v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-application)
+[1m[92m   Compiling[0m tt-adapter-sync v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-sync)
