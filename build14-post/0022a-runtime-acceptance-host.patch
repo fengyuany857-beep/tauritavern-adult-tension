@@ -1,0 +1,224 @@
+diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
+index d70eec2..1ea3f6e 100644
+--- a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
++++ b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
+@@ -10,6 +10,7 @@ use tokio::sync::Semaphore;
+ use crate::app::{AppServices, StartupProfile};
+ use crate::infrastructure::apis::http_external_import_downloader::HttpExternalImportDownloader;
+ use tt_adapter_http::HttpClientPool;
++use tt_adapter_storage_userdata::repositories::FileAcceptanceSandboxFactory;
+ use tt_adapter_storage_core::file_system::DataDirectory;
+ use tt_application::services::asset_service::AssetService;
+ use tt_application::services::avatar_service::AvatarService;
+@@ -31,6 +32,7 @@ use tt_application::services::native_regex_service::NativeRegexService;
+ use tt_application::services::preset_service::PresetService;
+ use tt_application::services::provider_metadata_service::ProviderMetadataService;
+ use tt_application::services::quick_reply_service::QuickReplyService;
++use tt_application::services::runtime_acceptance_service::RuntimeAcceptanceService;
+ use tt_application::services::secret_service::SecretService;
+ use tt_application::services::settings_service::{RequestProxyRuntime, SettingsService};
+ use tt_application::services::skill_service::SkillService;
+@@ -44,6 +46,7 @@ use tt_application::services::user_directory_service::UserDirectoryService;
+ use tt_application::services::user_service::UserService;
+ use tt_application::services::world_info_service::WorldInfoService;
+ use tt_domain::errors::DomainError;
++use tt_ports::repositories::acceptance_sandbox_factory::AcceptanceSandboxFactory;
+ 
+ use super::{adapters, repositories};
+ 
+@@ -120,6 +123,20 @@ pub(super) async fn build(
+         chat_completion_service.clone(),
+         llm_connection_service.clone(),
+     );
++    let acceptance_root = app_handle
++        .path()
++        .app_cache_dir()
++        .or_else(|_| app_handle.path().temp_dir())
++        .map_err(|error| DomainError::InternalError(format!("Failed to resolve runtime acceptance root: {error}")))?
++        .join("tauritavern-acceptance");
++    let acceptance_sandbox_factory: Arc<dyn AcceptanceSandboxFactory> =
++        Arc::new(FileAcceptanceSandboxFactory::new(acceptance_root));
++    let runtime_acceptance_service = Arc::new(RuntimeAcceptanceService::new(
++        acceptance_sandbox_factory,
++        agent_services.agent_profile_service.clone(),
++        agent_services.agent_profile_diagnostic_service.clone(),
++        agent_services.agent_runtime_service.clone(),
++    ));
+     let tokenization_service = Arc::new(TokenizationService::new(
+         repositories.tokenizer_repository.clone(),
+     ));
+@@ -237,6 +254,7 @@ pub(super) async fn build(
+         agent_run_retention_automation_service: agent_services
+             .agent_run_retention_automation_service,
+         agent_runtime_service: agent_services.agent_runtime_service,
++        runtime_acceptance_service,
+         chat_completion_service,
+         llm_connection_service,
+         provider_metadata_service,
+diff --git a/src-tauri/crates/tauritavern/src/app/state.rs b/src-tauri/crates/tauritavern/src/app/state.rs
+index 65882fb..8bbf9be 100644
+--- a/src-tauri/crates/tauritavern/src/app/state.rs
++++ b/src-tauri/crates/tauritavern/src/app/state.rs
+@@ -31,6 +31,7 @@ use tt_application::services::preset_service::PresetService;
+ use tt_application::services::prompt_assembly_service::PromptAssemblyService;
+ use tt_application::services::provider_metadata_service::ProviderMetadataService;
+ use tt_application::services::quick_reply_service::QuickReplyService;
++use tt_application::services::runtime_acceptance_service::RuntimeAcceptanceService;
+ use tt_application::services::secret_service::SecretService;
+ use tt_application::services::settings_service::SettingsService;
+ use tt_application::services::skill_service::SkillService;
+@@ -100,6 +101,7 @@ pub(crate) struct AppServices {
+     pub(crate) agent_run_history_service: Arc<AgentRunHistoryService>,
+     pub(crate) agent_run_retention_automation_service: Arc<AgentRunRetentionAutomationService>,
+     pub(crate) agent_runtime_service: Arc<AgentRuntimeService>,
++    pub(crate) runtime_acceptance_service: Arc<RuntimeAcceptanceService>,
+     pub(crate) chat_completion_service: Arc<ChatCompletionService>,
+     pub(crate) llm_connection_service: Arc<LlmConnectionService>,
+     pub(crate) provider_metadata_service: Arc<ProviderMetadataService>,
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/acceptance_commands.rs b/src-tauri/crates/tauritavern/src/presentation/commands/acceptance_commands.rs
+new file mode 100644
+index 0000000..dc4aa2c
+--- /dev/null
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/acceptance_commands.rs
+@@ -0,0 +1,101 @@
++use std::sync::Arc;
++
++use tauri::State;
++
++use crate::app::AppState;
++use crate::presentation::commands::helpers::{log_command, map_command_error};
++use crate::presentation::errors::CommandError;
++use tt_application::dto::runtime_acceptance_dto::{
++    AcceptanceBuildInfoDto, AcceptanceCancelResultDto, AcceptanceReportDto,
++    AcceptanceRunRequestDto, AcceptanceStartResultDto, AcceptanceStatusDto,
++    AcceptanceStatusRequestDto,
++};
++
++#[tauri::command]
++pub async fn acceptance_start(
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<AcceptanceStartResultDto, CommandError> {
++    log_command("acceptance_start");
++    app_state
++        .services
++        .runtime_acceptance_service
++        .clone()
++        .start(build_info())
++        .await
++        .map_err(map_command_error("Failed to start runtime acceptance"))
++}
++
++#[tauri::command]
++pub async fn acceptance_get_status(
++    dto: AcceptanceStatusRequestDto,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<AcceptanceStatusDto, CommandError> {
++    log_command("acceptance_get_status");
++    app_state
++        .services
++        .runtime_acceptance_service
++        .get_status(dto.run_id.as_deref())
++        .await
++        .map_err(map_command_error("Failed to read runtime acceptance status"))
++}
++
++#[tauri::command]
++pub async fn acceptance_cancel(
++    dto: AcceptanceRunRequestDto,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<AcceptanceCancelResultDto, CommandError> {
++    log_command("acceptance_cancel");
++    app_state
++        .services
++        .runtime_acceptance_service
++        .cancel(&dto.run_id)
++        .await
++        .map_err(map_command_error("Failed to cancel runtime acceptance"))
++}
++
++#[tauri::command]
++pub async fn acceptance_get_report(
++    dto: AcceptanceRunRequestDto,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<AcceptanceReportDto, CommandError> {
++    log_command("acceptance_get_report");
++    app_state
++        .services
++        .runtime_acceptance_service
++        .get_report(&dto.run_id)
++        .await
++        .map_err(map_command_error("Failed to read runtime acceptance report"))
++}
++
++fn build_info() -> AcceptanceBuildInfoDto {
++    AcceptanceBuildInfoDto {
++        platform: platform_name().to_string(),
++        tauri_version: crate::product::VERSION.to_string(),
++        integration_revision: optional(crate::product::GIT_REVISION),
++        git_branch: optional(crate::product::GIT_BRANCH),
++        distribution_flavor: crate::product::DISTRIBUTION_FLAVOR.to_string(),
++        control_sha: crate::product::CONTROL_SHA.and_then(optional),
++        upstream_sha: crate::product::UPSTREAM_SHA.and_then(optional),
++        github_run_id: crate::product::BUILD_RUN_ID.and_then(optional),
++        github_run_number: crate::product::BUILD_RUN_NUMBER.and_then(optional),
++    }
++}
++
++fn optional(value: &str) -> Option<String> {
++    let value = value.trim();
++    (!value.is_empty()).then(|| value.to_string())
++}
++
++fn platform_name() -> &'static str {
++    if cfg!(target_os = "ios") {
++        "ios"
++    } else if cfg!(target_os = "macos") {
++        "macos"
++    } else if cfg!(windows) {
++        "windows"
++    } else if cfg!(target_os = "linux") {
++        "linux"
++    } else {
++        "unknown"
++    }
++}
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/mod.rs b/src-tauri/crates/tauritavern/src/presentation/commands/mod.rs
+index c73e92c..4493afd 100644
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/mod.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/mod.rs
+@@ -1,4 +1,5 @@
+ // Tauri commands
++pub mod acceptance_commands;
+ pub mod agent_commands;
+ pub mod asset_commands;
+ pub mod avatar_commands;
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
+index e9e0c68..c11dc3f 100644
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
+@@ -1,5 +1,10 @@
+ pub fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static {
+     tauri::generate_handler![
++        // Runtime acceptance commands
++        super::acceptance_commands::acceptance_start,
++        super::acceptance_commands::acceptance_get_status,
++        super::acceptance_commands::acceptance_cancel,
++        super::acceptance_commands::acceptance_get_report,
+         // Character commands
+         super::character_commands::get_all_characters,
+         super::character_commands::get_character,
+diff --git a/src-tauri/crates/tauritavern/src/product.rs b/src-tauri/crates/tauritavern/src/product.rs
+index 2d61a90..7cab4d0 100644
+--- a/src-tauri/crates/tauritavern/src/product.rs
++++ b/src-tauri/crates/tauritavern/src/product.rs
+@@ -8,6 +8,10 @@ pub(crate) const DISTRIBUTION_FLAVOR: &str = match option_env!("TAURITAVERN_DIST
+     Some(value) => value,
+     None => "upstream",
+ };
++pub(crate) const CONTROL_SHA: Option<&str> = option_env!("TAURITAVERN_CONTROL_SHA");
++pub(crate) const BUILD_RUN_ID: Option<&str> = option_env!("TAURITAVERN_BUILD_RUN_ID");
++pub(crate) const BUILD_RUN_NUMBER: Option<&str> = option_env!("TAURITAVERN_BUILD_RUN_NUMBER");
++pub(crate) const UPSTREAM_SHA: Option<&str> = option_env!("TAURITAVERN_UPSTREAM_SHA");
+ 
+ pub(crate) fn optional_build_value(value: &str) -> Option<&str> {
+     let value = value.trim();
