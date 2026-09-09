@@ -1,0 +1,126 @@
+diff --git a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+new file mode 100644
+index 0000000..cc23f43
+--- /dev/null
++++ b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+@@ -0,0 +1,120 @@
++use std::sync::Arc;
++use std::time::{Duration, Instant};
++
++use chrono::Utc;
++use serde_json::{Value, json};
++use tokio::sync::Mutex;
++use tokio_util::sync::CancellationToken;
++use uuid::Uuid;
++
++use crate::dto::runtime_acceptance_dto::*;
++use crate::errors::ApplicationError;
++use crate::services::agent_profile_diagnostic_service::AgentProfileDiagnosticService;
++use crate::services::agent_profile_service::{AgentProfileResolveInput, AgentProfileService};
++use crate::services::agent_runtime_service::AgentRuntimeService;
++use crate::services::agent_runtime_service::build_agent_manifest;
++use crate::services::agent_tools::rp;
++use tt_domain::models::agent::profile::{ADULT_TENSION_RP_PROFILE_ID, ResolvedAgentProfile};
++use tt_domain::models::agent::{
++    AgentChatRef, AgentRun, AgentRunPresentation, AgentRunSkillScopeRefs, AgentRunStatus,
++};
++use tt_domain::models::rp_architecture::{RP_ARCHITECTURE_SCHEMA_VERSION, WorldId, WorldManifest};
++use tt_domain::models::tool::{ToolId, ToolInvocation};
++use tt_ports::repositories::acceptance_sandbox_factory::{
++    ACCEPTANCE_SUITE_VERSION, AcceptanceSandbox, AcceptanceSandboxFactory,
++};
++
++const STATUS_SCHEMA_VERSION: u32 = 1;
++const REPORT_SCHEMA_VERSION: u32 = 1;
++const SUITE_EXECUTION_TIMEOUT: Duration = Duration::from_secs(25);
++const CLEANUP_TIMEOUT: Duration = Duration::from_secs(5);
++
++const CASES: &[(&str, &str, AcceptanceCaseKind, AcceptancePhase, Duration)] = &[
++    ("env.build_bridge_identity", "Build / bridge identity", AcceptanceCaseKind::Core, AcceptancePhase::Environment, Duration::from_secs(2)),
++    ("env.sandbox_preflight", "Isolated sandbox preflight", AcceptanceCaseKind::Core, AcceptancePhase::Environment, Duration::from_secs(2)),
++    ("agent.profile_contract", "Adult Tension RP profile contract", AcceptanceCaseKind::Core, AcceptancePhase::Agent, Duration::from_secs(2)),
++    ("agent.required_tool_surface", "Required Agent / RP tool surface", AcceptanceCaseKind::Core, AcceptancePhase::Agent, Duration::from_secs(2)),
++    ("rp.empty_state", "RP empty state read", AcceptanceCaseKind::Core, AcceptancePhase::Rp, Duration::from_secs(2)),
++    ("rp.stage_recall_roundtrip", "RP stage / recall roundtrip", AcceptanceCaseKind::Core, AcceptancePhase::Rp, Duration::from_secs(2)),
++    ("rp.knowledge_provenance_pair", "RP knowledge provenance pair", AcceptanceCaseKind::Core, AcceptancePhase::Rp, Duration::from_secs(2)),
++    ("rp.retraction_pair", "RP retraction / invalid retraction", AcceptanceCaseKind::Core, AcceptancePhase::Rp, Duration::from_secs(3)),
++    ("rp.authority_pause_gate", "RP authority pause gate", AcceptanceCaseKind::Core, AcceptancePhase::Rp, Duration::from_secs(3)),
++    ("world.binding_matrix", "World binding matrix", AcceptanceCaseKind::Core, AcceptancePhase::World, Duration::from_secs(3)),
++    ("cast.lifecycle_revision", "Cast lifecycle / profile revision", AcceptanceCaseKind::Core, AcceptancePhase::CastMemory, Duration::from_secs(3)),
++    ("memory.tiny_dedup", "Small memory dedup", AcceptanceCaseKind::Core, AcceptancePhase::CastMemory, Duration::from_secs(2)),
++    ("canon.confirmation_fail_closed", "Canon confirmation fail-closed", AcceptanceCaseKind::Core, AcceptancePhase::CastMemory, Duration::from_secs(2)),
++    ("persist.commit_reopen", "Persistent commit / reopen", AcceptanceCaseKind::Core, AcceptancePhase::Persistence, Duration::from_secs(4)),
++    ("branch.fork_isolation", "Persistent branch isolation", AcceptanceCaseKind::Core, AcceptancePhase::Persistence, Duration::from_secs(5)),
++    ("burst.quick_local", "Bounded local burst", AcceptanceCaseKind::Core, AcceptancePhase::Burst, Duration::from_secs(4)),
++];
++
++struct ActiveRun {
++    status: AcceptanceStatusDto,
++    cancel: CancellationToken,
++    build: AcceptanceBuildInfoDto,
++    sandbox_id: Option<String>,
++}
++
++struct TerminalRun {
++    status: AcceptanceStatusDto,
++    report: AcceptanceReportDto,
++}
++
++#[derive(Default)]
++struct AcceptanceHubState {
++    active: Option<ActiveRun>,
++    last_terminal: Option<TerminalRun>,
++}
++
++#[derive(Clone)]
++struct SuiteContext {
++    sandbox: Arc<AcceptanceSandbox>,
++    profile: Arc<ResolvedAgentProfile>,
++    base_prompt: Value,
++    suite_run_id: String,
++}
++
++struct CaseRunResult {
++    state: AcceptanceCaseState,
++    code: Option<String>,
++    detail: String,
++}
++
++impl CaseRunResult {
++    fn pass(detail: impl Into<String>) -> Self {
++        Self { state: AcceptanceCaseState::Pass, code: None, detail: detail.into() }
++    }
++
++    fn warn(code: impl Into<String>, detail: impl Into<String>) -> Self {
++        Self { state: AcceptanceCaseState::Warn, code: Some(code.into()), detail: detail.into() }
++    }
++}
++
++pub struct RuntimeAcceptanceService {
++    sandbox_factory: Arc<dyn AcceptanceSandboxFactory>,
++    profile_service: Arc<AgentProfileService>,
++    profile_diagnostic_service: Arc<AgentProfileDiagnosticService>,
++    agent_runtime_service: Arc<AgentRuntimeService>,
++    hub: Mutex<AcceptanceHubState>,
++}
++
++impl RuntimeAcceptanceService {
++    pub fn new(
++        sandbox_factory: Arc<dyn AcceptanceSandboxFactory>,
++        profile_service: Arc<AgentProfileService>,
++        profile_diagnostic_service: Arc<AgentProfileDiagnosticService>,
++        agent_runtime_service: Arc<AgentRuntimeService>,
++    ) -> Self {
++        Self {
++            sandbox_factory,
++            profile_service,
++            profile_diagnostic_service,
++            agent_runtime_service,
++            hub: Mutex::new(AcceptanceHubState::default()),
++        }
++    }
++
++    pub async fn start(self: &Arc<Self>, build: AcceptanceBuildInfoDto) -> Result<AcceptanceStartResultDto, ApplicationError> {
++        let run_id = format!("accept-{}", Uuid::new_v4());
++        let now = Utc::now().to_rfc3339();
++        let status = AcceptanceStatusDto {
