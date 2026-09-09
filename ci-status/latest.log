@@ -1,32 +1,3 @@
 # Diagnostic matches
 
 # Tail
-✔ api.agent.profiles forwards profile commands with camelCase DTOs (24.116208ms)
-✔ api.agent.profiles publishes profile change events after successful mutations (0.680458ms)
-✔ api.agent.profiles fails fast on invalid profile inputs (0.582458ms)
-✔ api.agent.tools lists canonical catalog items (0.217167ms)
-✔ api.agent.promptAssembly prepares backend broker requests (0.281ms)
-✔ api.agent.promptAssembly normalizes current model connection through backend commands (0.359583ms)
-✔ api.agent.startRunWithPromptSnapshot refreshes Model Target LLM connection before starting run (5.109958ms)
-✔ api.agent.readEvents requests timeline projection only when asked (0.397958ms)
-✔ api.agent.submitGuidance forwards camelCase DTO and fails fast on invalid input (0.394041ms)
-✔ api.agent.listRuns forwards run history filters with camelCase DTOs (9.678625ms)
-✔ api.agent.listRuns fails fast on invalid history filters (0.747375ms)
-✔ api.agent.retention forwards settings and prune contracts (0.48175ms)
-✔ api.agent.retention fails fast on invalid retention inputs (5.987083ms)
-✔ api.agent.readModelTurn forwards camelCase DTO and fails fast on invalid input (0.594125ms)
-✔ api.agent.pruneChatPersistentStates forwards explicit candidate state ids (0.353667ms)
-✔ api.agent.pruneChatPersistentStates fails fast on invalid candidate state ids (1.042625ms)
-✔ agent chat commit bridge detaches on partial success terminal event (0.976375ms)
-✔ agent chat commit bridge runs generated output cleanup before saving (1.637834ms)
-✔ agent chat commit bridge cleans append commits as one raw target message (1.578583ms)
-✔ agent prompt assembly bridge reads pending request by assembly id (3.327542ms)
-✔ shared agent run event subscription fans out over one backend poller (0.986708ms)
-ℹ tests 21
-ℹ suites 0
-ℹ pass 21
-ℹ fail 0
-ℹ cancelled 0
-ℹ skipped 0
-ℹ todo 0
-ℹ duration_ms 149.676625
