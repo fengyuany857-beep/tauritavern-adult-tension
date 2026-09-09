@@ -1,3 +1,65 @@
 # Diagnostic matches
+15:[1m[91merror[E0603][0m[1m: module `rp` is private[0m
+29:[1m[91merror[E0603][0m[1m: module `rp` is private[0m
 
 # Tail
+
+> tauritavern@2.2.0 test:rust /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> cargo test --manifest-path src-tauri/Cargo.toml --workspace --no-default-features
+
+[1m[92m   Compiling[0m tt-domain v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-domain)
+[1m[92m   Compiling[0m tauritavern v2.2.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern)
+[1m[92m   Compiling[0m tt-contracts v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-contracts)
+[1m[92m   Compiling[0m tt-ports v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-ports)
+[1m[92m   Compiling[0m tt-adapter-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-http)
+[1m[92m   Compiling[0m tt-adapter-storage-core v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-core)
+[1m[92m   Compiling[0m tt-adapter-tokenization v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-tokenization)
+[1m[92m   Compiling[0m tt-adapter-provider-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-provider-http)
+[1m[92m   Compiling[0m tt-adapter-archive v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-archive)
+[1m[92m   Compiling[0m tt-application v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-application)
+[1m[91merror[E0603][0m[1m: module `rp` is private[0m
+ [1m[94m--> [0mcrates/tt-application/src/services/agent_runtime_service/rp_canonization.rs:6:35
+  [1m[94m|[0m
+[1m[94m6[0m [1m[94m|[0m use crate::services::agent_tools::rp::{mark_canonizations_applied, pending_canonizations_for_run};
+  [1m[94m|[0m                                   [1m[91m^^[0m   [1m[94m--------------------------[0m [1m[94mfunction `mark_canonizations_applied` is not publicly re-exported[0m
+  [1m[94m|[0m                                   [1m[91m|[0m
+  [1m[94m|[0m                                   [1m[91mprivate module[0m
+  [1m[94m|[0m
+[1m[92mnote[0m: the module `rp` is defined here
+ [1m[94m--> [0mcrates/tt-application/src/services/agent_tools.rs:7:1
+  [1m[94m|[0m
+[1m[94m7[0m [1m[94m|[0m mod rp;
+  [1m[94m|[0m [1m[92m^^^^^^^[0m
+
+[1m[91merror[E0603][0m[1m: module `rp` is private[0m
+ [1m[94m--> [0mcrates/tt-application/src/services/agent_runtime_service/rp_canonization.rs:6:35
+  [1m[94m|[0m
+[1m[94m6[0m [1m[94m|[0m use crate::services::agent_tools::rp::{mark_canonizations_applied, pending_canonizations_for_run};
+  [1m[94m|[0m                                   [1m[91m^^[0m [1m[91mprivate module[0m                [1m[94m-----------------------------[0m [1m[94mfunction `pending_canonizations_for_run` is not publicly re-exported[0m
+  [1m[94m|[0m
+[1m[92mnote[0m: the module `rp` is defined here
+ [1m[94m--> [0mcrates/tt-application/src/services/agent_tools.rs:7:1
+  [1m[94m|[0m
+[1m[94m7[0m [1m[94m|[0m mod rp;
+  [1m[94m|[0m [1m[92m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `PendingCanonization`[0m
+ [1m[94m--> [0mcrates/tt-application/src/services/agent_tools/rp/mod.rs:7:83
+  [1m[94m|[0m
+[1m[94m7[0m [1m[94m|[0m pub(crate) use state::{mark_canonizations_applied, pending_canonizations_for_run, PendingCanonization};
+  [1m[94m|[0m                                                                                   [1m[33m^^^^^^^^^^^^^^^^^^^[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+[1m[92m   Compiling[0m tt-adapter-extension v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-extension)
+[1m[92m   Compiling[0m tt-adapter-media v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-media)
+[1m[33mwarning[0m[1m: unused variable: `run`[0m
+    [1m[94m--> [0mcrates/tt-application/src/services/agent_tools/rp/state.rs:1547:9
+     [1m[94m|[0m
+[1m[94m1547[0m [1m[94m|[0m     let run = run_repository.load_run(run_id).await?;
+     [1m[94m|[0m         [1m[33m^^^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_run`[0m
+     [1m[94m|[0m
+     [1m[94m= [0m[1mnote[0m: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+[1m[92m   Compiling[0m tt-adapter-storage-userdata v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-userdata)
+[1m[92m   Compiling[0m tt-adapter-sync v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-sync)
