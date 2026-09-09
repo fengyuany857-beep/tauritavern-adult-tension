@@ -24,6 +24,8 @@
 93:    [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::collapsible_str_replace)]`
 95:[1m[91merror[0m: could not compile `tt-application` (lib) due to 6 previous errors
 96:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+97:[1m[91merror[0m: could not compile `tt-application` (lib test) due to 6 previous errors
+98: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
 
@@ -122,3 +124,5 @@
 
 [1m[91merror[0m: could not compile `tt-application` (lib) due to 6 previous errors
 [1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+[1m[91merror[0m: could not compile `tt-application` (lib test) due to 6 previous errors
+ ELIFECYCLE  Command failed with exit code 101.
