@@ -1,0 +1,128 @@
+diff --git a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+index 1965554..c29dca6 100644
+--- a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
++++ b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+@@ -238,3 +238,123 @@ impl RuntimeAcceptanceService {
+             } else {
+                 CaseRunResult::pass("Adult Tension self-sign distribution and build provenance are available.")
+             }
++        } else {
++            return self.core_fail_and_finish(run_id, build.clone(), None, stale_cleaned, model_configuration_ready, "env.build_bridge_identity", "acceptance.distribution_mismatch", "Expected adult_tension_selfsign distribution identity.").await;
++        };
++        self.complete_case(run_id, "env.build_bridge_identity", env).await?;
++
++        if cancel.is_cancelled() {
++            return self.cancel_and_finish(run_id, build.clone(), None, stale_cleaned, model_configuration_ready).await;
++        }
++
++        self.start_case(run_id, "env.sandbox_preflight").await?;
++        let started = Instant::now();
++        let preflight = async {
++            stale_cleaned = self.sandbox_factory.cleanup_stale().await.map_err(ApplicationError::from)?;
++            let prepared = self.sandbox_factory.prepare(run_id).await.map_err(ApplicationError::from)?;
++            {
++                let mut hub = self.hub.lock().await;
++                active_mut(&mut hub, run_id)?.sandbox_id = Some(prepared.sandbox_id.clone());
++            }
++            sandbox = Some(Arc::new(prepared));
++            Ok::<_, ApplicationError>(CaseRunResult::pass(format!("Isolated file-backed sandbox created; {stale_cleaned} stale sandbox(s) cleaned.")))
++        }.await;
++        match preflight {
++            Ok(result) => self.finish_case(run_id, "env.sandbox_preflight", result, started.elapsed().as_millis()).await?,
++            Err(error) => {
++                self.finish_case(run_id, "env.sandbox_preflight", CaseRunResult { state: AcceptanceCaseState::Fail, code: Some("acceptance.sandbox_prepare_failed".to_string()), detail: sanitize_error(&error) }, started.elapsed().as_millis()).await?;
++                return self.finish_suite(run_id, build.clone(), sandbox, AcceptanceSuiteState::Fail, stale_cleaned, model_configuration_ready).await;
++            }
++        }
++
++        self.start_case(run_id, "agent.profile_contract").await?;
++        let started = Instant::now();
++        let health = self.profile_diagnostic_service.diagnose_profile(ADULT_TENSION_RP_PROFILE_ID, self.agent_runtime_service.tool_catalog()).await?;
++        let hard_codes = ["agent.profile_contract_invalid", "agent.profile_preset_api_unsupported", "agent.profile_preset_missing"];
++        let config_codes = ["agent.profile_model_requires_configuration", "agent.profile_model_connection_missing", "agent.profile_model_connection_invalid"];
++        if let Some(diagnostic) = health.diagnostics.iter().find(|item| hard_codes.contains(&item.code.as_str())) {
++            self.finish_case(run_id, "agent.profile_contract", CaseRunResult { state: AcceptanceCaseState::Fail, code: Some(diagnostic.code.clone()), detail: sanitize_text(&diagnostic.message) }, started.elapsed().as_millis()).await?;
++            return self.finish_suite(run_id, build.clone(), sandbox, AcceptanceSuiteState::Fail, stale_cleaned, model_configuration_ready).await;
++        }
++        let resolved = self.profile_service.resolve_profile_for_preview(AgentProfileResolveInput { profile_id: Some(ADULT_TENSION_RP_PROFILE_ID), tool_catalog: self.agent_runtime_service.tool_catalog() }).await?;
++        profile = Some(Arc::new(resolved));
++        if let Some(diagnostic) = health.diagnostics.iter().find(|item| config_codes.contains(&item.code.as_str())) {
++            model_configuration_ready = false;
++            self.finish_case(run_id, "agent.profile_contract", CaseRunResult::warn(diagnostic.code.clone(), sanitize_text(&diagnostic.message)), started.elapsed().as_millis()).await?;
++        } else if !health.direct_run_available {
++            self.finish_case(run_id, "agent.profile_contract", CaseRunResult { state: AcceptanceCaseState::Fail, code: Some("acceptance.profile_not_direct_runnable".to_string()), detail: "Profile diagnostics contain no configuration warning, but direct runtime is unavailable.".to_string() }, started.elapsed().as_millis()).await?;
++            return self.finish_suite(run_id, build.clone(), sandbox, AcceptanceSuiteState::Fail, stale_cleaned, model_configuration_ready).await;
++        } else {
++            self.finish_case(run_id, "agent.profile_contract", CaseRunResult::pass("Adult Tension RP profile resolves and is structurally runnable."), started.elapsed().as_millis()).await?;
++        }
++
++        let sandbox = sandbox.expect("sandbox prepared");
++        let profile = profile.expect("profile resolved");
++        let context = SuiteContext { sandbox: sandbox.clone(), profile: profile.clone(), base_prompt: prompt_for_world("acceptance-world-a", 1, "acceptance-fp-a", false, "Synthetic acceptance input."), suite_run_id: run_id.to_string() };
++
++        for (case_id, _, _, _, timeout) in CASES.iter().skip(3) {
++            if cancel.is_cancelled() {
++                return self.cancel_and_finish(run_id, build.clone(), Some(sandbox.clone()), stale_cleaned, model_configuration_ready).await;
++            }
++            self.start_case(run_id, case_id).await?;
++            let started = Instant::now();
++            let result = tokio::time::timeout(*timeout, self.execute_case(case_id, &context)).await;
++            match result {
++                Ok(Ok(case_result)) => {
++                    let failed = case_result.state == AcceptanceCaseState::Fail;
++                    self.finish_case(run_id, case_id, case_result, started.elapsed().as_millis()).await?;
++                    if failed {
++                        return self.finish_suite(run_id, build.clone(), Some(sandbox.clone()), AcceptanceSuiteState::Fail, stale_cleaned, model_configuration_ready).await;
++                    }
++                }
++                Ok(Err(error)) => {
++                    self.finish_case(run_id, case_id, CaseRunResult { state: AcceptanceCaseState::Fail, code: Some(error_code(&error)), detail: sanitize_error(&error) }, started.elapsed().as_millis()).await?;
++                    return self.finish_suite(run_id, build.clone(), Some(sandbox.clone()), AcceptanceSuiteState::Fail, stale_cleaned, model_configuration_ready).await;
++                }
++                Err(_) => {
++                    self.finish_case(run_id, case_id, CaseRunResult { state: AcceptanceCaseState::Fail, code: Some("acceptance.case_timeout".to_string()), detail: format!("Case `{case_id}` exceeded its bounded deadline.") }, started.elapsed().as_millis()).await?;
++                    return self.finish_suite(run_id, build.clone(), Some(sandbox.clone()), AcceptanceSuiteState::Fail, stale_cleaned, model_configuration_ready).await;
++                }
++            }
++        }
++
++        self.finish_suite(run_id, build.clone(), Some(sandbox), AcceptanceSuiteState::Pass, stale_cleaned, model_configuration_ready).await
++    }
++
++    async fn execute_case(&self, case_id: &str, ctx: &SuiteContext) -> Result<CaseRunResult, ApplicationError> {
++        match case_id {
++            "agent.required_tool_surface" => self.case_required_tools(ctx).await,
++            "rp.empty_state" => self.case_empty_state(ctx).await,
++            "rp.stage_recall_roundtrip" => self.case_stage_recall(ctx).await,
++            "rp.knowledge_provenance_pair" => self.case_knowledge_provenance(ctx).await,
++            "rp.retraction_pair" => self.case_retraction(ctx).await,
++            "rp.authority_pause_gate" => self.case_pause_gate(ctx).await,
++            "world.binding_matrix" => self.case_world_binding(ctx).await,
++            "cast.lifecycle_revision" => self.case_cast_lifecycle(ctx).await,
++            "memory.tiny_dedup" => self.case_memory_dedup(ctx).await,
++            "canon.confirmation_fail_closed" => self.case_canon_fail_closed(ctx).await,
++            "persist.commit_reopen" => self.case_persist_reopen(ctx).await,
++            "branch.fork_isolation" => self.case_branch_isolation(ctx).await,
++            "burst.quick_local" => self.case_quick_burst(ctx).await,
++            _ => Err(ApplicationError::InternalError(format!("acceptance.case_unknown: {case_id}"))),
++        }
++    }
++
++    async fn case_required_tools(&self, ctx: &SuiteContext) -> Result<CaseRunResult, ApplicationError> {
++        const REQUIRED: &[&str] = &["rp.state", "rp.recall", "rp.stage_turn", "rp.confirm_canonization", "workspace.write_file", "workspace.commit", "workspace.finish"];
++        for name in REQUIRED {
++            let id = ToolId::builtin(name)?;
++            if self.agent_runtime_service.tool_catalog().get(&id).is_none() {
++                return Err(ApplicationError::ValidationError(format!("acceptance.required_tool_missing: {name}")));
++            }
++            if !ctx.profile.tools.allow.iter().any(|item| item == name) {
++                return Err(ApplicationError::ValidationError(format!("acceptance.profile_tool_missing: {name}")));
++            }
++        }
++        Ok(CaseRunResult::pass("Required RP and workspace tools exist in both the catalog and Adult Tension profile."))
++    }
++
++    async fn case_empty_state(&self, ctx: &SuiteContext) -> Result<CaseRunResult, ApplicationError> {
++        let run = self.create_run(ctx, "empty", None, &ctx.base_prompt).await?;
++        let result = self.rp_call(ctx, &run.id, &ctx.base_prompt, "rp.state", json!({})).await?;
++        require_success(&result, "rp.empty_state")?;
