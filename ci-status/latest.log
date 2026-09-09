@@ -20,12 +20,6 @@
 854:    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/ibtool --errors --warnings --notices --module TauriTavern --target-device iphone --target-device ipad --minimum-deployment-target 16.0 --output-format human-readable-text --link /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/LaunchScreen.storyboardc
 
 # Tail
-    export SYSTEM_DEVELOPER_JAVA_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Java\ Tools
-    export SYSTEM_DEVELOPER_PERFORMANCE_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Performance\ Tools
-    export SYSTEM_DEVELOPER_RELEASENOTES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/releasenotes
-    export SYSTEM_DEVELOPER_TOOLS\=/Applications/Xcode_26.6.app/Contents/Developer/Tools
-    export SYSTEM_DEVELOPER_TOOLS_DOC_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/documentation/DeveloperTools
-    export SYSTEM_DEVELOPER_TOOLS_RELEASENOTES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/releasenotes/DeveloperTools
     export SYSTEM_DEVELOPER_USR_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/usr
     export SYSTEM_DEVELOPER_UTILITIES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Utilities
     export SYSTEM_DEXT_INSTALL_PATH\=/System/Library/DriverExtensions
@@ -280,3 +274,9 @@ Touch /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/relea
 note: Run script build phase 'Build Rust Code' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'tauritavern_iOS' from project 'tauritavern')
 ** BUILD SUCCEEDED **
 
+Unsigned iOS build created:
+  /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/TauriTavern-unsigned.ipa
+  /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/TauriTavern.app.zip
+5ff102229640d802014f92d5192a0f6d7ae41f935ac4cc27707f30fdf8f7273a  TauriTavern-unsigned.ipa
+6cc98f1c854787c789033f74aa929c8b61dfaa7986f68f83e5034a639e7ed912  TauriTavern.app.zip
+bd9784c6adb999116601a12eecac7adafc473ec9a3625fc570a52465b9a90773  build-info.json
