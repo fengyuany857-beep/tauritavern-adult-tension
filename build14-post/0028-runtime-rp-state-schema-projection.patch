@@ -1,0 +1,32 @@
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -626,6 +626,7 @@
+ #[serde(rename_all = "camelCase")]
+ struct StateResult<'a> {
+     stable_chat_id: &'a str,
++    schema_version: u32,
+     runtime_revision: u64,
+     turn: u64,
+     mode: &'a str,
+@@ -1647,6 +1648,7 @@
+ ) -> StateResult<'a> {
+     StateResult {
+         stable_chat_id,
++        schema_version: state.schema_version,
+         runtime_revision: state.runtime_revision,
+         turn: state.turn,
+         mode: state.mode.as_str(),
+@@ -2535,4 +2537,13 @@
+         assert_eq!(session.active_branch_id.0, "chat-b");
+     }
+ 
++    #[test]
++    fn state_payload_exposes_schema_and_runtime_revision() {
++        let state = RpState::default();
++        let payload = state_payload("chat-a", &state, RuntimeBindingStatus::LegacyUnbound);
++        let value = serde_json::to_value(payload).expect("state payload should serialize");
++        assert_eq!(value.get("schemaVersion").and_then(Value::as_u64), Some(RP_SCHEMA_VERSION as u64));
++        assert_eq!(value.get("runtimeRevision").and_then(Value::as_u64), Some(0));
++    }
++
+ }
