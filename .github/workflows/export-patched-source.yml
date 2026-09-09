@@ -73,43 +73,11 @@ jobs:
           done
           git diff --check
 
-      - name: Collect integration snapshot
+      - name: Collect complete patched source
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p snapshot
-          paths=(
-            source/src-tauri/crates/tt-application/src/services/agent_tools/rp
-            source/src-tauri/crates/tt-application/src/services/agent_tools/dispatcher.rs
-            source/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
-            source/src-tauri/crates/tt-application/src/services/agent_runtime_service/artifacts.rs
-            source/src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs
-            source/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_agent_repository
-            source/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/mod.rs
-            source/src-tauri/crates/tt-ports/src/repositories/mod.rs
-            source/src-tauri/crates/tt-ports/src/repositories/workspace_repository.rs
-            source/src-tauri/crates/tt-ports/src/repositories/agent_run_repository.rs
-            source/src-tauri/crates/tauritavern/src/app/state.rs
-            source/src-tauri/crates/tauritavern/src/app/composition
-            source/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
-            source/src-tauri/crates/tauritavern/src/presentation/commands/mod.rs
-            source/src-tauri/crates/tauritavern/src/product.rs
-            source/src-tauri/crates/tauritavern/src/presentation/commands/bridge.rs
-            source/src-tauri/crates/tauritavern/src/presentation/commands/update_commands.rs
-            source/src/tauri/main/bootstrap.js
-            source/src/tauri/main/kernel/invokes/tauri-commands.js
-            source/src/tauri/main/api/dev.js
-            source/src/scripts/tauri/setting/setting-panel/settings-popup.js
-            source/src/scripts/tauri/setting/settings-app/SettingsApp.js
-            source/src/scripts/extensions/tauritavern-version/index.js
-            source/rspack.config.js
-          )
-          for path in "${paths[@]}"; do
-            if [ -e "$path" ]; then
-              cp -R --parents "$path" snapshot/
-            fi
-          done
-          tar -czf patched-source-snapshot.tar.gz -C snapshot .
+          tar --exclude='source/.git' --exclude='source/node_modules' --exclude='source/target' -czf patched-source-snapshot.tar.gz source
 
       - name: Upload snapshot
         uses: actions/upload-artifact@v4
