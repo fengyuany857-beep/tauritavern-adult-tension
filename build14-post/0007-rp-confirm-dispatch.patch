@@ -1,0 +1,22 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/dispatcher.rs b/src-tauri/crates/tt-application/src/services/agent_tools/dispatcher.rs
+index 5d56d62..68ca098 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/dispatcher.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/dispatcher.rs
+@@ -175,6 +175,17 @@ impl AgentToolDispatcher {
+                 )
+                 .await?
+             }
++            rp::RP_CONFIRM_CANONIZATION => {
++                let prompt_snapshot = self.read_run_prompt_snapshot(run_id).await?;
++                rp::confirm_canonization(
++                    self.run_repository.as_ref(),
++                    self.workspace_repository.as_ref(),
++                    run_id,
++                    &prompt_snapshot,
++                    call,
++                )
++                .await?
++            }
+             skill::SKILL_LIST => skill::list(call, session, profile).await?,
+             skill::SKILL_SEARCH => {
+                 skill::search(self.skill_service.as_ref(), call, session, profile).await?
