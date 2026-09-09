@@ -1,38 +1,3 @@
 # Diagnostic matches
 
 # Tail
-✔ api.agent.profiles forwards profile commands with camelCase DTOs (54.881917ms)
-✔ api.agent.profiles publishes profile change events after successful mutations (0.650333ms)
-✔ api.agent.profiles fails fast on invalid profile inputs (0.607833ms)
-✔ api.agent.tools lists canonical catalog items (0.172042ms)
-✔ api.agent.promptAssembly prepares backend broker requests (0.256875ms)
-✔ api.agent.promptAssembly normalizes current model connection through backend commands (0.356292ms)
-✔ api.agent.startRunWithPromptSnapshot refreshes Model Target LLM connection before starting run (7.35525ms)
-✔ api.agent.readEvents requests timeline projection only when asked (0.566083ms)
-✔ api.agent.submitGuidance forwards camelCase DTO and fails fast on invalid input (0.493583ms)
-✔ api.agent.listRuns forwards run history filters with camelCase DTOs (21.993125ms)
-✔ api.agent.listRuns fails fast on invalid history filters (0.763458ms)
-✔ api.agent.retention forwards settings and prune contracts (0.513083ms)
-✔ api.agent.retention fails fast on invalid retention inputs (10.695667ms)
-✔ api.agent.readModelTurn forwards camelCase DTO and fails fast on invalid input (0.35675ms)
-✔ api.agent.pruneChatPersistentStates forwards explicit candidate state ids (0.950334ms)
-✔ api.agent.pruneChatPersistentStates fails fast on invalid candidate state ids (0.1985ms)
-✔ agent chat commit bridge detaches on partial success terminal event (0.968458ms)
-✔ agent chat commit bridge runs generated output cleanup before saving (1.586625ms)
-✔ agent chat commit bridge cleans append commits as one raw target message (1.339333ms)
-✔ agent prompt assembly bridge reads pending request by assembly id (3.155ms)
-✔ shared agent run event subscription fans out over one backend poller (0.715583ms)
-✔ Auto Acceptance is wired through production Settings and Host ABI (5.673416ms)
-✔ Auto Acceptance uses isolated file storage and the production RP path (2.365708ms)
-✔ Auto Acceptance remains quick, bounded, and offline by default (0.405958ms)
-✔ Acceptance report export reuses the existing safe export chain (0.25875ms)
-✔ Adult Tension self-sign distribution blocks upstream update drift (1.259667ms)
-✔ Acceptance build identity includes fork and CI provenance fields (0.357958ms)
-ℹ tests 27
-ℹ suites 0
-ℹ pass 27
-ℹ fail 0
-ℹ cancelled 0
-ℹ skipped 0
-ℹ todo 0
-ℹ duration_ms 284.867625
