@@ -1,0 +1,120 @@
+name: Export Patched Source Snapshot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - SOURCE_DUMP_TRIGGER
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      UPSTREAM_SHA: 3a8c5401c859ac15ac11f3339846360615232896
+    steps:
+      - name: Checkout control repository
+        uses: actions/checkout@v4
+        with:
+          path: control
+
+      - name: Checkout exact TauriTavern baseline
+        uses: actions/checkout@v4
+        with:
+          repository: Darkatse/TauriTavern
+          ref: 3a8c5401c859ac15ac11f3339846360615232896
+          path: source
+
+      - name: Reconstruct patches
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, gzip, hashlib
+          parts = sorted(Path('control/patch64').glob('p*.txt'))
+          encoded = ''.join(p.read_text().strip() for p in parts)
+          patch = gzip.decompress(base64.b64decode(encoded))
+          Path('/tmp/native.patch').write_bytes(patch)
+          assert hashlib.sha256(patch).hexdigest() == 'ab08a021d5ff0158b283ef25bfc6aa7f0efec05328ca99e489eea130d566fe10'
+          parts = sorted(Path('control/build11patch64').glob('p*.txt'))
+          encoded = ''.join(p.read_text().strip() for p in parts)
+          patch = gzip.decompress(base64.b64decode(encoded))
+          Path('/tmp/build11.patch').write_bytes(patch)
+          assert hashlib.sha256(patch).hexdigest() == 'f32fced72ac46136d17ef0e4a916d0285bff178aaaccdd1e6ef17aa7e33f36c7'
+          PY
+
+      - name: Apply complete patch stack
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply --check /tmp/native.patch
+          git apply /tmp/native.patch
+          shopt -s nullglob
+          for patch in ../control/patches/*.patch; do
+            git apply --check "$patch"
+            git apply "$patch"
+          done
+          git apply --check /tmp/build11.patch
+          git apply /tmp/build11.patch
+          for patch in ../control/build11-post/*.patch; do
+            git apply --check "$patch"
+            git apply "$patch"
+          done
+          for patch in ../control/build14-post/*.patch; do
+            normalized="$(mktemp)"
+            sed 's/^ diff --git /diff --git /' "$patch" > "$normalized"
+            git apply --recount --check "$normalized"
+            git apply --recount "$normalized"
+            rm -f "$normalized"
+          done
+          git diff --check
+
+      - name: Collect integration snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p snapshot
+          paths=(
+            source/src-tauri/crates/tt-application/src/services/agent_tools/rp
+            source/src-tauri/crates/tt-application/src/services/agent_tools/dispatcher.rs
+            source/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
+            source/src-tauri/crates/tt-application/src/services/agent_runtime_service/artifacts.rs
+            source/src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs
+            source/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_agent_repository
+            source/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/mod.rs
+            source/src-tauri/crates/tt-ports/src/repositories/mod.rs
+            source/src-tauri/crates/tt-ports/src/repositories/workspace_repository.rs
+            source/src-tauri/crates/tt-ports/src/repositories/agent_run_repository.rs
+            source/src-tauri/crates/tauritavern/src/app/state.rs
+            source/src-tauri/crates/tauritavern/src/app/composition
+            source/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
+            source/src-tauri/crates/tauritavern/src/presentation/commands/mod.rs
+            source/src-tauri/crates/tauritavern/src/product.rs
+            source/src-tauri/crates/tauritavern/src/presentation/commands/bridge.rs
+            source/src-tauri/crates/tauritavern/src/presentation/commands/update_commands.rs
+            source/src/tauri/main/bootstrap.js
+            source/src/tauri/main/kernel/invokes/tauri-commands.js
+            source/src/tauri/main/api/dev.js
+            source/src/scripts/tauri/setting/setting-panel/settings-popup.js
+            source/src/scripts/tauri/setting/settings-app/SettingsApp.js
+            source/src/scripts/extensions/tauritavern-version/index.js
+            source/rspack.config.js
+          )
+          for path in "${paths[@]}"; do
+            if [ -e "$path" ]; then
+              cp -R --parents "$path" snapshot/
+            fi
+          done
+          tar -czf patched-source-snapshot.tar.gz -C snapshot .
+
+      - name: Upload snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: patched-source-snapshot
+          path: patched-source-snapshot.tar.gz
+          if-no-files-found: error
+          retention-days: 1
