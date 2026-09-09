@@ -6,8 +6,8 @@
   "trigger_sha": "8dee2f6dd08bc2ba58dd2a826232255b0ce74b17",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
   "stage": "Rust tests",
-  "state": "RUNNING",
+  "state": "PASS",
   "exit_code": 0,
-  "updated_at": "2026-09-09T14:10:17Z",
+  "updated_at": "2026-09-09T14:10:38Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-24-a1"
 }
