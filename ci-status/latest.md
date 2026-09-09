@@ -1,10 +1,10 @@
 # TauriTavern Adult Tension iOS build status
 
-- State: **FAIL**
-- Stage: **Rust Clippy**
-- Exit code: **101**
-- Run: **27 / attempt 1**
+- State: **RUNNING**
+- Stage: **Environment ready**
+- Exit code: **0**
+- Run: **31 / attempt 1**
 - Upstream: `3a8c5401c859ac15ac11f3339846360615232896`
-- Updated: **2026-09-09T13:43:45Z**
+- Updated: **2026-09-09T14:06:24Z**
 
 - Self-sign release: https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-24-a1
