@@ -1,0 +1,41 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools.rs b/src-tauri/crates/tt-application/src/services/agent_tools.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_tools.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools.rs
+@@ -17,6 +17,7 @@ pub(crate) use dispatcher::{AgentToolDispatchOutcome, AgentToolDispatcher, Agent
+ pub(crate) use session::AgentToolSession;
++pub(crate) use rp::{mark_canonizations_applied, pending_canonizations_for_run};
+ 
+ pub(crate) use agent::{AGENT_AWAIT, AGENT_DELEGATE, AGENT_HANDOFF, AGENT_LIST, TASK_RETURN};
+ pub(crate) use common::{WORKSPACE_PATH_IS_DIRECTORY_CODE, workspace_path_is_directory_message};
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_canonization.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_canonization.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_canonization.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_canonization.rs
+@@ -3,7 +3,7 @@ use sha2::{Digest, Sha256};
+ 
+ use super::AgentRuntimeService;
+ use crate::errors::ApplicationError;
+-use crate::services::agent_tools::rp::{mark_canonizations_applied, pending_canonizations_for_run};
++use crate::services::agent_tools::{mark_canonizations_applied, pending_canonizations_for_run};
+ use tt_domain::models::agent::WorkspacePath;
+ use tt_domain::models::rp_architecture::{RP_ARCHITECTURE_SCHEMA_VERSION, WorldManifest};
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs
+@@ -4,7 +4,7 @@ mod state;
+ 
+ pub(crate) use descriptors::{recall_descriptor, stage_turn_descriptor, state_descriptor};
+ pub(crate) use state::{recall, stage_turn, state};
+-pub(crate) use state::{mark_canonizations_applied, pending_canonizations_for_run, PendingCanonization};
++pub(crate) use state::{mark_canonizations_applied, pending_canonizations_for_run};
+ pub(crate) use confirm::{confirm_canonization, confirm_canonization_descriptor};
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -1544,7 +1544,7 @@ pub(crate) async fn confirm_canonization(
+     proposal_id: &str,
+     user_confirmation: &str,
+ ) -> Result<AgentToolResult, ApplicationError> {
+-    let run = run_repository.load_run(run_id).await?;
++    let _run = run_repository.load_run(run_id).await?;
+     let mut state = load_state(workspace_repository, run_id).await?;
+     let proposal = state
