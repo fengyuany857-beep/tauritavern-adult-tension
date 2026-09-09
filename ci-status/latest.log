@@ -1,6 +1,9 @@
 # Diagnostic matches
 28:[1m[91merror[E0063][0m[1m: missing fields `canonization_proposals`, `cast_updates`, `memory_updates` and 1 other field in initializer of `state::StageTurnArgs`[0m
 34:[1m[91merror[E0063][0m[1m: missing fields `canonization_proposals`, `cast_updates`, `memory_updates` and 1 other field in initializer of `state::StageTurnArgs`[0m
+40:[1mFor more information about this error, try `rustc --explain E0063`.[0m
+41:[1m[91merror[0m: could not compile `tt-application` (lib test) due to 2 previous errors
+42:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
 
 # Tail
 
@@ -42,3 +45,6 @@
 [1m[94m2148[0m [1m[94m|[0m         StageTurnArgs {
      [1m[94m|[0m         [1m[91m^^^^^^^^^^^^^[0m [1m[91mmissing `canonization_proposals`, `cast_updates`, `memory_updates` and 1 other field[0m
 
+[1mFor more information about this error, try `rustc --explain E0063`.[0m
+[1m[91merror[0m: could not compile `tt-application` (lib test) due to 2 previous errors
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
