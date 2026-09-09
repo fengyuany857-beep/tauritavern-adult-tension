@@ -20,33 +20,6 @@
 858:    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/ibtool --errors --warnings --notices --module TauriTavern --target-device iphone --target-device ipad --minimum-deployment-target 16.0 --output-format human-readable-text --link /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/LaunchScreen.storyboardc
 
 # Tail
-    export SWIFT_EMIT_LOC_STRINGS\=NO
-    export SWIFT_ENABLE_EXPLICIT_MODULES\=YES
-    export SWIFT_OPTIMIZATION_LEVEL\=-O
-    export SWIFT_PLATFORM_TARGET_PREFIX\=ios
-    export SWIFT_RESPONSE_FILE_PATH_normal_arm64\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/Objects-normal/arm64/TauriTavern.SwiftFileList
-    export SWIFT_VERSION\=5.0
-    export SYMROOT\=/Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products
-    export SYSTEM_ADMIN_APPS_DIR\=/Applications/Utilities
-    export SYSTEM_APPS_DIR\=/Applications
-    export SYSTEM_CORE_SERVICES_DIR\=/System/Library/CoreServices
-    export SYSTEM_DEMOS_DIR\=/Applications/Extras
-    export SYSTEM_DEVELOPER_APPS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications
-    export SYSTEM_DEVELOPER_BIN_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/usr/bin
-    export SYSTEM_DEVELOPER_DEMOS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Utilities/Built\ Examples
-    export SYSTEM_DEVELOPER_DIR\=/Applications/Xcode_26.6.app/Contents/Developer
-    export SYSTEM_DEVELOPER_DOC_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library
-    export SYSTEM_DEVELOPER_GRAPHICS_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Graphics\ Tools
-    export SYSTEM_DEVELOPER_JAVA_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Java\ Tools
-    export SYSTEM_DEVELOPER_PERFORMANCE_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Performance\ Tools
-    export SYSTEM_DEVELOPER_RELEASENOTES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/releasenotes
-    export SYSTEM_DEVELOPER_TOOLS\=/Applications/Xcode_26.6.app/Contents/Developer/Tools
-    export SYSTEM_DEVELOPER_TOOLS_DOC_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/documentation/DeveloperTools
-    export SYSTEM_DEVELOPER_TOOLS_RELEASENOTES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/releasenotes/DeveloperTools
-    export SYSTEM_DEVELOPER_USR_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/usr
-    export SYSTEM_DEVELOPER_UTILITIES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Utilities
-    export SYSTEM_DEXT_INSTALL_PATH\=/System/Library/DriverExtensions
-    export SYSTEM_DOCUMENTATION_DIR\=/Library/Documentation
     export SYSTEM_EXTENSIONS_FOLDER_PATH\=TauriTavern.app/SystemExtensions
     export SYSTEM_EXTENSIONS_FOLDER_PATH_SHALLOW_BUNDLE_NO\=TauriTavern.app/Library/SystemExtensions
     export SYSTEM_EXTENSIONS_FOLDER_PATH_SHALLOW_BUNDLE_YES\=TauriTavern.app/SystemExtensions
@@ -280,3 +253,30 @@ ProcessInfoPlistFile /Users/runner/work/_temp/tauritavern-ios-derived-data/Build
 CopySwiftLibs /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app (in target 'tauritavern_iOS' from project 'tauritavern')
     cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
     builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/TauriTavern --scan-folder /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/Frameworks --scan-folder /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/PlugIns --scan-folder /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/SystemExtensions --scan-folder /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/Extensions --scan-folder /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/System/Library/Frameworks/CoreGraphics.framework --scan-folder /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/System/Library/Frameworks/Metal.framework --scan-folder /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/System/Library/Frameworks/MetalKit.framework --scan-folder /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/System/Library/Frameworks/QuartzCore.framework --scan-folder /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/System/Library/Frameworks/Security.framework --scan-folder /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/System/Library/Frameworks/UIKit.framework --scan-folder /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/System/Library/Frameworks/WebKit.framework --platform iphoneos --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.c67Lln/Metal.xctoolchain --toolchain /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os --back-deploy-swift-span
+Ignoring --strip-bitcode because --sign was not passed
+
+GenerateDSYMFile /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app.dSYM /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/TauriTavern (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/dsymutil /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app/TauriTavern -o /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app.dSYM
+
+RegisterExecutionPolicyException /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    builtin-RegisterExecutionPolicyException /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app
+
+Validate /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    builtin-validationUtility /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app -shallow-bundle -infoplist-subpath Info.plist
+
+Touch /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app (in target 'tauritavern_iOS' from project 'tauritavern')
+    cd /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern/gen/apple
+    /usr/bin/touch -c /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app
+
+note: Run script build phase 'Build Rust Code' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'tauritavern_iOS' from project 'tauritavern')
+** BUILD SUCCEEDED **
+
+Unsigned iOS build created:
+  /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/TauriTavern-unsigned.ipa
+  /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/TauriTavern.app.zip
+13c3310a2ec6e79939d6e331d7eaf7871d8fa74ac64388ea626cc1c6fd74250e  TauriTavern-unsigned.ipa
+ee7df714e53bed710339dc68b8101a9285e97b7b24eca7d4014562c11ccbadee  TauriTavern.app.zip
+bd9784c6adb999116601a12eecac7adafc473ec9a3625fc570a52465b9a90773  build-info.json
