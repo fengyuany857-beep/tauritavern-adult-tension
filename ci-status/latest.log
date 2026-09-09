@@ -20,12 +20,6 @@
 858:    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/ibtool --errors --warnings --notices --module TauriTavern --target-device iphone --target-device ipad --minimum-deployment-target 16.0 --output-format human-readable-text --link /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/release-iphoneos/TauriTavern.app /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Intermediates.noindex/tauritavern.build/release-iphoneos/tauritavern_iOS.build/LaunchScreen.storyboardc
 
 # Tail
-    export SYSTEM_DEVELOPER_TOOLS_DOC_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/documentation/DeveloperTools
-    export SYSTEM_DEVELOPER_TOOLS_RELEASENOTES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/releasenotes/DeveloperTools
-    export SYSTEM_DEVELOPER_USR_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/usr
-    export SYSTEM_DEVELOPER_UTILITIES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Utilities
-    export SYSTEM_DEXT_INSTALL_PATH\=/System/Library/DriverExtensions
-    export SYSTEM_DOCUMENTATION_DIR\=/Library/Documentation
     export SYSTEM_EXTENSIONS_FOLDER_PATH\=TauriTavern.app/SystemExtensions
     export SYSTEM_EXTENSIONS_FOLDER_PATH_SHALLOW_BUNDLE_NO\=TauriTavern.app/Library/SystemExtensions
     export SYSTEM_EXTENSIONS_FOLDER_PATH_SHALLOW_BUNDLE_YES\=TauriTavern.app/SystemExtensions
@@ -280,3 +274,9 @@ Touch /Users/runner/work/_temp/tauritavern-ios-derived-data/Build/Products/relea
 note: Run script build phase 'Build Rust Code' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'tauritavern_iOS' from project 'tauritavern')
 ** BUILD SUCCEEDED **
 
+Unsigned iOS build created:
+  /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/TauriTavern-unsigned.ipa
+  /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/TauriTavern.app.zip
+f00d1598a78a81d151f65a36bd9fa16367c8abfbfa49cd9f53fb915bef5e2cf6  TauriTavern-unsigned.ipa
+0a02e5dc03bee639b93d3e76b48feb9dfbf4d6e3ae855ba62c47bd7ecc844849  TauriTavern.app.zip
+bd9784c6adb999116601a12eecac7adafc473ec9a3625fc570a52465b9a90773  build-info.json
