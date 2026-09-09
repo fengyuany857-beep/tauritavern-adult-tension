@@ -31,16 +31,6 @@ jobs:
         with:
           path: control
 
-      - name: Export build provenance
-        shell: bash
-        run: |
-          {
-            echo "TAURITAVERN_CONTROL_SHA=$GITHUB_SHA"
-            echo "TAURITAVERN_BUILD_RUN_ID=$GITHUB_RUN_ID"
-            echo "TAURITAVERN_BUILD_RUN_NUMBER=$GITHUB_RUN_NUMBER"
-            echo "TAURITAVERN_UPSTREAM_SHA=$UPSTREAM_SHA"
-          } >> "$GITHUB_ENV"
-
       - name: Checkout exact TauriTavern baseline
         uses: actions/checkout@v4
         with:
