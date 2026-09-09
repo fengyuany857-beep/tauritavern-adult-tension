@@ -1,0 +1,96 @@
+diff --git a/tests/ios-runtime-acceptance-contract.test.mjs b/tests/ios-runtime-acceptance-contract.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/ios-runtime-acceptance-contract.test.mjs
+@@ -0,0 +1,93 @@
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import test from 'node:test';
++
++function read(path) {
++    return fs.readFileSync(path, 'utf8');
++}
++
++test('Auto Acceptance is wired through production Settings and Host ABI', () => {
++    const settings = read('src/scripts/tauri/setting/settings-app/SettingsApp.js');
++    const actions = read('src/scripts/tauri/setting/setting-panel/settings-popup.js');
++    const api = read('src/tauri/main/api/acceptance.js');
++    const bootstrap = read('src/tauri/main/bootstrap.js');
++    const commands = read('src/tauri/main/kernel/invokes/tauri-commands.js');
++    const registry = read('src-tauri/crates/tauritavern/src/presentation/commands/registry.rs');
++
++    assert.match(settings, /Auto Acceptance/);
++    assert.match(actions, /openAcceptance/);
++    assert.match(api, /acceptance_start/);
++    assert.match(api, /acceptance_get_status/);
++    assert.match(api, /acceptance_cancel/);
++    assert.match(api, /acceptance_get_report/);
++    assert.match(bootstrap, /installAcceptanceApi/);
++    for (const name of ['acceptance_start', 'acceptance_get_status', 'acceptance_cancel', 'acceptance_get_report']) {
++        assert.match(commands, new RegExp(name));
++        assert.match(registry, new RegExp(name));
++    }
++});
++
++test('Auto Acceptance uses isolated file storage and the production RP path', () => {
++    const port = read('src-tauri/crates/tt-ports/src/repositories/acceptance_sandbox_factory.rs');
++    const adapter = read('src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_acceptance_sandbox_factory.rs');
++    const service = read('src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs');
++    const rp = read('src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs');
++
++    assert.match(port, /AcceptanceSandboxFactory/);
++    assert.match(adapter, /FileAgentRepository::new/);
++    assert.match(adapter, /marker\.json/);
++    assert.match(adapter, /symlink_metadata/);
++    assert.match(adapter, /accept-/);
++    assert.match(service, /build_agent_manifest/);
++    assert.match(service, /rp::dispatch_tool/);
++    assert.match(rp, /pub\(crate\) async fn dispatch_tool/);
++    assert.doesNotMatch(service, /FileAgentRepository::new/);
++    assert.doesNotMatch(service, /tt_adapter_storage_userdata/);
++});
++
++test('Auto Acceptance remains quick, bounded, and offline by default', () => {
++    const service = read('src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs');
++
++    assert.match(service, /SUITE_EXECUTION_TIMEOUT/);
++    assert.match(service, /burst\.quick_local/);
++    assert.match(service, /0\.\.24|24-operation/);
++    assert.doesNotMatch(service, /generate_exchange_with_cancel/);
++    assert.doesNotMatch(service, /ChatCompletionService::generate/);
++    assert.doesNotMatch(service, /1_000_000|1000000/);
++});
++
++test('Acceptance report export reuses the existing safe export chain', () => {
++    const panel = read('src/scripts/tauri/setting/acceptance.js');
++
++    assert.match(panel, /downloadBlobWithRuntime/);
++    assert.match(panel, /application\/json/);
++    assert.doesNotMatch(panel, /ios_share_file/);
++});
++
++test('Adult Tension self-sign distribution blocks upstream update drift', () => {
++    const product = read('src-tauri/crates/tauritavern/src/product.rs');
++    const updateCommand = read('src-tauri/crates/tauritavern/src/presentation/commands/update_commands.rs');
++    const versionUi = read('src/scripts/extensions/tauritavern-version/index.js');
++
++    assert.match(product, /adult_tension_selfsign/);
++    assert.match(product, /upstream_updates_allowed/);
++    assert.match(updateCommand, /updates\.upstream_disabled_for_fork/);
++    assert.match(versionUi, /fork-managed Adult Tension build/);
++    assert.match(versionUi, /isForkManagedDistribution/);
++});
++
++test('Acceptance build identity includes fork and CI provenance fields', () => {
++    const product = read('src-tauri/crates/tauritavern/src/product.rs');
++    const commands = read('src-tauri/crates/tauritavern/src/presentation/commands/acceptance_commands.rs');
++
++    for (const name of ['TAURITAVERN_CONTROL_SHA', 'TAURITAVERN_BUILD_RUN_ID', 'TAURITAVERN_BUILD_RUN_NUMBER', 'TAURITAVERN_UPSTREAM_SHA']) {
++        assert.match(product, new RegExp(name));
++    }
++    assert.match(commands, /distribution_flavor/);
++    assert.match(commands, /control_sha/);
++    assert.match(commands, /github_run_id/);
++    assert.match(commands, /github_run_number/);
++    assert.match(commands, /upstream_sha/);
++});
