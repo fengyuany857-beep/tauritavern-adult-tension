@@ -1,0 +1,128 @@
+diff --git a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+index da6f5ee..890c348 100644
+--- a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
++++ b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+@@ -838,3 +838,123 @@ async fn create_synthetic_run(
+     sandbox.run_repository.create_run(&run).await?;
+     let manifest = build_agent_manifest(&run, profile);
+     sandbox.workspace_repository.initialize_run(&run, &manifest, prompt, profile).await?;
++    Ok(run)
++}
++
++fn tool_call(name: &str, arguments: Value) -> Result<ToolInvocation, ApplicationError> {
++    Ok(ToolInvocation {
++        call_id: format!("acceptance-call-{}", Uuid::new_v4().simple()),
++        tool_id: ToolId::builtin(name)?,
++        arguments,
++        provider_metadata: Value::Null,
++    })
++}
++
++fn prompt_for_world(world_id: &str, revision: u64, fingerprint: &str, duplicate_manifest: bool, user_text: &str) -> Value {
++    let manifest = WorldManifest {
++        schema_version: RP_ARCHITECTURE_SCHEMA_VERSION,
++        world_id: WorldId(world_id.to_string()),
++        title: format!("Acceptance {world_id}"),
++        manifest_revision: revision,
++        canon_revision: revision,
++        canon_fingerprint: fingerprint.to_string(),
++        immutable_rules: Vec::new(),
++        canon_entity_refs: Vec::new(),
++        lore_pack_refs: Vec::new(),
++        compatibility: Default::default(),
++    };
++    let content = serde_json::to_string(&manifest).expect("synthetic world manifest serializes");
++    let entry = json!({"displayName":"TauriTavern World Manifest","constant":true,"content":content,"world":"Acceptance World","uid":1});
++    let mut entries = vec![entry.clone()];
++    if duplicate_manifest { entries.push(entry); }
++    json!({
++        "chatCompletionPayload":{"messages":[{"role":"user","content":user_text}]},
++        "worldInfoActivation":{"entries":entries}
++    })
++}
++
++fn require_success(result: &tt_domain::models::agent::AgentToolResult, context: &str) -> Result<(), ApplicationError> {
++    if result.is_error {
++        return Err(ApplicationError::ValidationError(format!(
++            "acceptance.rp_call_failed: {context}: {}: {}",
++            result.error_code.as_deref().unwrap_or("unknown"), sanitize_text(&result.content)
++        )));
++    }
++    Ok(())
++}
++
++fn require_error_code(result: &tt_domain::models::agent::AgentToolResult, expected: &str) -> Result<(), ApplicationError> {
++    if !result.is_error || result.error_code.as_deref() != Some(expected) {
++        return Err(ApplicationError::ValidationError(format!(
++            "acceptance.expected_error_missing: expected `{expected}`, got error={} code={:?}", result.is_error, result.error_code
++        )));
++    }
++    Ok(())
++}
++
++fn hits_len(result: &tt_domain::models::agent::AgentToolResult) -> usize {
++    result.structured.get("hits").and_then(Value::as_array).map(Vec::len).unwrap_or(0)
++}
++
++fn active_mut<'a>(hub: &'a mut AcceptanceHubState, run_id: &str) -> Result<&'a mut ActiveRun, ApplicationError> {
++    let active = hub.active.as_mut().ok_or_else(|| ApplicationError::NotFound("acceptance.run_not_found".to_string()))?;
++    if active.status.run_id.as_deref() != Some(run_id) { return Err(ApplicationError::NotFound("acceptance.run_not_found".to_string())); }
++    Ok(active)
++}
++
++fn touch_status(status: &mut AcceptanceStatusDto) {
++    status.revision = status.revision.saturating_add(1);
++    status.updated_at = Utc::now().to_rfc3339();
++}
++
++fn idle_status() -> AcceptanceStatusDto {
++    AcceptanceStatusDto {
++        schema_version: STATUS_SCHEMA_VERSION,
++        suite_version: ACCEPTANCE_SUITE_VERSION.to_string(),
++        run_id: None,
++        revision: 0,
++        state: AcceptanceSuiteState::Idle,
++        phase: AcceptancePhase::Idle,
++        started_at: None,
++        updated_at: Utc::now().to_rfc3339(),
++        finished_at: None,
++        current_case_id: None,
++        completed_cases: 0,
++        total_cases: CASES.len(),
++        cancellation_requested: false,
++        cases: Vec::new(),
++    }
++}
++
++fn summarize(cases: &[AcceptanceCaseStatusDto]) -> AcceptanceSummaryDto {
++    let mut summary = AcceptanceSummaryDto::default();
++    for case in cases {
++        match case.state {
++            AcceptanceCaseState::Pass => summary.passed += 1,
++            AcceptanceCaseState::Warn => summary.warned += 1,
++            AcceptanceCaseState::Fail => summary.failed += 1,
++            AcceptanceCaseState::Skip => summary.skipped += 1,
++            AcceptanceCaseState::Cancelled => summary.cancelled += 1,
++            AcceptanceCaseState::Pending | AcceptanceCaseState::Running => {}
++        }
++    }
++    summary
++}
++
++fn sanitize_text(value: &str) -> String {
++    let mut text = value.replace('\n', " ").replace('\r', " ");
++    for marker in ["Bearer ", "Authorization:", "api_key", "apiKey", "secret", "token="] {
++        if text.to_ascii_lowercase().contains(&marker.to_ascii_lowercase()) {
++            return "Sensitive detail redacted; see backend logs for local diagnostics.".to_string();
++        }
++    }
++    if text.len() > 500 { text.truncate(500); }
++    text
++}
++
++fn sanitize_error(error: &ApplicationError) -> String { sanitize_text(&error.to_string()) }
++
++fn error_code(error: &ApplicationError) -> String {
++    let text = error.to_string();
++    text.split(':').next().unwrap_or("acceptance.internal").trim().to_string()
++}
