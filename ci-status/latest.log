@@ -4,6 +4,11 @@
 34:[1m[91merror[E0425][0m[1m: cannot find function `save_state` in this scope[0m
 40:[1m[91merror[E0425][0m[1m: cannot find function `save_state` in this scope[0m
 46:[1m[91merror[E0063][0m[1m: missing fields `archived_npc_count`, `canonization_proposals`, `cast_registry` and 1 other field in initializer of `StateResult<'_>`[0m
+57:[1mSome errors have detailed explanations: E0063, E0425, E0599.[0m
+58:[1mFor more information about an error, try `rustc --explain E0063`.[0m
+60:[1m[91merror[0m: could not compile `tt-application` (lib) due to 5 previous errors; 1 warning emitted
+61:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+62: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
 
@@ -59,3 +64,12 @@
 
 [1m[92m   Compiling[0m tt-adapter-extension v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-extension)
 [1m[92m   Compiling[0m tt-adapter-media v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-media)
+[1m[92m   Compiling[0m tt-adapter-storage-userdata v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-userdata)
+[1m[92m   Compiling[0m tt-adapter-archive v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-archive)
+[1m[92m   Compiling[0m tt-adapter-sync v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-sync)
+[1mSome errors have detailed explanations: E0063, E0425, E0599.[0m
+[1mFor more information about an error, try `rustc --explain E0063`.[0m
+[1m[33mwarning[0m: `tt-application` (lib) generated 1 warning
+[1m[91merror[0m: could not compile `tt-application` (lib) due to 5 previous errors; 1 warning emitted
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+ ELIFECYCLE  Command failed with exit code 101.
