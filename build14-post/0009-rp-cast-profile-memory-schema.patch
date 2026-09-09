@@ -1,0 +1,117 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs
+index 0436b43..6647afe 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs
+@@ -1,6 +1,6 @@
+ use serde_json::json;
+ 
+-use super::{RP_RECALL, RP_STAGE_TURN, RP_STATE};
++use super::{RP_CONFIRM_CANONIZATION, RP_RECALL, RP_STAGE_TURN, RP_STATE};
+ use tt_domain::models::tool::{ToolDescriptor, ToolId};
+ 
+ pub(in crate::services::agent_tools) fn rp_state_descriptor() -> ToolDescriptor {
+@@ -40,7 +40,7 @@ pub(in crate::services::agent_tools) fn rp_stage_turn_descriptor() -> ToolDescri
+     ToolDescriptor {
+         id: ToolId::builtin(RP_STAGE_TURN).expect("builtin tool name must be valid"),
+         title: Some("RP Stage Turn".to_string()),
+-        description: Some("Stage the structured consequences of exactly one roleplay beat into this run's branch-local persistent RP state. This does not directly edit chat. Use once after deciding the beat and before workspace.commit. Fixed Canon cannot be overwritten. Positive NPC knowledge requires explicit provenance. Every fact also requires source provenance: inference may remain a character interpretation but cannot become objective COMMITTED Canon. When the user says a prior accepted story turn never happened, retract that turn with retract_turns + retraction_reason so its derived continuity is removed instead of merely marking an event cancelled. Current boundaries/grants/safety live only in the runtime authority section and must be grounded in the explicit current user turn; continuity facts cannot create them. Player feelings/intentions/internal state are rejected.".to_string()),
++        description: Some("Stage the structured consequences of exactly one roleplay beat into this run's branch-local persistent RP state. This does not directly edit chat. Use once after deciding the beat and before workspace.commit. Fixed Canon cannot be overwritten. Positive NPC knowledge requires explicit provenance. Every fact also requires source provenance: inference may remain a character interpretation but cannot become objective COMMITTED Canon. When the user says a prior accepted story turn never happened, retract that turn with retract_turns + retraction_reason so its derived continuity is removed instead of merely marking an event cancelled. Current boundaries/grants/safety live only in the runtime authority section and must be grounded in the explicit current user turn; continuity facts cannot create them. Player feelings/intentions/internal state are rejected. Cast Registry, profile evidence, memory lifecycle and canonization proposals are also staged here; Profile enrichment never changes character_id, role/control ownership, or World Canon by itself.".to_string()),
+         input_schema: json!({
+             "type": "object",
+             "additionalProperties": false,
+@@ -69,6 +69,71 @@ pub(in crate::services::agent_tools) fn rp_stage_turn_descriptor() -> ToolDescri
+                         "required": ["id"]
+                     }
+                 },
++                "cast_updates": {
++                    "type": ["array", "null"], "maxItems": 32,
++                    "description": "Stable Character Entity / Cast Registry updates. character_id is immutable. Changing display_name preserves aliases. narrative_role is independent from control_owner. Existing control_owner changes are rejected and require an explicit control-transfer mechanism.",
++                    "items": {
++                        "type": "object", "additionalProperties": false,
++                        "properties": {
++                            "character_id": {"type":"string"},
++                            "display_name": {"type":["string","null"]},
++                            "aliases": {"type":["array","null"], "items":{"type":"string"}, "maxItems":32},
++                            "narrative_role": {"type":["string","null"], "enum":["incidental","recurring","supporting","main",null]},
++                            "control_owner": {"type":["string","null"], "enum":["ai","user","shared",null]},
++                            "lifecycle_status": {"type":["string","null"], "enum":["active","offscreen","inactive","missing","departed","retired","dead","archived",null]},
++                            "archive": {"type":["boolean","null"]},
++                            "rehydrate": {"type":["boolean","null"]},
++                            "expected_profile_revision": {"type":["integer","null"], "minimum":0},
++                            "author_canon": {"type":["object","null"], "description":"Only current-user explicit character settings belong here. Automatic profile enrichment must not synthesize AUTHOR_CANON."}
++                        },
++                        "required":["character_id"]
++                    }
++                },
++                "profile_evidence": {
++                    "type":["array","null"], "maxItems":48,
++                    "description":"AEGPE evidence. Single observations remain inferred. Stable Profile promotion is engine-gated by repeated cross-context evidence and remains lower authority than Author Canon.",
++                    "items": {
++                        "type":"object", "additionalProperties":false,
++                        "properties": {
++                            "id":{"type":["string","null"]},
++                            "character_id":{"type":"string"},
++                            "trait_key":{"type":"string", "description":"Stable semantic key used for dedupe, e.g. control_sensitivity."},
++                            "statement":{"type":"string"},
++                            "source_kind":{"type":"string", "enum":["user_asserted","behavior","reaction","decision","statement","relation_pattern","capability","limitation","other_character_report"]},
++                            "context":{"type":["string","null"]},
++                            "source_ref":{"type":["string","null"], "description":"Existing episode/fact/turn reference when available."},
++                            "contradicts":{"type":["boolean","null"], "description":"True when this evidence contradicts the candidate/stable pattern rather than supporting it."}
++                        },
++                        "required":["character_id","trait_key","statement","source_kind"]
++                    }
++                },
++                "memory_updates": {
++                    "type":["array","null"], "maxItems":32,
++                    "description":"Optional explicit memory lifecycle records. Working memory remains recentBeats; old working beats are automatically moved into episodic memory rather than disappearing.",
++                    "items": {
++                        "type":"object", "additionalProperties":false,
++                        "properties": {
++                            "id":{"type":["string","null"]},
++                            "tier":{"type":"string", "enum":["working","episodic","semantic","archive"]},
++                            "summary":{"type":"string"},
++                            "character_refs":{"type":["array","null"], "items":{"type":"string"}, "maxItems":32},
++                            "source_refs":{"type":["array","null"], "items":{"type":"string"}, "maxItems":32}
++                        },
++                        "required":["tier","summary"]
++                    }
++                },
++                "canonization_proposals": {
++                    "type":["array","null"], "maxItems":8,
++                    "description":"Propose promoting a session_created Character Entity to the bound World Canon. Proposal creation never writes World Canon. The user must later explicitly confirm its proposal id through rp.confirm_canonization.",
++                    "items": {
++                        "type":"object", "additionalProperties":false,
++                        "properties": {
++                            "proposal_id":{"type":["string","null"]},
++                            "character_id":{"type":"string"}
++                        },
++                        "required":["character_id"]
++                    }
++                },
+                 "events": {
+                     "type": ["array", "null"], "maxItems": 32,
+                     "items": {
+@@ -217,3 +282,23 @@ pub(in crate::services::agent_tools) fn rp_stage_turn_descriptor() -> ToolDescri
+         annotations: json!({ "readOnly": false, "idempotent": false, "sourceKind": "rp_runtime" }),
+     }
+ }
++
++
++pub(in crate::services::agent_tools) fn rp_confirm_canonization_descriptor() -> ToolDescriptor {
++    ToolDescriptor {
++        id: ToolId::builtin(RP_CONFIRM_CANONIZATION).expect("builtin tool name must be valid"),
++        title: Some("RP Confirm Canonization".to_string()),
++        description: Some("Confirm one previously proposed Session Character → World Canon promotion. This is deliberately fail-closed: the current explicit user message must name the exact proposal_id and clearly confirm/approve it. The tool only stages the confirmed transaction; the actual WorldInfo write is deferred to the successful workspace.finish boundary and preserves the same immutable character_id. Inferred profile and temporary runtime state are excluded from World Canon.".to_string()),
++        input_schema: json!({
++            "type":"object",
++            "additionalProperties":false,
++            "properties": {
++                "proposal_id":{"type":"string"},
++                "confirm":{"type":"boolean", "const":true}
++            },
++            "required":["proposal_id","confirm"]
++        }),
++        output_schema: None,
++        annotations: json!({"readOnly":false,"idempotent":false,"sourceKind":"rp_world_canon_transaction"}),
++    }
++}
