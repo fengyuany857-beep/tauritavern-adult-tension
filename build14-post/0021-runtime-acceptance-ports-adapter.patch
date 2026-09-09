@@ -1,0 +1,307 @@
+diff --git a/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_acceptance_sandbox_factory.rs b/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_acceptance_sandbox_factory.rs
+new file mode 100644
+index 0000000..768c194
+--- /dev/null
++++ b/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_acceptance_sandbox_factory.rs
+@@ -0,0 +1,244 @@
++use std::path::{Path, PathBuf};
++use std::sync::Arc;
++
++use async_trait::async_trait;
++use serde::{Deserialize, Serialize};
++use tokio::fs;
++use uuid::Uuid;
++
++use super::FileAgentRepository;
++use tt_domain::errors::DomainError;
++use tt_ports::repositories::acceptance_sandbox_factory::{
++    ACCEPTANCE_SUITE_VERSION, AcceptanceSandbox, AcceptanceSandboxFactory,
++};
++use tt_ports::repositories::agent_run_repository::AgentRunRepository;
++use tt_ports::repositories::workspace_repository::WorkspaceRepository;
++
++const MARKER_FILE: &str = "marker.json";
++const MARKER_SCHEMA_VERSION: u32 = 1;
++const SANDBOX_PREFIX: &str = "accept-";
++
++#[derive(Debug, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++struct AcceptanceSandboxMarker {
++    schema_version: u32,
++    suite_version: String,
++    sandbox_id: String,
++    run_id: String,
++}
++
++pub struct FileAcceptanceSandboxFactory {
++    root: PathBuf,
++}
++
++impl FileAcceptanceSandboxFactory {
++    pub fn new(root: PathBuf) -> Self {
++        Self { root }
++    }
++
++    fn sandbox_path(&self, sandbox_id: &str) -> Result<PathBuf, DomainError> {
++        validate_sandbox_id(sandbox_id)?;
++        Ok(self.root.join(sandbox_id))
++    }
++
++    async fn marker_owned(&self, path: &Path, sandbox_id: &str) -> Result<bool, DomainError> {
++        let marker_path = path.join(MARKER_FILE);
++        let metadata = match fs::symlink_metadata(&marker_path).await {
++            Ok(metadata) => metadata,
++            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
++            Err(error) => {
++                return Err(DomainError::InternalError(format!(
++                    "Failed to inspect acceptance sandbox marker {}: {error}",
++                    marker_path.display()
++                )));
++            }
++        };
++        if metadata.file_type().is_symlink() || !metadata.is_file() {
++            return Ok(false);
++        }
++        let text = fs::read_to_string(&marker_path).await.map_err(|error| {
++            DomainError::InternalError(format!(
++                "Failed to read acceptance sandbox marker {}: {error}",
++                marker_path.display()
++            ))
++        })?;
++        let marker: AcceptanceSandboxMarker = match serde_json::from_str(&text) {
++            Ok(marker) => marker,
++            Err(_) => return Ok(false),
++        };
++        Ok(marker.schema_version == MARKER_SCHEMA_VERSION
++            && marker.suite_version == ACCEPTANCE_SUITE_VERSION
++            && marker.sandbox_id == sandbox_id)
++    }
++
++    async fn remove_owned_sandbox(&self, sandbox_id: &str) -> Result<(), DomainError> {
++        let path = self.sandbox_path(sandbox_id)?;
++        let metadata = match fs::symlink_metadata(&path).await {
++            Ok(metadata) => metadata,
++            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
++            Err(error) => {
++                return Err(DomainError::InternalError(format!(
++                    "Failed to inspect acceptance sandbox {}: {error}",
++                    path.display()
++                )));
++            }
++        };
++        if metadata.file_type().is_symlink() || !metadata.is_dir() {
++            return Err(DomainError::InvalidData(
++                "acceptance.sandbox_path_invalid: sandbox must be a real directory".to_string(),
++            ));
++        }
++        if !self.marker_owned(&path, sandbox_id).await? {
++            return Err(DomainError::InvalidData(
++                "acceptance.sandbox_marker_invalid: refusing to delete unowned directory".to_string(),
++            ));
++        }
++        fs::remove_dir_all(&path).await.map_err(|error| {
++            DomainError::InternalError(format!(
++                "acceptance.sandbox_cleanup_failed: {}: {error}",
++                path.display()
++            ))
++        })?;
++        match fs::symlink_metadata(&path).await {
++            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
++            Ok(_) => Err(DomainError::InternalError(
++                "acceptance.sandbox_cleanup_failed: sandbox still exists after cleanup".to_string(),
++            )),
++            Err(error) => Err(DomainError::InternalError(format!(
++                "acceptance.sandbox_cleanup_failed: failed to verify removal: {error}"
++            ))),
++        }
++    }
++}
++
++#[async_trait]
++impl AcceptanceSandboxFactory for FileAcceptanceSandboxFactory {
++    async fn cleanup_stale(&self) -> Result<usize, DomainError> {
++        let root_metadata = match fs::symlink_metadata(&self.root).await {
++            Ok(metadata) => metadata,
++            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(0),
++            Err(error) => {
++                return Err(DomainError::InternalError(format!(
++                    "Failed to inspect acceptance root {}: {error}",
++                    self.root.display()
++                )));
++            }
++        };
++        if root_metadata.file_type().is_symlink() || !root_metadata.is_dir() {
++            return Err(DomainError::InvalidData(
++                "acceptance.sandbox_root_invalid: acceptance root must be a real directory".to_string(),
++            ));
++        }
++
++        let mut entries = fs::read_dir(&self.root).await.map_err(|error| {
++            DomainError::InternalError(format!(
++                "Failed to read acceptance root {}: {error}",
++                self.root.display()
++            ))
++        })?;
++        let mut removed = 0usize;
++        while let Some(entry) = entries.next_entry().await.map_err(|error| {
++            DomainError::InternalError(format!("Failed to read acceptance sandbox entry: {error}"))
++        })? {
++            let sandbox_id = match entry.file_name().into_string() {
++                Ok(value) if validate_sandbox_id(&value).is_ok() => value,
++                _ => continue,
++            };
++            let metadata = fs::symlink_metadata(entry.path()).await.map_err(|error| {
++                DomainError::InternalError(format!("Failed to inspect acceptance sandbox entry: {error}"))
++            })?;
++            if metadata.file_type().is_symlink() || !metadata.is_dir() {
++                continue;
++            }
++            if self.marker_owned(&entry.path(), &sandbox_id).await? {
++                self.remove_owned_sandbox(&sandbox_id).await?;
++                removed += 1;
++            }
++        }
++        Ok(removed)
++    }
++
++    async fn prepare(&self, run_id: &str) -> Result<AcceptanceSandbox, DomainError> {
++        if run_id.trim().is_empty() || run_id.len() > 160 {
++            return Err(DomainError::InvalidData(
++                "acceptance.run_id_invalid: run id is empty or too long".to_string(),
++            ));
++        }
++        fs::create_dir_all(&self.root).await.map_err(|error| {
++            DomainError::InternalError(format!(
++                "Failed to create acceptance root {}: {error}",
++                self.root.display()
++            ))
++        })?;
++        let root_metadata = fs::symlink_metadata(&self.root).await.map_err(|error| {
++            DomainError::InternalError(format!(
++                "Failed to inspect acceptance root {}: {error}",
++                self.root.display()
++            ))
++        })?;
++        if root_metadata.file_type().is_symlink() || !root_metadata.is_dir() {
++            return Err(DomainError::InvalidData(
++                "acceptance.sandbox_root_invalid: acceptance root must be a real directory".to_string(),
++            ));
++        }
++
++        let sandbox_id = format!("{SANDBOX_PREFIX}{}", Uuid::new_v4());
++        let path = self.sandbox_path(&sandbox_id)?;
++        fs::create_dir(&path).await.map_err(|error| {
++            DomainError::InternalError(format!(
++                "Failed to create acceptance sandbox {}: {error}",
++                path.display()
++            ))
++        })?;
++
++        let result = async {
++            let marker = AcceptanceSandboxMarker {
++                schema_version: MARKER_SCHEMA_VERSION,
++                suite_version: ACCEPTANCE_SUITE_VERSION.to_string(),
++                sandbox_id: sandbox_id.clone(),
++                run_id: run_id.to_string(),
++            };
++            let marker_text = serde_json::to_string_pretty(&marker).map_err(|error| {
++                DomainError::InternalError(format!("Failed to serialize acceptance sandbox marker: {error}"))
++            })?;
++            fs::write(path.join(MARKER_FILE), marker_text).await.map_err(|error| {
++                DomainError::InternalError(format!("Failed to write acceptance sandbox marker: {error}"))
++            })?;
++            let agent_root = path.join("agent");
++            fs::create_dir(&agent_root).await.map_err(|error| {
++                DomainError::InternalError(format!(
++                    "Failed to create acceptance agent root {}: {error}",
++                    agent_root.display()
++                ))
++            })?;
++            let repository = Arc::new(FileAgentRepository::new(agent_root));
++            let run_repository: Arc<dyn AgentRunRepository> = repository.clone();
++            let workspace_repository: Arc<dyn WorkspaceRepository> = repository;
++            Ok::<AcceptanceSandbox, DomainError>(AcceptanceSandbox {
++                sandbox_id: sandbox_id.clone(),
++                run_repository,
++                workspace_repository,
++            })
++        }
++        .await;
++
++        if result.is_err() {
++            let _ = fs::remove_dir_all(&path).await;
++        }
++        result
++    }
++
++    async fn cleanup(&self, sandbox_id: &str) -> Result<(), DomainError> {
++        self.remove_owned_sandbox(sandbox_id).await
++    }
++}
++
++fn validate_sandbox_id(value: &str) -> Result<(), DomainError> {
++    let suffix = value.strip_prefix(SANDBOX_PREFIX).ok_or_else(|| {
++        DomainError::InvalidData("acceptance.sandbox_id_invalid: invalid prefix".to_string())
++    })?;
++    Uuid::parse_str(suffix).map_err(|_| {
++        DomainError::InvalidData("acceptance.sandbox_id_invalid: invalid UUID".to_string())
++    })?;
++    Ok(())
++}
+diff --git a/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/mod.rs b/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/mod.rs
+index 59c9c3a..4e29153 100644
+--- a/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/mod.rs
++++ b/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/mod.rs
+@@ -1,9 +1,11 @@
++mod file_acceptance_sandbox_factory;
+ mod file_agent_profile_repository;
+ mod file_agent_repository;
+ mod file_character_repository;
+ mod file_skill_repository;
+ mod file_world_info_repository;
+ 
++pub use file_acceptance_sandbox_factory::FileAcceptanceSandboxFactory;
+ pub use file_agent_profile_repository::FileAgentProfileRepository;
+ pub use file_agent_repository::FileAgentRepository;
+ pub use file_character_repository::FileCharacterRepository;
+diff --git a/src-tauri/crates/tt-ports/src/repositories/acceptance_sandbox_factory.rs b/src-tauri/crates/tt-ports/src/repositories/acceptance_sandbox_factory.rs
+new file mode 100644
+index 0000000..8b61d6e
+--- /dev/null
++++ b/src-tauri/crates/tt-ports/src/repositories/acceptance_sandbox_factory.rs
+@@ -0,0 +1,23 @@
++use std::sync::Arc;
++
++use async_trait::async_trait;
++
++use tt_domain::errors::DomainError;
++
++use super::agent_run_repository::AgentRunRepository;
++use super::workspace_repository::WorkspaceRepository;
++
++pub const ACCEPTANCE_SUITE_VERSION: &str = "ios-runtime-acceptance-v1";
++
++pub struct AcceptanceSandbox {
++    pub sandbox_id: String,
++    pub run_repository: Arc<dyn AgentRunRepository>,
++    pub workspace_repository: Arc<dyn WorkspaceRepository>,
++}
++
++#[async_trait]
++pub trait AcceptanceSandboxFactory: Send + Sync {
++    async fn cleanup_stale(&self) -> Result<usize, DomainError>;
++    async fn prepare(&self, run_id: &str) -> Result<AcceptanceSandbox, DomainError>;
++    async fn cleanup(&self, sandbox_id: &str) -> Result<(), DomainError>;
++}
+diff --git a/src-tauri/crates/tt-ports/src/repositories/mod.rs b/src-tauri/crates/tt-ports/src/repositories/mod.rs
+index cd81fad..12d22af 100644
+--- a/src-tauri/crates/tt-ports/src/repositories/mod.rs
++++ b/src-tauri/crates/tt-ports/src/repositories/mod.rs
+@@ -4,6 +4,7 @@ pub mod agent_profile_repository;
+ pub mod agent_profile_storage_health_repository;
+ pub mod agent_run_repository;
+ pub mod agent_workspace_lifecycle_repository;
++pub mod acceptance_sandbox_factory;
+ pub mod asset_repository;
+ pub mod avatar_repository;
+ pub mod background_repository;
