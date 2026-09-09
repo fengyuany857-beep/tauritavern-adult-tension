@@ -1,0 +1,21 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/registry.rs b/src-tauri/crates/tt-application/src/services/agent_tools/registry.rs
+index f42f607..3d853fd 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/registry.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/registry.rs
+@@ -4,7 +4,7 @@ use super::agent::{
+ };
+ use super::chat::{chat_read_messages_descriptor, chat_search_descriptor};
+ use super::dice::dice_roll_descriptor;
+-use super::rp::{rp_recall_descriptor, rp_stage_turn_descriptor, rp_state_descriptor};
++use super::rp::{rp_confirm_canonization_descriptor, rp_recall_descriptor, rp_stage_turn_descriptor, rp_state_descriptor};
+ use super::skill::{
+     SKILL_READ, skill_list_descriptor, skill_read_descriptor, skill_search_descriptor,
+ };
+@@ -41,6 +41,7 @@ impl BuiltinAgentToolRegistry {
+             rp_state_descriptor(),
+             rp_recall_descriptor(),
+             rp_stage_turn_descriptor(),
++            rp_confirm_canonization_descriptor(),
+             skill_list_descriptor(),
+             skill_search_descriptor(),
+             skill_read_descriptor(),
