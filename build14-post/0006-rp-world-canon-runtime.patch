@@ -1,0 +1,297 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_canonization.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_canonization.rs
+new file mode 100644
+index 0000000..8d3281d
+--- /dev/null
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_canonization.rs
+@@ -0,0 +1,291 @@
++use serde_json::{Map, Value, json};
++use sha2::{Digest, Sha256};
++
++use super::AgentRuntimeService;
++use crate::errors::ApplicationError;
++use crate::services::agent_tools::rp::{mark_canonizations_applied, pending_canonizations_for_run};
++use tt_domain::models::agent::WorkspacePath;
++use tt_domain::models::rp_architecture::{RP_ARCHITECTURE_SCHEMA_VERSION, WorldManifest};
++
++const RUN_PROMPT_SNAPSHOT_PATH: &str = "input/prompt_snapshot.json";
++const WORLD_MANIFEST_DISPLAY_NAME: &str = "TauriTavern World Manifest";
++const CANON_REGISTRY_DISPLAY_NAME: &str = "TauriTavern Canon Registry";
++
++#[derive(Debug, Clone)]
++pub(super) struct RpWorldCanonRollback {
++    pub(super) world_name: String,
++    pub(super) original_data: Value,
++}
++
++impl AgentRuntimeService {
++    pub(super) async fn apply_pending_rp_canonizations(
++        &self,
++        run_id: &str,
++    ) -> Result<Vec<RpWorldCanonRollback>, ApplicationError> {
++        let pending = pending_canonizations_for_run(self.workspace_repository.as_ref(), run_id).await?;
++        if pending.is_empty() {
++            return Ok(Vec::new());
++        }
++
++        let snapshot_path = WorkspacePath::parse(RUN_PROMPT_SNAPSHOT_PATH)?;
++        let snapshot_file = self.workspace_repository.read_text(run_id, &snapshot_path).await?;
++        let snapshot: Value = serde_json::from_str(&snapshot_file.text).map_err(|error| {
++            ApplicationError::ValidationError(format!(
++                "rp.canonization_prompt_snapshot_invalid: {error}"
++            ))
++        })?;
++        let (world_name, manifest_uid, mut manifest) = active_manifest_source(&snapshot)?;
++
++        if pending.iter().any(|proposal| proposal.world_id != manifest.world_id.0) {
++            return Err(ApplicationError::ValidationError(
++                "WORLD_BINDING_MISMATCH: a confirmed canonization proposal targets a different world"
++                    .to_string(),
++            ));
++        }
++        if pending
++            .iter()
++            .any(|proposal| proposal.world_revision != manifest.canon_revision)
++        {
++            return Err(ApplicationError::ValidationError(format!(
++                "WORLD_REVISION_DIVERGED: confirmed canonization proposal is pinned to an older canon revision than {}",
++                manifest.canon_revision
++            )));
++        }
++
++        let original_data = self
++            .world_info_repository
++            .get_world_info(&world_name, false)
++            .await?
++            .ok_or_else(|| {
++                ApplicationError::ValidationError(format!(
++                    "rp.canonization_world_missing: world info `{world_name}` does not exist"
++                ))
++            })?;
++        let mut next_data = original_data.clone();
++        let entries = next_data
++            .get_mut("entries")
++            .and_then(Value::as_object_mut)
++            .ok_or_else(|| {
++                ApplicationError::ValidationError(
++                    "rp.canonization_world_invalid: world info entries must be an object".to_string(),
++                )
++            })?;
++
++        let manifest_key = manifest_uid.to_string();
++        if !entries.contains_key(&manifest_key) {
++            return Err(ApplicationError::ValidationError(format!(
++                "rp.canonization_manifest_missing: activated World Manifest uid `{manifest_uid}` is not present in `{world_name}`"
++            )));
++        }
++
++        let registry_key = find_registry_entry_key(entries).unwrap_or_else(|| {
++            let uid = next_free_uid(entries);
++            let key = uid.to_string();
++            entries.insert(key.clone(), new_registry_entry(uid));
++            key
++        });
++        let registry_entry = entries.get_mut(&registry_key).and_then(Value::as_object_mut).ok_or_else(|| {
++            ApplicationError::ValidationError("rp.canonization_registry_invalid: Canon Registry entry must be an object".to_string())
++        })?;
++        let mut registry = registry_entry
++            .get("content")
++            .and_then(Value::as_str)
++            .filter(|content| !content.trim().is_empty())
++            .map(serde_json::from_str::<Value>)
++            .transpose()
++            .map_err(|error| ApplicationError::ValidationError(format!("rp.canonization_registry_invalid: {error}")))?
++            .unwrap_or_else(|| json!({
++                "schemaVersion": RP_ARCHITECTURE_SCHEMA_VERSION,
++                "worldId": manifest.world_id.0,
++                "characters": {}
++            }));
++
++        let registry_object = registry.as_object_mut().ok_or_else(|| {
++            ApplicationError::ValidationError("rp.canonization_registry_invalid: registry content must be a JSON object".to_string())
++        })?;
++        if registry_object.get("worldId").and_then(Value::as_str) != Some(manifest.world_id.0.as_str()) {
++            return Err(ApplicationError::ValidationError(
++                "WORLD_BINDING_MISMATCH: Canon Registry worldId does not match World Manifest".to_string(),
++            ));
++        }
++        let characters = registry_object
++            .entry("characters".to_string())
++            .or_insert_with(|| Value::Object(Map::new()))
++            .as_object_mut()
++            .ok_or_else(|| ApplicationError::ValidationError("rp.canonization_registry_invalid: characters must be an object".to_string()))?;
++
++        let mut applied_ids = Vec::new();
++        for proposal in &pending {
++            if characters.contains_key(&proposal.character_id) {
++                return Err(ApplicationError::ValidationError(format!(
++                    "CHARACTER_ID_COLLISION: World Canon already contains character_id `{}`",
++                    proposal.character_id
++                )));
++            }
++            characters.insert(
++                proposal.character_id.clone(),
++                json!({
++                    "characterId": proposal.character_id,
++                    "displayName": proposal.display_name,
++                    "aliases": proposal.aliases,
++                    "narrativeRole": proposal.narrative_role,
++                    "origin": "world_canon",
++                    "authorCanon": proposal.author_canon,
++                    "stableProfile": proposal.stable_profile,
++                    "canonizedFromSession": true,
++                    "canonizationProposalId": proposal.proposal_id,
++                }),
++            );
++            if !manifest.canon_entity_refs.contains(&proposal.character_id) {
++                manifest.canon_entity_refs.push(proposal.character_id.clone());
++            }
++            applied_ids.push(proposal.proposal_id.clone());
++        }
++
++        registry_object.insert("schemaVersion".to_string(), json!(RP_ARCHITECTURE_SCHEMA_VERSION));
++        registry_object.insert("worldId".to_string(), json!(manifest.world_id.0));
++        let registry_text = serde_json::to_string_pretty(&registry).map_err(|error| {
++            ApplicationError::InternalError(format!("rp.canonization_registry_serialize_failed: {error}"))
++        })?;
++        registry_entry.insert("content".to_string(), Value::String(registry_text.clone()));
++        registry_entry.insert("constant".to_string(), Value::Bool(true));
++        registry_entry.insert("comment".to_string(), Value::String(CANON_REGISTRY_DISPLAY_NAME.to_string()));
++
++        manifest.canon_revision = manifest.canon_revision.saturating_add(1);
++        manifest.manifest_revision = manifest.manifest_revision.saturating_add(1);
++        manifest.canon_fingerprint = sha256_hex(registry_text.as_bytes());
++        let manifest_text = serde_json::to_string_pretty(&manifest).map_err(|error| {
++            ApplicationError::InternalError(format!("rp.canonization_manifest_serialize_failed: {error}"))
++        })?;
++        let manifest_entry = entries
++            .get_mut(&manifest_key)
++            .and_then(Value::as_object_mut)
++            .expect("manifest entry checked above");
++        manifest_entry.insert("content".to_string(), Value::String(manifest_text));
++        manifest_entry.insert("constant".to_string(), Value::Bool(true));
++        manifest_entry.insert("comment".to_string(), Value::String(WORLD_MANIFEST_DISPLAY_NAME.to_string()));
++
++        self.world_info_repository
++            .save_world_info(&world_name, &next_data)
++            .await?;
++        let readback = self
++            .world_info_repository
++            .get_world_info(&world_name, false)
++            .await?
++            .ok_or_else(|| ApplicationError::ValidationError("rp.canonization_readback_missing: WorldInfo disappeared after save".to_string()))?;
++        if readback != next_data {
++            let _ = self.world_info_repository.save_world_info(&world_name, &original_data).await;
++            return Err(ApplicationError::ValidationError(
++                "rp.canonization_readback_mismatch: WorldInfo readback did not match the committed Canon update; original world data was restored"
++                    .to_string(),
++            ));
++        }
++
++        if let Err(error) = mark_canonizations_applied(
++            self.workspace_repository.as_ref(),
++            run_id,
++            &applied_ids,
++            manifest.canon_revision,
++            &manifest.canon_fingerprint,
++        )
++        .await
++        {
++            let _ = self.world_info_repository.save_world_info(&world_name, &original_data).await;
++            return Err(error);
++        }
++
++        Ok(vec![RpWorldCanonRollback {
++            world_name,
++            original_data,
++        }])
++    }
++
++    pub(super) async fn rollback_rp_world_canonizations(
++        &self,
++        rollbacks: &[RpWorldCanonRollback],
++    ) {
++        for rollback in rollbacks.iter().rev() {
++            if let Err(error) = self
++                .world_info_repository
++                .save_world_info(&rollback.world_name, &rollback.original_data)
++                .await
++            {
++                tracing::error!(world = %rollback.world_name, %error, "Failed to roll back RP World Canon write after persistent-state commit failure");
++            }
++        }
++    }
++}
++
++fn active_manifest_source(snapshot: &Value) -> Result<(String, i64, WorldManifest), ApplicationError> {
++    let entries = snapshot
++        .get("worldInfoActivation")
++        .and_then(|batch| batch.get("entries"))
++        .and_then(Value::as_array)
++        .ok_or_else(|| ApplicationError::ValidationError("rp.world_manifest_required: no WorldInfo activation is available".to_string()))?;
++    let matches = entries
++        .iter()
++        .filter_map(|entry| {
++            let object = entry.as_object()?;
++            let constant = object.get("constant").and_then(Value::as_bool).unwrap_or(false);
++            let name = object.get("displayName").and_then(Value::as_str).unwrap_or_default();
++            if !constant || name != WORLD_MANIFEST_DISPLAY_NAME { return None; }
++            Some(object)
++        })
++        .collect::<Vec<_>>();
++    if matches.len() != 1 {
++        return Err(ApplicationError::ValidationError(format!(
++            "rp.world_manifest_ambiguous: expected exactly one active `{WORLD_MANIFEST_DISPLAY_NAME}`, found {}",
++            matches.len()
++        )));
++    }
++    let object = matches[0];
++    let world = object.get("world").and_then(Value::as_str).filter(|value| !value.trim().is_empty()).ok_or_else(|| {
++        ApplicationError::ValidationError("rp.world_manifest_source_missing: activated World Manifest does not expose its WorldInfo name".to_string())
++    })?;
++    let uid = object.get("uid").and_then(Value::as_i64).or_else(|| object.get("uid").and_then(Value::as_str).and_then(|value| value.parse().ok())).ok_or_else(|| {
++        ApplicationError::ValidationError("rp.world_manifest_source_missing: activated World Manifest does not expose a numeric uid".to_string())
++    })?;
++    let content = object.get("content").and_then(Value::as_str).ok_or_else(|| ApplicationError::ValidationError("rp.world_manifest_invalid: missing manifest content".to_string()))?;
++    let manifest = serde_json::from_str::<WorldManifest>(content).map_err(|error| ApplicationError::ValidationError(format!("rp.world_manifest_invalid: {error}")))?;
++    Ok((world.to_string(), uid, manifest))
++}
++
++fn find_registry_entry_key(entries: &Map<String, Value>) -> Option<String> {
++    entries.iter().find_map(|(key, entry)| {
++        let object = entry.as_object()?;
++        let comment = object.get("comment").and_then(Value::as_str).unwrap_or_default();
++        (comment == CANON_REGISTRY_DISPLAY_NAME).then(|| key.clone())
++    })
++}
++
++fn next_free_uid(entries: &Map<String, Value>) -> i64 {
++    entries.keys().filter_map(|key| key.parse::<i64>().ok()).max().unwrap_or(-1).saturating_add(1)
++}
++
++fn new_registry_entry(uid: i64) -> Value {
++    json!({
++        "uid": uid,
++        "key": [],
++        "keysecondary": [],
++        "comment": CANON_REGISTRY_DISPLAY_NAME,
++        "content": "",
++        "constant": true,
++        "selective": false,
++        "selectiveLogic": 0,
++        "order": 100,
++        "position": 0,
++        "disable": false,
++        "probability": 100,
++        "useProbability": true,
++        "depth": 4,
++        "role": 0,
++        "sticky": 0,
++        "cooldown": 0,
++        "delay": 0
++    })
++}
++
++fn sha256_hex(bytes: &[u8]) -> String {
++    let digest = Sha256::digest(bytes);
++    digest.iter().map(|byte| format!("{byte:02x}")).collect()
++}
