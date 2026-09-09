@@ -1,0 +1,164 @@
+diff --git a/src-tauri/crates/tauritavern/src/product.rs b/src-tauri/crates/tauritavern/src/product.rs
+index 46837c6..1111111 100644
+--- a/src-tauri/crates/tauritavern/src/product.rs
++++ b/src-tauri/crates/tauritavern/src/product.rs
+@@ -4,6 +4,10 @@ pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
+ pub(crate) const USER_AGENT: &str = concat!("TauriTavern/", env!("CARGO_PKG_VERSION"));
+ pub(crate) const GIT_REVISION: &str = env!("TAURITAVERN_GIT_REVISION");
+ pub(crate) const GIT_BRANCH: &str = env!("TAURITAVERN_GIT_BRANCH");
++pub(crate) const DISTRIBUTION_FLAVOR: &str = match option_env!("TAURITAVERN_DISTRIBUTION_FLAVOR") {
++    Some(value) => value,
++    None => "upstream",
++};
+ 
+ pub(crate) fn optional_build_value(value: &str) -> Option<&str> {
+     let value = value.trim();
+@@ -13,6 +17,14 @@ pub(crate) fn default_update_channel() -> UpdateChannel {
+     infer_update_channel(optional_build_value(GIT_BRANCH))
+ }
+ 
++pub(crate) fn upstream_updates_allowed() -> bool {
++    distribution_allows_upstream_updates(DISTRIBUTION_FLAVOR)
++}
++
++fn distribution_allows_upstream_updates(distribution_flavor: &str) -> bool {
++    distribution_flavor.trim() != "adult_tension_selfsign"
++}
++
+ fn infer_update_channel(branch: Option<&str>) -> UpdateChannel {
+     match branch {
+         Some("main") | None => UpdateChannel::Stable,
+@@ -22,7 +34,7 @@ fn infer_update_channel(branch: Option<&str>) -> UpdateChannel {
+ 
+ #[cfg(test)]
+ mod tests {
+-    use super::{UpdateChannel, infer_update_channel};
++    use super::{UpdateChannel, distribution_allows_upstream_updates, infer_update_channel};
+ 
+     #[test]
+     fn main_is_stable_and_other_known_branches_are_canary() {
+@@ -35,4 +47,11 @@ mod tests {
+         );
+         assert_eq!(infer_update_channel(None), UpdateChannel::Stable);
+     }
++
++    #[test]
++    fn adult_tension_selfsign_blocks_upstream_updates() {
++        assert!(!distribution_allows_upstream_updates("adult_tension_selfsign"));
++        assert!(distribution_allows_upstream_updates("upstream"));
++        assert!(distribution_allows_upstream_updates(""));
++    }
+ }
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/bridge.rs b/src-tauri/crates/tauritavern/src/presentation/commands/bridge.rs
+index 5a5f4e4..2222222 100644
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/bridge.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/bridge.rs
+@@ -54,6 +54,8 @@ pub struct VersionInfo {
+     pub git_branch: Option<String>,
+     #[serde(rename = "defaultUpdateChannel")]
+     pub default_update_channel: UpdateChannel,
++    #[serde(rename = "distributionFlavor")]
++    pub distribution_flavor: String,
+ }
+ 
+ #[tauri::command]
+@@ -77,6 +79,7 @@ pub fn get_client_version() -> Result<VersionInfo, CommandError> {
+         git_branch: crate::product::optional_build_value(crate::product::GIT_BRANCH)
+             .map(str::to_string),
+         default_update_channel: crate::product::default_update_channel(),
++        distribution_flavor: crate::product::DISTRIBUTION_FLAVOR.to_string(),
+     };
+ 
+     Ok(version_info)
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/update_commands.rs b/src-tauri/crates/tauritavern/src/presentation/commands/update_commands.rs
+index 2d9e7e0..3333333 100644
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/update_commands.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/update_commands.rs
+@@ -11,6 +11,12 @@ pub async fn check_for_update(
+ ) -> Result<UpdateCheckResult, CommandError> {
+     log_command("check_for_update");
+ 
++    if !crate::product::upstream_updates_allowed() {
++        return Err(CommandError::Unauthorized(
++            "updates.upstream_disabled_for_fork".to_string(),
++        ));
++    }
++
+     ensure_ios_policy_allows(
+         &app_state.ios_policy,
+         app_state.ios_policy.capabilities.updates.manual_check,
+diff --git a/src/scripts/extensions/tauritavern-version/index.js b/src/scripts/extensions/tauritavern-version/index.js
+index da04c80..4444444 100644
+--- a/src/scripts/extensions/tauritavern-version/index.js
++++ b/src/scripts/extensions/tauritavern-version/index.js
+@@ -103,12 +103,18 @@ function buildVersionInfo(payload = null) {
+     const compatVersion = extractCompatVersion(agent);
+     const compatBaseline = `SillyTavern ${compatVersion}`;
+     const defaultUpdateChannel = payload?.defaultUpdateChannel === 'canary' ? 'canary' : 'stable';
++    const distributionFlavor = typeof payload?.distributionFlavor === 'string' && payload.distributionFlavor.trim()
++        ? payload.distributionFlavor.trim()
++        : 'upstream';
+ 
+     return {
+         packageVersion,
+         compatBaseline,
+         gitInfo,
+         gitRevision,
+         defaultUpdateChannel,
++        distributionFlavor,
+     };
+ }
+ 
++function isForkManagedDistribution(info) {
++    return info?.distributionFlavor === 'adult_tension_selfsign';
++}
++
+ async function resolveVersionInfo() {
+@@ -137,7 +143,10 @@ async function resolveVersionInfo() {
+ function renderVersionInfo(info) {
+     $('#tauritavern_version_number').text(info.packageVersion);
+     $('#tauritavern_compat_version').text(info.compatBaseline);
+-    $('#tauritavern_git_info').text(info.gitInfo);
++    $('#tauritavern_git_info').text(isForkManagedDistribution(info)
++        ? `${info.gitInfo} · Adult Tension Self-sign`
++        : info.gitInfo);
+ }
+@@ -294,6 +303,15 @@ async function onCheckUpdateClick() {
+         return;
+     }
+ 
++    const versionInfo = await resolveVersionInfo();
++    if (isForkManagedDistribution(versionInfo)) {
++        globalThis.toastr?.info?.(
++            localize('ttv_version.fork_updates_managed', 'Updates are managed by this custom Adult Tension build.'),
++        );
++        return;
++    }
++
+     const updateCaps = resolveIosUpdateCapabilities();
+@@ -446,6 +464,12 @@ async function runStartupUpdateCheck() {
+         return startupUpdateCheckPromise;
+     }
+ 
++    const versionInfo = await resolveVersionInfo();
++    if (isForkManagedDistribution(versionInfo)) {
++        console.debug('Startup update check skipped: fork-managed Adult Tension build');
++        return;
++    }
++
+     startupUpdateCheckPromise = (async () => {
+@@ -629,6 +653,15 @@ jQuery(async () => {
+     ]);
+     renderVersionInfo(versionInfo);
+     renderChannel(settings?.updates?.channel || versionInfo.defaultUpdateChannel);
++    if (isForkManagedDistribution(versionInfo)) {
++        $('#tauritavern_check_update').remove();
++        const channelRow = document.getElementById('ttv-channel-row');
++        if (channelRow instanceof HTMLElement) {
++            channelRow.hidden = true;
++        }
++        hideUpdateResult();
++    }
+     $('#ttv-channel-toggle').on('click', onChannelToggleClick);
+     container.find('input[name="tauritavern_update_channel"]').on('change', onUpdateChannelChange);
+ 
