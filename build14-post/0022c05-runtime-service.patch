@@ -1,0 +1,128 @@
+diff --git a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+index 7894982..3de7620 100644
+--- a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
++++ b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+@@ -478,3 +478,123 @@ impl RuntimeAcceptanceService {
+             "npc_updates":[{"id":"acceptance-npc-a","emotion":"calm"}]
+         })).await?;
+         require_success(&created, "cast.lifecycle_revision.create")?;
++        let committed = ctx.sandbox.workspace_repository.commit_persistent_changes(&root.id).await?;
++
++        let conflict = self.create_run(ctx, "cast-conflict", Some(committed.state_id.clone()), &ctx.base_prompt).await?;
++        let error = self.rp_call_raw(ctx, &conflict.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Stale profile revision.","advances_story":true,
++            "cast_updates":[{"character_id":"acceptance-npc-a","expected_profile_revision":0,"author_canon":{"stale":true}}]
++        })).await;
++        match error {
++            Err(ApplicationError::ValidationError(message)) if message.contains("PROFILE_REVISION_CONFLICT") => {}
++            Ok(result) if result.is_error && result.content.contains("PROFILE_REVISION_CONFLICT") => {}
++            other => return Err(ApplicationError::ValidationError(format!("acceptance.profile_revision_conflict_missing: {}", match other { Ok(v) => v.content, Err(e) => sanitize_error(&e) }))),
++        }
++
++        let archive = self.create_run(ctx, "cast-archive", Some(committed.state_id.clone()), &ctx.base_prompt).await?;
++        require_success(&self.rp_call(ctx, &archive.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Archive synthetic NPC.","advances_story":true,
++            "cast_updates":[{"character_id":"acceptance-npc-a","archive":true}]
++        })).await?, "cast.lifecycle_revision.archive")?;
++        let archived_state = self.rp_call(ctx, &archive.id, &ctx.base_prompt, "rp.state", json!({})).await?;
++        if archived_state.structured.get("archivedNpcCount").and_then(Value::as_u64).unwrap_or(0) == 0 {
++            return Err(ApplicationError::ValidationError("acceptance.cast_archive_missing".to_string()));
++        }
++        let archived_commit = ctx.sandbox.workspace_repository.commit_persistent_changes(&archive.id).await?;
++        let rehydrate = self.create_run(ctx, "cast-rehydrate", Some(archived_commit.state_id), &ctx.base_prompt).await?;
++        require_success(&self.rp_call(ctx, &rehydrate.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Rehydrate synthetic NPC.","advances_story":true,
++            "cast_updates":[{"character_id":"acceptance-npc-a","rehydrate":true}]
++        })).await?, "cast.lifecycle_revision.rehydrate")?;
++        Ok(CaseRunResult::pass("Character identity survives revision conflict, archive, and rehydrate flows."))
++    }
++
++    async fn case_memory_dedup(&self, ctx: &SuiteContext) -> Result<CaseRunResult, ApplicationError> {
++        let run = self.create_run(ctx, "memory", None, &ctx.base_prompt).await?;
++        let staged = self.rp_call(ctx, &run.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Small synthetic memory batch.","advances_story":true,
++            "memory_updates":[
++                {"id":"mem-a","tier":"episodic","summary":"Aster found the blue key."},
++                {"id":"mem-b","tier":"episodic","summary":"Aster found the blue key."},
++                {"id":"mem-c","tier":"semantic","summary":"Blue key serial is KT-71839."}
++            ]
++        })).await?;
++        require_success(&staged, "memory.tiny_dedup.stage")?;
++        let state = self.rp_call(ctx, &run.id, &ctx.base_prompt, "rp.state", json!({})).await?;
++        let memories = state.structured.get("memories").and_then(Value::as_array).ok_or_else(|| ApplicationError::ValidationError("acceptance.memory_state_missing".to_string()))?;
++        if memories.len() != 2 { return Err(ApplicationError::ValidationError(format!("acceptance.memory_dedup_mismatch: expected 2 compact memories, got {}", memories.len()))); }
++        Ok(CaseRunResult::pass("Tiny duplicate memory batch compacts without state growth."))
++    }
++
++    async fn case_canon_fail_closed(&self, ctx: &SuiteContext) -> Result<CaseRunResult, ApplicationError> {
++        let run = self.create_run(ctx, "canon", None, &ctx.base_prompt).await?;
++        let staged = self.rp_call(ctx, &run.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Create synthetic canon proposal.","advances_story":true,
++            "cast_updates":[{"character_id":"acceptance-canon-npc","display_name":"Canon Test"}],
++            "canonization_proposals":[{"proposal_id":"acceptance-proposal-1","character_id":"acceptance-canon-npc"}]
++        })).await?;
++        require_success(&staged, "canon.confirmation_fail_closed.propose")?;
++        let denied = self.rp_call(ctx, &run.id, &ctx.base_prompt, "rp.confirm_canonization", json!({"proposal_id":"acceptance-proposal-1","confirm":true})).await?;
++        require_error_code(&denied, "rp.canonization_confirmation_required")?;
++        Ok(CaseRunResult::pass("Canon proposal cannot self-confirm without explicit current-user confirmation naming the proposal."))
++    }
++
++    async fn case_persist_reopen(&self, ctx: &SuiteContext) -> Result<CaseRunResult, ApplicationError> {
++        let root = self.create_run(ctx, "persist-root", None, &ctx.base_prompt).await?;
++        require_success(&self.rp_call(ctx, &root.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Persistent synthetic fact.","advances_story":true,
++            "facts":[{"id":"acceptance-persist-fact","subject":"persistent-key","predicate":"serial","value":"P-001","source":{"kind":"user_asserted","reference":"synthetic input"}}]
++        })).await?, "persist.commit_reopen.stage")?;
++        let committed = ctx.sandbox.workspace_repository.commit_persistent_changes(&root.id).await?;
++        let reopened = self.create_run(ctx, "persist-reopen", Some(committed.state_id), &ctx.base_prompt).await?;
++        let state = self.rp_call(ctx, &reopened.id, &ctx.base_prompt, "rp.state", json!({})).await?;
++        require_success(&state, "persist.commit_reopen.state")?;
++        let recall = self.rp_call(ctx, &reopened.id, &ctx.base_prompt, "rp.recall", json!({"query":"persistent-key"})).await?;
++        require_success(&recall, "persist.commit_reopen.recall")?;
++        if recall.structured.get("hits").and_then(Value::as_array).map(Vec::is_empty).unwrap_or(true) {
++            return Err(ApplicationError::ValidationError("acceptance.persist_restore_mismatch".to_string()));
++        }
++        Ok(CaseRunResult::pass("Committed persistent RP projection restores into a new run from its base state id."))
++    }
++
++    async fn case_branch_isolation(&self, ctx: &SuiteContext) -> Result<CaseRunResult, ApplicationError> {
++        let root = self.create_run(ctx, "branch-root", None, &ctx.base_prompt).await?;
++        require_success(&self.rp_call(ctx, &root.id, &ctx.base_prompt, "rp.stage_turn", json!({"beat_summary":"Branch root.","advances_story":true})).await?, "branch.root")?;
++        let s0 = ctx.sandbox.workspace_repository.commit_persistent_changes(&root.id).await?;
++
++        let a = self.create_run(ctx, "branch-a", Some(s0.state_id.clone()), &ctx.base_prompt).await?;
++        require_success(&self.rp_call(ctx, &a.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Branch A.","advances_story":true,
++            "facts":[{"id":"branch-fact-a","subject":"branch-a","predicate":"exists","value":true,"source":{"kind":"user_asserted","reference":"synthetic branch A"}}]
++        })).await?, "branch.a")?;
++        let sa = ctx.sandbox.workspace_repository.commit_persistent_changes(&a.id).await?;
++
++        let b = self.create_run(ctx, "branch-b", Some(s0.state_id), &ctx.base_prompt).await?;
++        require_success(&self.rp_call(ctx, &b.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Branch B.","advances_story":true,
++            "facts":[{"id":"branch-fact-b","subject":"branch-b","predicate":"exists","value":true,"source":{"kind":"user_asserted","reference":"synthetic branch B"}}]
++        })).await?, "branch.b")?;
++        let sb = ctx.sandbox.workspace_repository.commit_persistent_changes(&b.id).await?;
++
++        let ar = self.create_run(ctx, "branch-a-read", Some(sa.state_id), &ctx.base_prompt).await?;
++        let a_recall_a = self.rp_call(ctx, &ar.id, &ctx.base_prompt, "rp.recall", json!({"query":"branch-a"})).await?;
++        let a_recall_b = self.rp_call(ctx, &ar.id, &ctx.base_prompt, "rp.recall", json!({"query":"branch-b"})).await?;
++        if hits_len(&a_recall_a) == 0 || hits_len(&a_recall_b) != 0 { return Err(ApplicationError::ValidationError("acceptance.branch_isolation_failed: branch A contamination".to_string())); }
++
++        let br = self.create_run(ctx, "branch-b-read", Some(sb.state_id), &ctx.base_prompt).await?;
++        let b_recall_b = self.rp_call(ctx, &br.id, &ctx.base_prompt, "rp.recall", json!({"query":"branch-b"})).await?;
++        let b_recall_a = self.rp_call(ctx, &br.id, &ctx.base_prompt, "rp.recall", json!({"query":"branch-a"})).await?;
++        if hits_len(&b_recall_b) == 0 || hits_len(&b_recall_a) != 0 { return Err(ApplicationError::ValidationError("acceptance.branch_isolation_failed: branch B contamination".to_string())); }
++        Ok(CaseRunResult::pass("Two children of the same persistent base remain isolated after independent commits."))
++    }
++
++    async fn case_quick_burst(&self, ctx: &SuiteContext) -> Result<CaseRunResult, ApplicationError> {
++        let run = self.create_run(ctx, "burst", None, &ctx.base_prompt).await?;
++        require_success(&self.rp_call(ctx, &run.id, &ctx.base_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Quick burst seed.","advances_story":true,
++            "facts":[{"id":"burst-fact","subject":"burst-key","predicate":"exists","value":true,"source":{"kind":"user_asserted","reference":"synthetic burst"}}]
++        })).await?, "burst.seed")?;
++        for _ in 0..6 { require_success(&self.rp_call(ctx, &run.id, &ctx.base_prompt, "rp.state", json!({})).await?, "burst.state")?; }
++        for _ in 0..6 { require_success(&self.rp_call(ctx, &run.id, &ctx.base_prompt, "rp.recall", json!({"query":"burst-key","limit":3})).await?, "burst.recall")?; }
++        let committed = ctx.sandbox.workspace_repository.commit_persistent_changes(&run.id).await?;
++        for index in 0..4 {
