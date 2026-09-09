@@ -1,0 +1,18 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs
+index acd3ee5..71e905c 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/mod.rs
+@@ -2,9 +2,11 @@ mod binding;
+ mod descriptors;
+ mod state;
+ 
+-pub(super) use descriptors::{rp_recall_descriptor, rp_stage_turn_descriptor, rp_state_descriptor};
+-pub(super) use state::{recall, stage_turn, staged_for_run, state};
++pub(super) use descriptors::{rp_confirm_canonization_descriptor, rp_recall_descriptor, rp_stage_turn_descriptor, rp_state_descriptor};
++pub(super) use state::{confirm_canonization, recall, stage_turn, staged_for_run, state};
++pub(crate) use state::{mark_canonizations_applied, pending_canonizations_for_run, PendingCanonization};
+ 
+ pub(super) const RP_STATE: &str = "rp.state";
+ pub(super) const RP_RECALL: &str = "rp.recall";
+ pub(super) const RP_STAGE_TURN: &str = "rp.stage_turn";
++pub(super) const RP_CONFIRM_CANONIZATION: &str = "rp.confirm_canonization";
