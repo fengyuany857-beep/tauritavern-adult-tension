@@ -1,0 +1,254 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+index 289c101..c93b568 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -1129,6 +1361,249 @@ fn ensure_stage_session_binding(
+     Ok(())
+ }
+ 
++
++fn ensure_character_entity(state: &mut RpState, character_id: &str, turn: u64) {
++    state.cast_registry.entry(character_id.to_string()).or_insert_with(|| RpCharacterEntity {
++        character_id: character_id.to_string(), display_name: character_id.to_string(), aliases: Vec::new(),
++        narrative_role: "incidental".to_string(), control_owner: "ai".to_string(), lifecycle_status: "active".to_string(),
++        origin: "session_created".to_string(), first_seen_turn: turn, promoted_at_turn: None, profile_revision: 0,
++        author_canon: BTreeMap::new(), stable_profile: BTreeMap::new(), inferred_profile: BTreeMap::new(),
++    });
++}
++
++fn apply_cast_update(state: &mut RpState, update: &CastUpdateInput, turn: u64) -> Result<(), ApplicationError> {
++    ensure_character_entity(state, &update.character_id, turn);
++    if update.archive.unwrap_or(false) && update.rehydrate.unwrap_or(false) {
++        return Err(ApplicationError::ValidationError("rp.cast_update_conflict: archive and rehydrate cannot both be true".to_string()));
++    }
++    {
++        let character = state.cast_registry.get_mut(&update.character_id).expect("character ensured");
++        if let Some(expected) = update.expected_profile_revision
++            && expected != character.profile_revision
++        {
++            return Err(ApplicationError::ValidationError(format!("PROFILE_REVISION_CONFLICT: character `{}` expected profile revision {}, current {}", update.character_id, expected, character.profile_revision)));
++        }
++        if let Some(owner) = update.control_owner.as_deref()
++            && owner != character.control_owner && character.first_seen_turn != turn
++        {
++            return Err(ApplicationError::ValidationError("CONTROL_TRANSFER_REQUIRED: changing control_owner of an existing character requires a separate explicit control-transfer transaction".to_string()));
++        }
++        if let Some(name) = update.display_name.as_deref().map(str::trim).filter(|value| !value.is_empty()) {
++            if name != character.display_name {
++                if !character.aliases.contains(&character.display_name) { character.aliases.push(character.display_name.clone()); }
++                character.display_name = name.to_string();
++            }
++        }
++        if let Some(aliases) = update.aliases.as_ref() { character.aliases = dedupe(aliases.clone()); }
++        if let Some(role) = update.narrative_role.as_ref() {
++            if role != &character.narrative_role { character.promoted_at_turn = Some(turn); }
++            character.narrative_role = role.clone();
++        }
++        if let Some(owner) = update.control_owner.as_ref() { character.control_owner = owner.clone(); }
++        if let Some(status) = update.lifecycle_status.as_ref() { character.lifecycle_status = status.clone(); }
++        if let Some(author) = update.author_canon.as_ref() {
++            for (key, value) in author { character.author_canon.insert(key.clone(), value.clone()); }
++            character.profile_revision = character.profile_revision.saturating_add(1);
++        }
++    }
++    if update.archive.unwrap_or(false) { archive_npc(state, &update.character_id); }
++    if update.rehydrate.unwrap_or(false) { rehydrate_npc(state, &update.character_id)?; }
++    Ok(())
++}
++
++fn archive_npc(state: &mut RpState, character_id: &str) {
++    if let Some(runtime) = state.npcs.remove(character_id) {
++        state.archived_npcs.insert(character_id.to_string(), runtime);
++        if let Some(character) = state.cast_registry.get_mut(character_id) { character.lifecycle_status = "archived".to_string(); }
++    }
++    while state.archived_npcs.len() > MAX_ARCHIVED_NPCS {
++        if let Some(key) = state.archived_npcs.keys().next().cloned() { state.archived_npcs.remove(&key); } else { break; }
++    }
++}
++
++fn rehydrate_npc(state: &mut RpState, character_id: &str) -> Result<(), ApplicationError> {
++    ensure_hot_runtime_capacity(state, Some(character_id))?;
++    if let Some(runtime) = state.archived_npcs.remove(character_id) { state.npcs.insert(character_id.to_string(), runtime); }
++    if let Some(character) = state.cast_registry.get_mut(character_id) { character.lifecycle_status = "active".to_string(); }
++    Ok(())
++}
++
++fn ensure_hot_runtime_capacity(state: &mut RpState, incoming: Option<&str>) -> Result<(), ApplicationError> {
++    if incoming.is_some_and(|id| state.npcs.contains_key(id)) || state.npcs.len() < MAX_NPCS { return Ok(()); }
++    let candidate = state.npcs.iter()
++        .filter(|(id, _)| !state.participants.contains(*id))
++        .filter(|(id, _)| state.cast_registry.get(*id).is_none_or(|character| !matches!(character.narrative_role.as_str(), "main" | "supporting")))
++        .min_by_key(|(_, runtime)| runtime.last_updated_turn.unwrap_or(0))
++        .map(|(id, _)| id.clone());
++    let Some(candidate) = candidate else {
++        return Err(ApplicationError::ValidationError(format!("HOT_RUNTIME_CAPACITY_EXCEEDED: {MAX_NPCS} active NPC runtime records are protected; archive or move a cold character offscreen before adding another")));
++    };
++    archive_npc(state, &candidate);
++    Ok(())
++}
++
++fn apply_profile_evidence(state: &mut RpState, input: &ProfileEvidenceInput, turn: u64) -> Result<(), ApplicationError> {
++    ensure_character_entity(state, &input.character_id, turn);
++    let id = input.id.clone().unwrap_or_else(|| format!("profile-evidence-{turn}-{}", state.profile_evidence.len()));
++    if state.profile_evidence.iter().any(|evidence| evidence.id == id) {
++        return Err(ApplicationError::ValidationError(format!("PROFILE_EVIDENCE_INVALID: evidence id `{id}` already exists")));
++    }
++    let context = input.context.clone().unwrap_or_else(|| "unspecified".to_string());
++    let source_ref = input.source_ref.clone().unwrap_or_else(|| format!("turn:{turn}"));
++    state.profile_evidence.push(RpProfileEvidence {
++        id, character_id: input.character_id.clone(), trait_key: input.trait_key.clone(), statement: input.statement.clone(),
++        source_kind: input.source_kind.clone(), context, source_ref, turn, contradicts: input.contradicts.unwrap_or(false), retracted: false,
++    });
++    rebuild_character_profile(state, &input.character_id);
++    Ok(())
++}
++
++fn rebuild_profiles_from_evidence(state: &mut RpState) {
++    let ids = state.cast_registry.keys().cloned().collect::<Vec<_>>();
++    for id in ids { rebuild_character_profile(state, &id); }
++}
++
++fn rebuild_character_profile(state: &mut RpState, character_id: &str) {
++    let relevant = state.profile_evidence.iter().filter(|e| e.character_id == character_id && !e.retracted).cloned().collect::<Vec<_>>();
++    let Some(character) = state.cast_registry.get_mut(character_id) else { return; };
++    let before_stable = character.stable_profile.clone();
++    let before_inferred = character.inferred_profile.clone();
++    let keys = relevant.iter().map(|e| e.trait_key.clone()).collect::<HashSet<_>>();
++    character.inferred_profile.clear();
++    character.stable_profile.retain(|key, _| keys.contains(key));
++    for key in keys {
++        if character.author_canon.contains_key(&key) { continue; }
++        let evidence = relevant.iter().filter(|e| e.trait_key == key).collect::<Vec<_>>();
++        let positive = evidence.iter().filter(|e| !e.contradicts).collect::<Vec<_>>();
++        let negative = evidence.iter().filter(|e| e.contradicts).collect::<Vec<_>>();
++        if positive.is_empty() { character.stable_profile.remove(&key); continue; }
++        let contexts = positive.iter().map(|e| e.context.clone()).collect::<HashSet<_>>();
++        let min_turn = positive.iter().map(|e| e.turn).min().unwrap_or(0);
++        let max_turn = positive.iter().map(|e| e.turn).max().unwrap_or(0);
++        let refs = positive.iter().map(|e| e.id.clone()).collect::<Vec<_>>();
++        let contradictions = negative.iter().map(|e| e.id.clone()).collect::<Vec<_>>();
++        let confidence = ((positive.len() * 22 + contexts.len() * 12).saturating_sub(negative.len() * 25)).min(100) as u8;
++        let statement = positive.last().map(|e| e.statement.clone()).unwrap_or_default();
++        let stable = positive.len() >= 3 && contexts.len() >= 2 && max_turn.saturating_sub(min_turn) >= 2 && negative.len() * 2 < positive.len();
++        if stable {
++            character.stable_profile.insert(key.clone(), RpStableTrait { statement, evidence_refs: refs, status: "stable".to_string(), updated_turn: max_turn });
++        } else {
++            character.stable_profile.remove(&key);
++            character.inferred_profile.insert(key.clone(), RpProfileCandidate {
++                statement, evidence_refs: refs, contradiction_refs: contradictions, contexts: contexts.into_iter().collect(),
++                confidence, status: if negative.len() >= positive.len() { "weak" } else { "candidate" }.to_string(), first_observed_turn: min_turn, last_evaluated_turn: max_turn,
++            });
++        }
++    }
++    if character.stable_profile != before_stable || character.inferred_profile != before_inferred {
++        character.profile_revision = character.profile_revision.saturating_add(1);
++    }
++}
++
++fn compact_memory(state: &mut RpState) {
++    let mut seen = HashSet::new();
++    state.memories.retain(|memory| {
++        let key = compact(&format!("{}{}", memory.tier, memory.summary));
++        seen.insert(key)
++    });
++    if state.memories.len() > MAX_MEMORIES {
++        let overflow = state.memories.len() - MAX_MEMORIES;
++        for memory in state.memories.iter_mut().take(overflow) { memory.tier = "archive".to_string(); }
++        state.memories.drain(..overflow.saturating_sub(MAX_MEMORIES / 4));
++    }
++}
++
++pub(in crate::services::agent_tools) async fn confirm_canonization(
++    run_repository: &dyn AgentRunRepository,
++    workspace_repository: &dyn WorkspaceRepository,
++    run_id: &str,
++    prompt_snapshot: &Value,
++    call: &ToolInvocation,
++) -> Result<(AgentToolResult, AgentToolEffect), ApplicationError> {
++    let Some(args) = object_args(call) else { return Ok((tool_error(call, "tool.invalid_arguments", "arguments must be an object"), AgentToolEffect::None)); };
++    let proposal_id = args.get("proposal_id").and_then(Value::as_str).unwrap_or_default().trim();
++    if proposal_id.is_empty() { return Ok((tool_error(call, "rp.canonization_confirmation_required", "proposal_id is required"), AgentToolEffect::None)); }
++    let confirm = args.get("confirm").and_then(Value::as_bool).unwrap_or(false);
++    if !confirm { return Ok((tool_error(call, "rp.canonization_confirmation_required", "confirm must be true"), AgentToolEffect::None)); }
++    let user_text = last_user_text(prompt_snapshot).to_lowercase();
++    let explicit = user_text.contains(&proposal_id.to_lowercase()) && ["确认", "confirm", "批准", "应用", "写入"].iter().any(|token| user_text.contains(token));
++    if !explicit { return Ok((tool_error(call, "rp.canonization_confirmation_required", "The current explicit user message must name the proposal id and clearly confirm/approve applying it to World Canon."), AgentToolEffect::None)); }
++    let run = run_repository.load_run(run_id).await?;
++    let mut state = load_state(workspace_repository, run_id).await?;
++    let manifest = active_world_manifest(prompt_snapshot).map_err(|e| ApplicationError::ValidationError(e.message))?;
++    if let Some(session) = state.session.as_ref() { validate_bound_session(session, manifest.as_ref()).map_err(|e| ApplicationError::ValidationError(e.message))?; }
++    let (character_id, world_id) = {
++        let proposal = state.canonization_proposals.iter_mut().find(|proposal| proposal.proposal_id == proposal_id)
++            .ok_or_else(|| ApplicationError::ValidationError(format!("rp.canonization_proposal_missing: unknown proposal `{proposal_id}`")))?;
++        if proposal.status != "proposed" { return Ok((tool_error(call, "rp.canonization_invalid_status", "proposal is not awaiting confirmation"), AgentToolEffect::None)); }
++        proposal.status = "confirmed".to_string(); proposal.confirmed_turn = Some(state.turn);
++        (proposal.character_id.clone(), proposal.requested_world_id.clone())
++    };
++    state.runtime_revision = state.runtime_revision.saturating_add(1); state.last_run_id = Some(run_id.to_string());
++    save_state(workspace_repository, run_id, &state).await?;
++    let payload = json!({"proposalId": proposal_id, "characterId": character_id, "status":"confirmed_pending_finish", "worldId": world_id});
++    Ok((success(call, "Canonization confirmed and staged. World Canon will be written only at the successful workspace.finish commit boundary.".to_string(), payload), AgentToolEffect::None))
++}
++
++fn last_user_text(prompt_snapshot: &Value) -> String {
++    let messages = prompt_snapshot.get("chatCompletionPayload").and_then(|value| value.get("messages")).and_then(Value::as_array);
++    let Some(messages) = messages else { return String::new(); };
++    for message in messages.iter().rev() {
++        if message.get("role").and_then(Value::as_str) != Some("user") { continue; }
++        let Some(content) = message.get("content") else { continue; };
++        if let Some(text) = content.as_str() { return text.to_string(); }
++        if let Some(parts) = content.as_array() {
++            return parts.iter().filter_map(|part| part.get("text").and_then(Value::as_str)).collect::<Vec<_>>().join("\n");
++        }
++    }
++    String::new()
++}
++
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub(crate) struct PendingCanonization {
++    pub proposal_id: String,
++    pub character_id: String,
++    pub world_id: String,
++    pub world_revision: u64,
++    pub display_name: String,
++    pub aliases: Vec<String>,
++    pub narrative_role: String,
++    pub author_canon: BTreeMap<String, Value>,
++    pub stable_profile: BTreeMap<String, Value>,
++}
++
++pub(crate) async fn pending_canonizations_for_run(
++    workspace_repository: &dyn WorkspaceRepository, run_id: &str,
++) -> Result<Vec<PendingCanonization>, ApplicationError> {
++    let state = load_state(workspace_repository, run_id).await?;
++    let mut values = Vec::new();
++    for proposal in state.canonization_proposals.iter().filter(|proposal| proposal.status == "confirmed") {
++        let Some(character) = state.cast_registry.get(&proposal.character_id) else { continue; };
++        let stable_profile = character.stable_profile.iter().map(|(key, value)| (key.clone(), json!(value))).collect();
++        values.push(PendingCanonization {
++            proposal_id: proposal.proposal_id.clone(), character_id: character.character_id.clone(), world_id: proposal.requested_world_id.clone(), world_revision: proposal.requested_world_revision,
++            display_name: character.display_name.clone(), aliases: character.aliases.clone(), narrative_role: character.narrative_role.clone(), author_canon: character.author_canon.clone(), stable_profile,
++        });
++    }
++    Ok(values)
++}
++
++pub(crate) async fn mark_canonizations_applied(
++    workspace_repository: &dyn WorkspaceRepository, run_id: &str, proposal_ids: &[String], new_revision: u64, new_fingerprint: &str,
++) -> Result<(), ApplicationError> {
++    if proposal_ids.is_empty() { return Ok(()); }
++    let mut state = load_state(workspace_repository, run_id).await?;
++    for proposal in &mut state.canonization_proposals {
++        if proposal_ids.contains(&proposal.proposal_id) && proposal.status == "confirmed" {
++            proposal.status = "applied".to_string(); proposal.applied_turn = Some(state.turn);
++        }
++    }
++    if let Some(session) = state.session.as_mut() { session.bound_canon_revision = new_revision; session.bound_canon_fingerprint = new_fingerprint.to_string(); }
++    state.runtime_revision = state.runtime_revision.saturating_add(1); state.last_run_id = Some(run_id.to_string());
++    save_state(workspace_repository, run_id, &state).await
++}
++
+ fn default_safety_state() -> String { "running".to_string() }
+ fn default_true() -> bool { true }
+ 
