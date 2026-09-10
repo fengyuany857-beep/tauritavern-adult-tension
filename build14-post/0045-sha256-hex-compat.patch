@@ -1,0 +1,33 @@
+diff --git a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+--- a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
++++ b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+@@ -181,5 +181,5 @@ impl CharacterCardMaterializationStore {
+     pub async fn write_snapshot(&self, bytes: &[u8]) -> Result<String, DomainError> {
+         let digest = Sha256::digest(bytes);
+-        let hash = format!("{digest:x}");
++        let hash = digest.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+         let file_name = format!("{hash}.json");
+         let target = self.snapshots_dir().join(&file_name);
+@@ -204,5 +204,5 @@ impl CharacterCardMaterializationStore {
+     pub async fn write_png_snapshot(&self, bytes: &[u8]) -> Result<String, DomainError> {
+         let digest = Sha256::digest(bytes);
+-        let hash = format!("{digest:x}");
++        let hash = digest.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+         let file_name = format!("{hash}.png");
+         let target = self.snapshots_dir().join(&file_name);
+@@ -270,5 +270,5 @@ impl CharacterCardMaterializationStore {
+         }
+         drop(file);
+-        let hash = format!("{:x}", Sha256::digest(bytes));
++        let hash = Sha256::digest(bytes).iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+         Ok((format!("{STAGING_DIR}/{file_name}"), hash))
+     }
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
+@@ -169,5 +169,5 @@ pub fn canonical_definition_bytes(card: &Value) -> Result<Vec<u8>, String> {
+ pub fn canonical_definition_hash(card: &Value) -> Result<String, String> {
+     let bytes = canonical_definition_bytes(card)?;
+-    Ok(format!("{:x}", Sha256::digest(bytes)))
++    Ok(Sha256::digest(bytes).iter().map(|byte| format!("{byte:02x}")).collect::<String>())
+ }
