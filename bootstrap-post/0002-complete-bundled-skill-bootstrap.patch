@@ -1,0 +1,66 @@
+diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/bundled_skills.rs b/src-tauri/crates/tauritavern/src/app/composition/services/bundled_skills.rs
+--- a/src-tauri/crates/tauritavern/src/app/composition/services/bundled_skills.rs
++++ b/src-tauri/crates/tauritavern/src/app/composition/services/bundled_skills.rs
+@@ -193,4 +193,62 @@ fn parse_checksums(input: &str) -> Result<BTreeMap<String, String>, DomainError> {
+         let Some(file_name) = fields.next() else {
+             return Err(DomainError::InvalidData(
+                 "Malformed bundled Adult Tension Skill checksum line".to_string(),
+             ));
++        };
++        if fields.next().is_some()
++            || hash.len() != 64
++            || !hash.bytes().all(|byte| byte.is_ascii_hexdigit())
++        {
++            return Err(DomainError::InvalidData(format!(
++                "Malformed bundled Adult Tension Skill checksum for '{file_name}'"
++            )));
++        }
++        if result
++            .insert(file_name.to_string(), hash.to_ascii_lowercase())
++            .is_some()
++        {
++            return Err(DomainError::InvalidData(format!(
++                "Duplicate bundled Adult Tension Skill checksum for '{file_name}'"
++            )));
++        }
++    }
++    Ok(result)
++}
++
++fn bundle_path(file_name: &str) -> String {
++    format!("{BUNDLE_ROOT}/{file_name}")
++}
++
++fn application_error(context: &str, error: impl std::fmt::Display) -> DomainError {
++    DomainError::InternalError(format!("{context}: {error}"))
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn checksum_parser_accepts_three_skill_sha256_file() {
++        let input = concat!(
++            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa  adult-tension-cbfdc623.zip\n",
++            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb  adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip\n",
++            "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc  adult-tension-tauritavern-adapter-build14.zip\n",
++        );
++        let parsed = parse_checksums(input).expect("parse bundled skill checksums");
++        assert_eq!(parsed.len(), 3);
++        assert_eq!(parsed["adult-tension-cbfdc623.zip"], "a".repeat(64));
++    }
++
++    #[test]
++    fn manifest_requires_frozen_install_order() {
++        let manifest = BundledSkillManifest {
++            schema_version: 1,
++            suite: BUNDLE_SUITE.to_string(),
++            install_order: EXPECTED_SKILLS
++                .iter()
++                .map(|skill| skill.archive.to_string())
++                .collect(),
++        };
++        validate_manifest(&manifest).expect("valid bundled skill manifest");
++    }
++}
