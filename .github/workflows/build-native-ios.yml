@@ -100,6 +100,11 @@ jobs:
             git apply --recount "$normalized"
             rm -f "$normalized"
           done
+          for patch in ../control/bootstrap-post/*.patch; do
+            echo "Applying bundled Skill bootstrap patch: $patch"
+            git apply --check "$patch"
+            git apply "$patch"
+          done
           git diff --check
 
       - name: Install Rust toolchain
