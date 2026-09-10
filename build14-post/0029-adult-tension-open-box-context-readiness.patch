@@ -1,0 +1,508 @@
+diff --git a/extras/adult-tension-tauritavern-adapter/SKILL.md b/extras/adult-tension-tauritavern-adapter/SKILL.md
+index 3c89047..130bae7 100644
+--- a/extras/adult-tension-tauritavern-adapter/SKILL.md
++++ b/extras/adult-tension-tauritavern-adapter/SKILL.md
+@@ -30,9 +30,9 @@ The model cannot directly read or write `persist/` under this profile.
+ 
+ For every story-advancing turn:
+ 
+-1. Read the relevant original Skills when needed.
+-2. Call `rp_state` (native id `rp.state`) before drafting.
+-3. Call `rp_recall` (native id `rp.recall`) when older accepted history matters.
++1. Do not reread the full original Skills on routine turns. Use `skill_search` first and targeted `skill_read` only when a specialized rule is actually needed.
++2. Call `rp_state` (native id `rp.state`) before drafting for current runtime state.
++3. Call `rp_recall` (native id `rp.recall`) when older accepted continuity matters. Use `chat_search` / `chat_read_messages` only for exact old dialogue or wording. Activated World Info is already injected by the profile; use `worldinfo_read_activated` only for activation/source inspection.
+ 4. Decide one coherent action beat.
+ 5. Keep NPC knowledge and persistent goals source-bound. A new NPC does not inherit accepted continuity merely because it exists in state. Positive `knowledge` rows must include `source`; an NPC goal that names or depends on accepted continuity must be supported by accepted/staged knowledge for that NPC.
+ 6. Keep creative inference separate from Persistent Canon. Every `facts[]` row needs `source`. `user_asserted`, `observed`, `event_derived`, or `existing` may support Canon when valid. `inferred` may persist only as `plane=CHARACTER` + `classification=INTERPRETATION` and never gains objective Canon authority. Prefer `knowledge.state=suspects|partial` + `source.kind=inferred` for NPC hypotheses.
+diff --git a/extras/adult-tension-tauritavern-adapter/agents/tauritavern.json b/extras/adult-tension-tauritavern-adapter/agents/tauritavern.json
+index ce2f218..c208d34 100644
+--- a/extras/adult-tension-tauritavern-adapter/agents/tauritavern.json
++++ b/extras/adult-tension-tauritavern-adapter/agents/tauritavern.json
+@@ -7,16 +7,16 @@
+     "rp.state",
+     "rp.recall",
+     "rp.stage_turn",
+-    "skill.read",
+-    "worldinfo.read_activated",
+     "workspace.write_file",
+     "workspace.commit",
+     "workspace.finish"
+   ],
+-  "recommendedContext": {
+-    "defaultBudgetTokens": 12000,
+-    "preferredMode": "fixed_canon_living_world"
+-  },
+-  "tags": ["roleplay", "continuity", "fixed-canon", "living-world", "ios"],
+-  "notes": "Use with the built-in adult-tension-rp Agent Profile. Skill scripts are reference-only on TauriTavern."
++  "tags": [
++    "roleplay",
++    "continuity",
++    "fixed-canon",
++    "living-world",
++    "ios"
++  ],
++  "notes": "Use with the built-in adult-tension-rp Agent Profile. Activated World Info is injected automatically; use targeted Skill/search reads only when needed. Skill scripts are reference-only on TauriTavern."
+ }
+diff --git a/src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs b/src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs
+index 9e50eed..0bf323e 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs
+@@ -122,13 +122,16 @@ pub(super) fn adult_tension_rp_profile() -> Result<AgentProfileDefinition, Appli
+         preset: AgentPresetBinding { mode: AgentPresetBindingMode::CurrentPromptSnapshot, ref_: None, required: false },
+         model: AgentModelBinding { mode: AgentModelBindingMode::CurrentPromptSnapshot, connection_ref: None, model_id: None },
+         run: AgentRunPolicy { presentation: AgentRunPresentation::Foreground, direct_runnable: true, model_retry: Default::default() },
+-        context: AgentContextPolicy::default(),
++        context: AgentContextPolicy {
++            initial_chat_history_messages: 16,
++            include_activated_world_info: true,
++        },
+         instructions: AgentProfileInstructions {
+             agent_system_prompt: Some(r#"You are running the TauriTavern native adapter for the adult-tension roleplay stack.
+ 
+ For every advancing roleplay turn:
+-1. Read the relevant adult-tension / adult-tension-continuity / adult-tension-tauritavern-adapter Skills when their rules are not already in context.
+-2. Call the model-facing tool rp_state before drafting. Use rp_recall when older accepted history matters.
++1. Do not routinely reread the full adult-tension / adult-tension-continuity / adult-tension-tauritavern-adapter Skills. The built-in profile and native RP state are sufficient for ordinary turns. When a specialized rule is actually needed, use skill_search first and a targeted skill_read range only if the search snippet is insufficient.
++2. Call the model-facing tool rp_state before drafting for current runtime state. Use rp_recall for older accepted continuity. Use chat_search/chat_read_messages only when exact old dialogue or wording is required. Activated World Info is already injected into the initial Agent prompt; call worldinfo_read_activated only to inspect activation/source details, not as a routine reread.
+ 3. Preserve Fixed Canon. Never author the player's dialogue/actions/attempts/feelings/intentions/internal state beyond what the user explicitly supplied. NPCs remain autonomous.
+ 4. Historical continuity never grants current consent, boundaries, safety or permission. Resolve those only from the current explicit user turn plus the accepted runtime authority returned by rp_state. Current boundary/grant/pause changes belong only in rp_stage_turn.authority, never in continuity facts. Any scene/location/participant change conservatively withdraws previous current grants.
+ 5. NPC knowledge and persistent goals are source-bound. A newly introduced NPC does not know accepted facts merely because they exist in RP state. Any positive knowledge row must provide source.kind; any NPC goal that names or depends on accepted continuity must be supported by accepted/staged knowledge for that NPC. When a new NPC goal/beat/fact relies on prior continuity, bind the accepted fact id in npc_updates.knowledge_refs and stage matching knowledge.fact_id + source provenance. Use observed only for facts actually perceived, told_by only when the speaker/source exists in the beat, public only for established public information, and user_asserted only when the current user explicitly establishes that knowledge. Inference may create suspects/partial, never knows.
+@@ -165,15 +168,19 @@ The branch-local RP state becomes durable only through workspace.finish and Taur
+             ],
+             deny: Vec::new(),
+             tool_descriptions: BTreeMap::new(),
+-            max_rounds: DEFAULT_AGENT_TOOL_MAX_ROUNDS,
+-            max_calls_per_run: DEFAULT_AGENT_TOOL_MAX_CALLS_PER_RUN,
++            max_rounds: 16,
++            max_calls_per_run: 32,
+             max_calls_per_tool,
+         },
+         skills: AgentSkillPolicy {
+-            visible: vec!["*".to_string()],
++            visible: vec![
++                "adult-tension".to_string(),
++                "adult-tension-continuity".to_string(),
++                "adult-tension-tauritavern-adapter".to_string(),
++            ],
+             deny: Vec::new(),
+-            max_read_chars_per_call: DEFAULT_AGENT_SKILL_MAX_READ_CHARS_PER_CALL,
+-            max_read_chars_per_run: DEFAULT_AGENT_SKILL_MAX_READ_CHARS_PER_RUN,
++            max_read_chars_per_call: 16_000,
++            max_read_chars_per_run: 32_000,
+         },
+         // The model cannot directly read or write persist/. Native rp.* tools own it.
+         workspace: AgentWorkspacePolicy {
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+index 3168638..ebbe6ce 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -27,6 +27,7 @@ const MAX_RUNTIME_CHECKPOINTS: usize = 32;
+ const MAX_ARCHIVED_NPCS: usize = 1024;
+ const MAX_MEMORIES: usize = 1024;
++const HOT_MEMORY_LIMIT: usize = 24;
+ const MAX_PROFILE_EVIDENCE: usize = 1024;
+ const MAX_CANONIZATION_PROPOSALS: usize = 64;
+ 
+@@ -641,7 +642,9 @@ struct StateResult<'a> {
+     npcs: &'a BTreeMap<String, RpNpcState>,
+     archived_npc_count: usize,
+     cast_registry: &'a BTreeMap<String, RpCharacterEntity>,
+-    memories: &'a [RpMemoryRecord],
++    memory_count: usize,
++    memory_tier_counts: BTreeMap<String, usize>,
++    memories: Vec<&'a RpMemoryRecord>,
+     canonization_proposals: &'a [RpCanonizationProposal],
+     active_boundaries: Vec<&'a RpBoundary>,
+     active_grants: Vec<&'a RpGrant>,
+@@ -1663,7 +1666,16 @@ fn state_payload<'a>(
+         npcs: &state.npcs,
+         archived_npc_count: state.archived_npcs.len(),
+         cast_registry: &state.cast_registry,
+-        memories: &state.memories,
++        memory_count: state.memories.iter().filter(|memory| !memory.retracted).count(),
++        memory_tier_counts: active_memory_tier_counts(&state.memories),
++        memories: state.memories.iter()
++            .filter(|memory| !memory.retracted)
++            .rev()
++            .take(HOT_MEMORY_LIMIT)
++            .collect::<Vec<_>>()
++            .into_iter()
++            .rev()
++            .collect(),
+         canonization_proposals: &state.canonization_proposals,
+         active_boundaries: state.boundaries.iter().filter(|v| v.status == "active").collect(),
+         active_grants: state.grants.iter().filter(|v| v.status == "granted" && state.scene_id.as_deref() == Some(v.scene_id.as_str())).collect(),
+@@ -1685,6 +1697,14 @@ fn render_state_summary(payload: &StateResult<'_>) -> String {
+     format!("RP state revision {} / turn {}. {}, Safety={}, {} active participant(s), {} tracked NPC(s), {} active boundary/boundaries, {} active grant(s), {} pending event(s), {} open commitment(s), {} open thread(s).", payload.runtime_revision, payload.turn, binding, payload.safety_state, payload.participants.len(), payload.npcs.len(), payload.active_boundaries.len(), payload.active_grants.len(), payload.pending_events.len(), payload.open_commitments.len(), payload.open_threads.len())
+ }
+ 
++fn active_memory_tier_counts(memories: &[RpMemoryRecord]) -> BTreeMap<String, usize> {
++    let mut counts = BTreeMap::new();
++    for memory in memories.iter().filter(|memory| !memory.retracted) {
++        *counts.entry(memory.tier.clone()).or_insert(0) += 1;
++    }
++    counts
++}
++
+ fn recall_hits(state: &RpState, query: &str, limit: usize) -> Vec<Value> {
+     let mut records = Vec::<(u64, Value, String)>::new();
+     for fact in state.facts.iter().filter(|fact| fact_is_active(fact)) {
+@@ -1699,6 +1719,20 @@ fn recall_hits(state: &RpState, query: &str, limit: usize) -> Vec<Value> {
+     for t in &state.threads {
+         records.push((t.turn, json!({"kind":"thread","record":t}), format!("{} {} {}", t.id, t.summary, t.status)));
+     }
++    for memory in state.memories.iter().filter(|memory| !memory.retracted) {
++        records.push((
++            memory.turn,
++            json!({"kind":"memory","record":memory}),
++            format!(
++                "{} {} {} {} {}",
++                memory.id,
++                memory.tier,
++                memory.summary,
++                memory.character_refs.join(" "),
++                memory.source_refs.join(" ")
++            ),
++        ));
++    }
+     for b in &state.recent_beats {
+         records.push((b.turn, json!({"kind":"beat","record":b}), b.summary.clone()));
+     }
+@@ -2546,4 +2580,28 @@ mod tests {
+         assert_eq!(value.get("runtimeRevision").and_then(Value::as_u64), Some(0));
+     }
+ 
++    #[test]
++    fn state_payload_bounds_hot_memories_but_recall_keeps_cold_memory_retrievable() {
++        let mut state = RpState::default();
++        for index in 0..64_u64 {
++            state.memories.push(RpMemoryRecord {
++                id: format!("memory-{index}"),
++                tier: if index % 2 == 0 { "episodic".to_string() } else { "semantic".to_string() },
++                summary: if index == 1 { "old lighthouse password is cobalt".to_string() } else { format!("memory summary {index}") },
++                character_refs: vec!["npc-a".to_string()],
++                source_refs: vec![format!("turn:{index}")],
++                turn: index,
++                retracted: false,
++            });
++        }
++        let payload = state_payload("chat-a", &state, RuntimeBindingStatus::LegacyUnbound);
++        assert_eq!(payload.memory_count, 64);
++        assert_eq!(payload.memories.len(), HOT_MEMORY_LIMIT);
++        assert!(!payload.memories.iter().any(|memory| memory.id == "memory-1"));
++        let hits = recall_hits(&state, "cobalt", 12);
++        assert_eq!(hits.len(), 1);
++        assert_eq!(hits[0].get("kind").and_then(Value::as_str), Some("memory"));
++        assert_eq!(hits[0].pointer("/record/id").and_then(Value::as_str), Some("memory-1"));
++    }
++
+ }
+diff --git a/src/scripts/extensions/agent-system/src/adult-tension-readiness.js b/src/scripts/extensions/agent-system/src/adult-tension-readiness.js
+new file mode 100644
+index 0000000..59ef568
+--- /dev/null
++++ b/src/scripts/extensions/agent-system/src/adult-tension-readiness.js
+@@ -0,0 +1,147 @@
++import { getClientVersion } from '../../../../tauri-bridge.js';
++import { getChatCompletionModel } from '../../../openai.js';
++import { loadSettings, patchSettings } from './settings-store.js';
++import { requireAgentApi, requireSkillApi, requireSillyTavernContext } from './host-api.js';
++
++export const ADULT_TENSION_DISTRIBUTION = 'adult_tension_selfsign';
++export const ADULT_TENSION_PROFILE_ID = 'adult-tension-rp';
++export const ADULT_TENSION_BOOTSTRAP_VERSION = 1;
++export const ADULT_TENSION_CONTEXT_BOOTSTRAP_VERSION = 1;
++export const ADULT_TENSION_MIN_CONTEXT = 16_384;
++export const ADULT_TENSION_MIN_RESPONSE = 1_024;
++export const ADULT_TENSION_REQUIRED_SKILLS = Object.freeze([
++    'adult-tension',
++    'adult-tension-continuity',
++    'adult-tension-tauritavern-adapter',
++]);
++
++async function distributionFlavor() {
++    const version = await getClientVersion();
++    return String(version?.distributionFlavor || '').trim();
++}
++
++export async function isAdultTensionDistribution() {
++    return await distributionFlavor() === ADULT_TENSION_DISTRIBUTION;
++}
++
++function factoryLikeAgentSettings(settings) {
++    const active = String(settings?.activeProfileId || 'default-writer').trim() || 'default-writer';
++    const editing = String(settings?.editingProfileId || active).trim() || active;
++    return active === 'default-writer' && editing === 'default-writer';
++}
++
++async function adultTensionProfileAvailable() {
++    const result = await requireAgentApi().profiles.list();
++    return Array.isArray(result?.profiles)
++        && result.profiles.some((profile) => profile?.id === ADULT_TENSION_PROFILE_ID && profile?.directRunnable !== false);
++}
++
++async function applyContextBootstrap(settings) {
++    if (Number(settings?.adultTensionContextBootstrapVersion || 0) >= ADULT_TENSION_CONTEXT_BOOTSTRAP_VERSION) {
++        return settings;
++    }
++    const context = requireSillyTavernContext();
++    if (context.mainApi !== 'openai') {
++        return settings;
++    }
++    const chatSettings = context.chatCompletionSettings;
++    if (!chatSettings || typeof chatSettings !== 'object') {
++        return settings;
++    }
++
++    let changed = false;
++    const currentContext = Number(chatSettings.openai_max_context);
++    if (Number.isFinite(currentContext) && currentContext <= 4095) {
++        chatSettings.openai_max_context = ADULT_TENSION_MIN_CONTEXT;
++        changed = true;
++    }
++    const currentResponse = Number(chatSettings.openai_max_tokens);
++    if (Number.isFinite(currentResponse) && currentResponse <= 300) {
++        chatSettings.openai_max_tokens = ADULT_TENSION_MIN_RESPONSE;
++        changed = true;
++    }
++    if (changed && typeof context.saveSettingsDebounced === 'function') {
++        context.saveSettingsDebounced();
++    }
++    return await patchSettings(settings, {
++        adultTensionContextBootstrapVersion: ADULT_TENSION_CONTEXT_BOOTSTRAP_VERSION,
++    });
++}
++
++export async function applyAdultTensionBootstrap() {
++    if (!await isAdultTensionDistribution()) {
++        return { applicable: false, changed: false };
++    }
++
++    let settings = await loadSettings();
++    let changed = false;
++    if (Number(settings?.adultTensionBootstrapVersion || 0) < ADULT_TENSION_BOOTSTRAP_VERSION) {
++        const profileAvailable = await adultTensionProfileAvailable();
++        const factoryLike = factoryLikeAgentSettings(settings);
++        const patch = {
++            adultTensionBootstrapVersion: ADULT_TENSION_BOOTSTRAP_VERSION,
++        };
++        if (profileAvailable && factoryLike) {
++            patch.agentModeEnabled = true;
++            patch.activeProfileId = ADULT_TENSION_PROFILE_ID;
++            patch.editingProfileId = ADULT_TENSION_PROFILE_ID;
++            changed = true;
++        }
++        settings = await patchSettings(settings, patch);
++    }
++
++    const beforeContextVersion = Number(settings?.adultTensionContextBootstrapVersion || 0);
++    settings = await applyContextBootstrap(settings);
++    changed ||= Number(settings?.adultTensionContextBootstrapVersion || 0) > beforeContextVersion;
++    return { applicable: true, changed, settings };
++}
++
++function readinessItem(id, ok, detail) {
++    return { id, ok: Boolean(ok), detail: String(detail || '') };
++}
++
++export async function checkAdultTensionReadiness() {
++    const flavor = await distributionFlavor();
++    if (flavor !== ADULT_TENSION_DISTRIBUTION) {
++        return { applicable: false, ready: false, items: [] };
++    }
++
++    const [settings, profilesResult, skills] = await Promise.all([
++        loadSettings(),
++        requireAgentApi().profiles.list(),
++        requireSkillApi().list({ scope: { kind: 'all' } }),
++    ]);
++    const context = requireSillyTavernContext();
++    const profiles = Array.isArray(profilesResult?.profiles) ? profilesResult.profiles : [];
++    const installedSkills = new Set((Array.isArray(skills) ? skills : []).map((skill) => String(skill?.name || '').trim()).filter(Boolean));
++    const missingSkills = ADULT_TENSION_REQUIRED_SKILLS.filter((name) => !installedSkills.has(name));
++    const chatSettings = context.chatCompletionSettings || {};
++    const maxContext = Number(chatSettings.openai_max_context || 0);
++    const responseLength = Number(chatSettings.openai_max_tokens || 0);
++    const model = context.mainApi === 'openai' ? String(getChatCompletionModel(chatSettings) || '').trim() : '';
++
++    const items = [
++        readinessItem('distribution', true, ADULT_TENSION_DISTRIBUTION),
++        readinessItem('agentMode', settings.agentModeEnabled === true, settings.agentModeEnabled ? 'ON' : 'OFF'),
++        readinessItem('profile', settings.activeProfileId === ADULT_TENSION_PROFILE_ID && profiles.some((p) => p?.id === ADULT_TENSION_PROFILE_ID), settings.activeProfileId || ''),
++        readinessItem('skills', missingSkills.length === 0, missingSkills.length ? `Missing: ${missingSkills.join(', ')}` : '3/3 installed'),
++        readinessItem('chatCompletion', context.mainApi === 'openai', String(context.mainApi || 'unset')),
++        readinessItem('model', Boolean(model), model || 'No chat-completion model selected'),
++        readinessItem('context', maxContext >= ADULT_TENSION_MIN_CONTEXT && responseLength >= ADULT_TENSION_MIN_RESPONSE, `${maxContext || 0} context / ${responseLength || 0} response`),
++        readinessItem('contextRouting', true, '16 recent messages + RP recall + exact chat retrieval + injected World Info'),
++    ];
++    return {
++        applicable: true,
++        ready: items.every((item) => item.ok),
++        items,
++        missingSkills,
++        model,
++        context: { maxContext, responseLength },
++        note: 'Local readiness only. It does not call the live LLM API or measure a real assembled prompt token ratio.',
++    };
++}
+diff --git a/src/scripts/extensions/agent-system/src/i18n.js b/src/scripts/extensions/agent-system/src/i18n.js
+index 615ce84..de412eb 100644
+--- a/src/scripts/extensions/agent-system/src/i18n.js
++++ b/src/scripts/extensions/agent-system/src/i18n.js
+@@ -26,6 +26,11 @@ const DEFAULT_MESSAGES = Object.freeze({
+     agentProfileSaved: 'Agent profile saved.',
+     agentRunActive: 'Agent run active',
+     agentSystem: 'Agent System',
++    adultTensionReadiness: 'Adult Tension Readiness',
++    readinessReady: 'READY',
++    readinessNeedsSetup: 'Needs setup',
++    refreshReadiness: 'Refresh Readiness',
++    readinessLocalNote: 'Local preflight only; no live LLM request is sent.',
+     agentSystemDialogUnsupported: 'Agent System requires dialog.showModal support',
+     agentSystemElementUnsupported: 'Agent System requires HTMLDialogElement support',
+     agentSystemPrompt: 'Agent System Prompt',
+diff --git a/src/scripts/extensions/agent-system/src/index.js b/src/scripts/extensions/agent-system/src/index.js
+index d7b1bed..d5f8593 100644
+--- a/src/scripts/extensions/agent-system/src/index.js
++++ b/src/scripts/extensions/agent-system/src/index.js
+@@ -11,6 +11,7 @@ import { loadSettings, patchSettings, subscribeSettings } from './settings-store
+ import { startModelTargetLlmConnectionSync, syncSavedModelTargetLlmConnections } from './model-target-connection.js';
+ import { subscribeAgentProfilesChanged } from '../../../tauritavern/agent/agent-profile-events.js';
+ import { DEFAULT_AGENT_PROFILE_ID } from '../../../tauritavern/agent/agent-system-settings.js';
++import { applyAdultTensionBootstrap, checkAdultTensionReadiness } from './adult-tension-readiness.js';
+ 
+ function createAgentSystemEntryApp() {
+     return createApp({
+@@ -20,6 +21,8 @@ function createAgentSystemEntryApp() {
+                 unsubscribeSettings: null,
+                 unsubscribeProfiles: null,
+                 profiles: [],
++                readiness: null,
++                readinessLoading: false,
+                 settings: {
+                     agentModeEnabled: false,
+                     chatInputToggleHidden: false,
+@@ -41,6 +44,7 @@ function createAgentSystemEntryApp() {
+                 this.settings = await loadSettings();
+                 await this.refreshProfiles();
+                 await this.ensureActiveProfileSelectable();
++                await this.refreshReadiness();
+                 this.unsubscribeSettings = subscribeSettings((settings) => {
+                     this.settings = settings;
+                 });
+@@ -74,6 +78,14 @@ function createAgentSystemEntryApp() {
+                     }
+                 })();
+             },
++            async refreshReadiness() {
++                this.readinessLoading = true;
++                try {
++                    this.readiness = await checkAdultTensionReadiness();
++                } finally {
++                    this.readinessLoading = false;
++                }
++            },
+             async refreshProfiles() {
+                 const result = await requireAgentApi().profiles.list();
+                 this.profiles = Array.isArray(result?.profiles) ? result.profiles : [];
+@@ -166,6 +178,12 @@ function createAgentSystemEntryApp() {
+                                 <i class="fa-solid fa-up-right-from-square"></i>
+                                 <span>{{ tr('openAgentSystem') }}</span>
+                             </button>
++                            <div v-if="readiness?.applicable" class="ttas-field">
++                                <b>{{ tr('adultTensionReadiness') }}: {{ readiness.ready ? tr('readinessReady') : tr('readinessNeedsSetup') }}</b>
++                                <div v-for="item in readiness.items" :key="item.id">{{ item.ok ? '✓' : '✗' }} {{ item.id }} · {{ item.detail }}</div>
++                                <small>{{ tr('readinessLocalNote') }}</small>
++                                <button type="button" class="menu_button" :disabled="readinessLoading" @click="refreshReadiness">{{ tr('refreshReadiness') }}</button>
++                            </div>
+                         </div>
+                     </div>
+                 </div>
+@@ -176,6 +194,12 @@ function createAgentSystemEntryApp() {
+ 
+ async function mountAgentSystem() {
+     await waitForHostReady();
++    try {
++        await applyAdultTensionBootstrap();
++    } catch (error) {
++        console.error('[AgentSystem] Adult Tension bootstrap failed open:', error);
++        window.toastr?.warning?.(`Adult Tension bootstrap: ${errorText(error)}`);
++    }
+     startModelTargetLlmConnectionSync();
+     await syncSavedModelTargetLlmConnections();
+ 
+diff --git a/src/scripts/tauritavern/agent/agent-system-settings.js b/src/scripts/tauritavern/agent/agent-system-settings.js
+index d798287..0c5ae82 100644
+--- a/src/scripts/tauritavern/agent/agent-system-settings.js
++++ b/src/scripts/tauritavern/agent/agent-system-settings.js
+@@ -10,6 +10,8 @@ export const DEFAULT_AGENT_SYSTEM_SETTINGS = Object.freeze({
+     editingProfileId: DEFAULT_AGENT_PROFILE_ID,
+     activeTab: 'profiles',
+     runTimelineHeightPx: null,
++    adultTensionBootstrapVersion: 0,
++    adultTensionContextBootstrapVersion: 0,
+ });
+ 
+ function requireExtensionStore() {
+diff --git a/tests/adult-tension-open-box-contract.test.mjs b/tests/adult-tension-open-box-contract.test.mjs
+new file mode 100644
+index 0000000..1c55a55
+--- /dev/null
++++ b/tests/adult-tension-open-box-contract.test.mjs
+@@ -0,0 +1,57 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++
++const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
++const defaults = read('src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs');
++const rpState = read('src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs');
++const settings = read('src/scripts/tauritavern/agent/agent-system-settings.js');
++const readiness = read('src/scripts/extensions/agent-system/src/adult-tension-readiness.js');
++const agentIndex = read('src/scripts/extensions/agent-system/src/index.js');
++const adapterManifest = JSON.parse(read('extras/adult-tension-tauritavern-adapter/agents/tauritavern.json'));
++
++const profileBlock = defaults.slice(defaults.indexOf('pub(super) fn adult_tension_rp_profile'));
++
++test('Adult Tension profile uses bounded layered context and tool budgets', () => {
++    assert.match(profileBlock, /initial_chat_history_messages:\s*16/);
++    assert.match(profileBlock, /include_activated_world_info:\s*true/);
++    assert.match(profileBlock, /max_rounds:\s*16/);
++    assert.match(profileBlock, /max_calls_per_run:\s*32/);
++    assert.match(profileBlock, /max_read_chars_per_call:\s*16_000/);
++    assert.match(profileBlock, /max_read_chars_per_run:\s*32_000/);
++    for (const skill of ['adult-tension', 'adult-tension-continuity', 'adult-tension-tauritavern-adapter']) {
++        assert.match(profileBlock, new RegExp(`"${skill}"\\.to_string\\(\\)`));
++    }
++    assert.doesNotMatch(profileBlock.match(/skills:\s*AgentSkillPolicy[\s\S]*?\n\s*},/)[0], /visible:\s*vec!\["\*"/);
++    assert.match(profileBlock, /Do not routinely reread the full/);
++    assert.match(profileBlock, /Activated World Info is already injected/);
++});
++
++test('Adapter recommendations avoid routine duplicate World Info and full Skill reads', () => {
++    assert.equal(adapterManifest.recommendedTools.includes('skill.read'), false);
++    assert.equal(adapterManifest.recommendedTools.includes('worldinfo.read_activated'), false);
++    assert.equal(Object.hasOwn(adapterManifest, 'recommendedContext'), false);
++});
++
++test('RP state bounds hot memory while recall indexes historical memory', () => {
++    assert.match(rpState, /const HOT_MEMORY_LIMIT:\s*usize\s*=\s*24/);
++    assert.match(rpState, /memory_count:\s*usize/);
++    assert.match(rpState, /memory_tier_counts:\s*BTreeMap/);
++    assert.match(rpState, /take\(HOT_MEMORY_LIMIT\)/);
++    assert.match(rpState, /"kind":"memory"/);
++    assert.match(rpState, /state_payload_bounds_hot_memories_but_recall_keeps_cold_memory_retrievable/);
++});
++
++test('Adult Tension distribution bootstraps once and exposes local readiness', () => {
++    assert.match(settings, /adultTensionBootstrapVersion:\s*0/);
++    assert.match(settings, /adultTensionContextBootstrapVersion:\s*0/);
++    assert.match(readiness, /adult_tension_selfsign/);
++    assert.match(readiness, /ADULT_TENSION_MIN_CONTEXT\s*=\s*16_384/);
++    assert.match(readiness, /ADULT_TENSION_MIN_RESPONSE\s*=\s*1_024/);
++    assert.match(readiness, /adult-tension-continuity/);
++    assert.match(readiness, /Local readiness only/);
++    assert.match(agentIndex, /applyAdultTensionBootstrap/);
++    assert.match(agentIndex, /checkAdultTensionReadiness/);
++});
