@@ -36,8 +36,16 @@ for candidate in "$TMP_DIR"/ipa/Payload/*.app; do
 done
 test -n "$APP_DIR"
 
-BUNDLE_DIR="$APP_DIR/$BUNDLE_DIR_NAME"
+# Runtime contract, not just packaging presence: on iOS Tauri resolves
+# BaseDirectory::Resource beneath <App>.app/assets. A bundle at the .app root
+# is physically present but invisible to assets::read_resource_bytes().
+RESOURCE_ROOT="$APP_DIR/assets"
+BUNDLE_DIR="$RESOURCE_ROOT/$BUNDLE_DIR_NAME"
+LEGACY_BUNDLE_DIR="$APP_DIR/$BUNDLE_DIR_NAME"
+
+test -d "$RESOURCE_ROOT"
 test -d "$BUNDLE_DIR"
+test ! -e "$LEGACY_BUNDLE_DIR"
 
 for file in "${required_files[@]}"; do
   test -f "$BUNDLE_DIR/$file"
@@ -70,4 +78,4 @@ unzip -p "$BUNDLE_DIR/adult-tension-continuity-graduation-final-v2-tauritavern-f
 unzip -t "$BUNDLE_DIR/adult-tension-tauritavern-adapter-build14.zip" >/dev/null
 unzip -p "$BUNDLE_DIR/adult-tension-tauritavern-adapter-build14.zip" SKILL.md | grep -q '^name: adult-tension-tauritavern-adapter$'
 
-printf 'VERIFIED: final IPA contains the exact three Adult Tension Runtime Skills at %s/%s\n' "$(basename "$APP_DIR")" "$BUNDLE_DIR_NAME"
+printf 'VERIFIED: final IPA exposes the exact three Adult Tension Runtime Skills at the iOS Tauri resource path %s/assets/%s\n' "$(basename "$APP_DIR")" "$BUNDLE_DIR_NAME"
