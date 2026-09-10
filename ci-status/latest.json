@@ -1,13 +1,13 @@
 {
-  "run_id": "34465460159",
-  "run_number": "40",
+  "run_id": "34478695448",
+  "run_number": "41",
   "run_attempt": "1",
   "repository": "fengyuany857-beep/tauritavern-adult-tension",
-  "trigger_sha": "35b60d2b63f1e2121bf72a14504a77585bcb8aac",
+  "trigger_sha": "a79c4ace5d8ebf4a250d8024cf2fc2d62bf1842c",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
-  "stage": "Complete: self-sign IPA + embedded auto-registering three Skills ready",
-  "state": "COMPLETE",
+  "stage": "Environment ready",
+  "state": "RUNNING",
   "exit_code": 0,
-  "updated_at": "2026-09-10T10:32:23Z",
+  "updated_at": "2026-09-10T12:48:29Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-40-a1"
 }
