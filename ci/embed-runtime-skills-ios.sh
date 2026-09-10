@@ -35,7 +35,13 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 mkdir -p "$TMP_DIR/ipa"
 unzip -q "$IPA" -d "$TMP_DIR/ipa"
 
-APP_DIR="$(find "$TMP_DIR/ipa/Payload" -maxdepth 1 -type d -name '*.app' -print -quit)"
+APP_DIR=""
+for candidate in "$TMP_DIR"/ipa/Payload/*.app; do
+  if [[ -d "$candidate" ]]; then
+    APP_DIR="$candidate"
+    break
+  fi
+done
 test -n "$APP_DIR"
 
 BUNDLE_DIR="$APP_DIR/$BUNDLE_DIR_NAME"
