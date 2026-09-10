@@ -43,12 +43,13 @@ diff --git a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materia
      }
  
      pub async fn read_snapshot(&self, logical_ref: &str) -> Result<Vec<u8>, DomainError> {
--        validate_snapshot_ref(logical_ref)?;
-+        validate_snapshot_ref(logical_ref)?;
+         validate_snapshot_ref(logical_ref)?;
          let file_name = logical_ref
              .strip_prefix("snapshots/")
              .ok_or_else(|| DomainError::InvalidData("invalid snapshot ref".to_string()))?;
-@@ -191,6 +175,35 @@ impl CharacterCardMaterializationStore {
+@@ -189,4 +173,31 @@ impl CharacterCardMaterializationStore {
+         fs::read(self.snapshots_dir().join(file_name))
+             .await
              .map_err(|error| map_io("read snapshot", error))
      }
 +
@@ -78,7 +79,7 @@ diff --git a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materia
 +        atomic_write_bytes(&target, bytes).await?;
 +        Ok(format!("{SNAPSHOTS_DIR}/{file_name}"))
 +    }
-@@ -383,11 +396,16 @@ fn validate_snapshot_ref(value: &str) -> Result<(), DomainError> {
+@@ -383,11 +394,16 @@ fn validate_snapshot_ref(value: &str) -> Result<(), DomainError> {
 -    let Some(hash) = file_name.strip_suffix(".json") else {
 +    let Some((hash, extension)) = file_name.rsplit_once('.') else {
          return Err(DomainError::InvalidData(
@@ -92,14 +93,14 @@ diff --git a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materia
 +        ));
 +    }
      if hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit()) {
-@@ -432,6 +450,10 @@ impl CharacterCardMaterializationRepository for CharacterCardMaterializationStore {
+@@ -432,6 +448,10 @@ impl CharacterCardMaterializationRepository for CharacterCardMaterializationStore {
          CharacterCardMaterializationStore::write_snapshot(self, bytes).await
      }
 +
 +    async fn write_png_snapshot(&self, bytes: &[u8]) -> Result<String, DomainError> {
 +        CharacterCardMaterializationStore::write_png_snapshot(self, bytes).await
 +    }
-@@ -515,6 +537,9 @@ mod tests {
+@@ -515,6 +535,9 @@ mod tests {
          let digest = "a".repeat(64);
          assert!(validate_snapshot_ref(&format!("snapshots/{digest}.json")).is_ok());
 +        assert!(validate_snapshot_ref(&format!("snapshots/{digest}.png")).is_ok());
