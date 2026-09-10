@@ -72,10 +72,10 @@ EOF
   if [[ -n "$log_file" && -f "$log_file" ]]; then
     {
       echo "# Diagnostic matches"
-      grep -nEi 'AGENT-IOS-DIAG|agent-system-ios|error|failed|failure|warning:|clippy|panic|denied|xcodebuild|codesign|provision|undefined reference|linker command' "$log_file" | head -n 220 || true
+      grep -nEi 'AGENT-IOS|BUNDLE-ID|continuity|error|failed|failure|warning:|clippy|panic|denied|xcodebuild|codesign|provision|undefined reference|linker command' "$log_file" | head -n 260 || true
       echo
       echo "# Tail"
-      tail -n 320 "$log_file" || true
+      tail -n 360 "$log_file" || true
     } > "$STATUS_DIR/latest.log"
   else
     : > "$STATUS_DIR/latest.log"
@@ -130,6 +130,8 @@ run_stage() {
 
 publish_status "Environment ready" "RUNNING" 0 ""
 
+run_stage "bundle-id-source" "Source Bundle ID identity" \
+  "EXPECTED_BUNDLE_ID=com.tauritavern.client bash '${CONTROL_DIR}/ci/verify-ios-bundle-id.sh' source"
 run_stage "native-contracts" "Native RP and Agent contracts" \
   "node --test tests/agent-rp-native-contract.test.mjs tests/agent-api-contract.test.mjs tests/personal-ios-unsigned-build.test.mjs tests/ios-runtime-acceptance-contract.test.mjs tests/adult-tension-open-box-contract.test.mjs"
 run_stage "frontend-guardrails" "Frontend guardrails" "pnpm run check:frontend"
@@ -139,14 +141,20 @@ run_stage "rust-boundaries" "Rust crate boundaries" "pnpm run check:rust-boundar
 run_stage "contracts" "Full contract tests" "pnpm run test:contracts"
 run_stage "rust-tests" "Rust tests" "pnpm run test:rust"
 run_stage "clippy" "Rust Clippy" "pnpm run check:rust:clippy"
+run_stage "agent-production-smoke" "Agent System minified production smoke" \
+  "pnpm run web:build && node '${CONTROL_DIR}/ci/agent-system-ios-bundle-diagnostic.mjs'"
 run_stage "frontend-build" "Frontend production build" "pnpm run web:build"
 run_stage "runtime-skills" "Runtime Skill packages" \
   "CONTROL_DIR='${CONTROL_DIR}' SOURCE_DIR='${SOURCE_DIR}' ADULT_TENSION_SOURCE_DIR='${GITHUB_WORKSPACE}/adult-tension-src' bash '${CONTROL_DIR}/ci/package-runtime-skills.sh'"
 run_stage "mobile-http" "iOS mobile HTTP compatibility" "./scripts/ci/configure-mobile-http.sh enable ios"
 run_stage "ios-arm64" "Unsigned iPhone arm64 build" \
-  "TAURITAVERN_CONTROL_SHA=${GITHUB_SHA} TAURITAVERN_BUILD_RUN_ID=${GITHUB_RUN_ID} TAURITAVERN_BUILD_RUN_NUMBER=${GITHUB_RUN_NUMBER} TAURITAVERN_UPSTREAM_SHA=${UPSTREAM_SHA} TAURITAVERN_BUILD_BRANCH=adult-tension-native-v1.1 TAURITAVERN_BUILD_REVISION=${UPSTREAM_SHA}+adult-tension-native-v1.1 TAURITAVERN_IOS_POLICY_PROFILE=full ./scripts/ci/build-ios-unsigned.sh"
+  "TAURITAVERN_CONTROL_SHA=${GITHUB_SHA} TAURITAVERN_BUILD_RUN_ID=${GITHUB_RUN_ID} TAURITAVERN_BUILD_RUN_NUMBER=${GITHUB_RUN_NUMBER} TAURITAVERN_UPSTREAM_SHA=${UPSTREAM_SHA} TAURITAVERN_BUILD_BRANCH=repair/ios-agent-continuity-20260910 TAURITAVERN_BUILD_REVISION=${UPSTREAM_SHA}+ios-agent-continuity TAURITAVERN_IOS_POLICY_PROFILE=full ./scripts/ci/build-ios-unsigned.sh"
+run_stage "bundle-id-built" "Built app Bundle ID identity" \
+  "EXPECTED_BUNDLE_ID=com.tauritavern.client bash '${CONTROL_DIR}/ci/verify-ios-bundle-id.sh' built"
 run_stage "embed-runtime-skills" "Embed three Runtime Skills into iOS app bundle" \
   "SOURCE_DIR='${SOURCE_DIR}' bash '${CONTROL_DIR}/ci/embed-runtime-skills-ios.sh'"
+run_stage "bundle-id-final" "Final unsigned IPA Bundle ID identity" \
+  "EXPECTED_BUNDLE_ID=com.tauritavern.client bash '${CONTROL_DIR}/ci/verify-ios-bundle-id.sh' final"
 run_stage "ipa-verify" "Unsigned IPA verification" \
   "./scripts/ci/verify-ios-unsigned.sh dist/ios-unsigned/TauriTavern-unsigned.ipa"
 run_stage "bundled-skills-verify" "Bundled Runtime Skills verification" \
@@ -169,9 +177,9 @@ run_stage "release" "Publish self-sign IPA with embedded auto-registering three-
     --repo '${GITHUB_REPOSITORY}' \
     --target '${GITHUB_SHA}' \
     --title 'TauriTavern Adult Tension iOS Self-sign ${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}' \
-    --notes 'Unsigned iPhone arm64 build with the matching three Adult Tension Runtime Skills embedded inside TauriTavern.app/AdultTensionRuntimeSkills. Startup bootstrap is compiled in: it preflights the bundled manifest and hashes, installs new Skills into global scope, treats identical copies as already installed, and preserves a different user-modified installed copy via skip policy. Final IPA is re-opened and hash-verified after embedding. Re-sign the IPA with your own iOS self-signing tool before installation.'"
+    --notes 'Unsigned iPhone arm64 build with the matching three Adult Tension Runtime Skills embedded inside TauriTavern.app/AdultTensionRuntimeSkills. Data continuity preflight now classifies legacy data before DataDirectory initialization, snapshots legacy worlds before the continuity marker is created, and only then allows bundled Skill reconciliation. Agent System readiness resolves the current model through the host context so the independent production bundle no longer duplicates the main chat runtime. Final IPA Bundle ID and bundled Skill hashes are verified. Re-sign the IPA with your own iOS self-signing tool before installation.'"
 
 printf '%s\n' "$release_url" > "$STATUS_DIR/latest-release.txt"
-publish_status "Complete: self-sign IPA + embedded auto-registering three Skills ready" "COMPLETE" 0 "$LOG_DIR/release.log"
+publish_status "Complete: self-sign IPA + Agent fix + continuity + three Skills ready" "COMPLETE" 0 "$LOG_DIR/release.log"
 
 echo "SELF_SIGN_RELEASE=$release_url"
