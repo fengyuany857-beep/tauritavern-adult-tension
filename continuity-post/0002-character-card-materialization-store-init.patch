@@ -1,0 +1,20 @@
+diff --git a/src-tauri/crates/tauritavern/src/app/composition.rs b/src-tauri/crates/tauritavern/src/app/composition.rs
+--- a/src-tauri/crates/tauritavern/src/app/composition.rs
++++ b/src-tauri/crates/tauritavern/src/app/composition.rs
+@@ -7,7 +7,7 @@ use std::path::Path;
+ 
+ use tauri::AppHandle;
+ 
+-use tt_adapter_storage_core::file_system::DataDirectory;
++use tt_adapter_storage_core::{CharacterCardMaterializationStore, file_system::DataDirectory};
+ use tt_domain::errors::DomainError;
+ 
+ use super::{AppServices, StartupProfile};
+@@ -24,6 +24,8 @@ pub(super) async fn initialize_data_directory(
+     );
+     let data_directory = DataDirectory::new(data_root.to_path_buf());
+     data_directory.initialize().await?;
++    CharacterCardMaterializationStore::new(&data_directory)
++        .initialize().await?;
+     Ok(data_directory)
+ }
