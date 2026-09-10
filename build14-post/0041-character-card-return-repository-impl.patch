@@ -1,0 +1,137 @@
+diff --git a/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_character_repository/repository.rs b/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_character_repository/repository.rs
+--- a/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_character_repository/repository.rs
++++ b/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_character_repository/repository.rs
+@@ -14,6 +14,7 @@ use tt_domain::errors::DomainError;
+ use tt_domain::json_merge::merge_json_value;
+ use tt_domain::models::{character::Character, chat::parse_message_timestamp_value};
++use tt_ports::repositories::character_card_return_repository::CharacterCardReturnRepository;
+ use tt_ports::repositories::character_repository::{
+     CHARACTER_CREATE_WARNING_AVATAR_IMPORT_FAILED, CharacterChat, CharacterCreateResult,
+     CharacterCreateWarning, CharacterRepository, ImageCrop,
+@@ -1018,3 +1019,131 @@ impl CharacterRepository for FileCharacterRepository {
+         Ok(())
+     }
+ }
++
++#[async_trait]
++impl CharacterCardReturnRepository for FileCharacterRepository {
++    async fn read_card_json(&self, storage_identity: &str) -> Result<String, DomainError> {
++        if !validate_path_segment(storage_identity) {
++            return Err(DomainError::InvalidData(
++                "Character storage identity is invalid".to_string(),
++            ));
++        }
++        CharacterRepository::read_character_card_json(self, storage_identity).await
++    }
++
++    async fn read_card_png_bytes(
++        &self,
++        storage_identity: &str,
++    ) -> Result<Vec<u8>, DomainError> {
++        if !validate_path_segment(storage_identity) {
++            return Err(DomainError::InvalidData(
++                "Character storage identity is invalid".to_string(),
++            ));
++        }
++        let file_path = self.get_character_path(storage_identity);
++        if !file_path.exists() {
++            return Err(DomainError::NotFound(format!(
++                "Character not found: {storage_identity}"
++            )));
++        }
++        fs::read(&file_path).await.map_err(|error| {
++            DomainError::InternalError(format!(
++                "Failed to read Character Card rollback snapshot: {error}"
++            ))
++        })
++    }
++
++    async fn write_return_definition(
++        &self,
++        storage_identity: &str,
++        character_card_json: &str,
++        avatar_png: Option<&[u8]>,
++    ) -> Result<Character, DomainError> {
++        if !validate_path_segment(storage_identity) {
++            return Err(DomainError::InvalidData(
++                "Character storage identity is invalid".to_string(),
++            ));
++        }
++        let file_path = self.get_character_path(storage_identity);
++        if !file_path.exists() {
++            return Err(DomainError::NotFound(format!(
++                "Character not found: {storage_identity}"
++            )));
++        }
++
++        let carrier = if let Some(avatar_png) = avatar_png {
++            if !is_png_bytes(avatar_png) {
++                return Err(DomainError::InvalidData(
++                    "Return avatar carrier is not a PNG".to_string(),
++                ));
++            }
++            avatar_png.to_vec()
++        } else {
++            fs::read(&file_path).await.map_err(|error| {
++                DomainError::InternalError(format!(
++                    "Failed to read existing Character Card avatar carrier: {error}"
++                ))
++            })?
++        };
++
++        let new_png = write_character_data_to_png(&carrier, character_card_json)?;
++        Self::replace_character_png_file(&file_path, &new_png).await?;
++        let character = self.read_character_from_file(&file_path).await?;
++        self.publish_character_write(storage_identity.to_string(), character.clone())
++            .await;
++        Ok(character)
++    }
++
++    async fn restore_card_png_bytes(
++        &self,
++        storage_identity: &str,
++        png_bytes: &[u8],
++    ) -> Result<Character, DomainError> {
++        if !validate_path_segment(storage_identity) {
++            return Err(DomainError::InvalidData(
++                "Character storage identity is invalid".to_string(),
++            ));
++        }
++        if !is_png_bytes(png_bytes) {
++            return Err(DomainError::InvalidData(
++                "Rollback snapshot is not a PNG".to_string(),
++            ));
++        }
++        // Validate embedded Character Card metadata before replacing the live file.
++        read_character_data_from_png(png_bytes)?;
++        let file_path = self.get_character_path(storage_identity);
++        if !file_path.exists() {
++            return Err(DomainError::NotFound(format!(
++                "Character not found: {storage_identity}"
++            )));
++        }
++        Self::replace_character_png_file(&file_path, png_bytes).await?;
++        let character = self.read_character_from_file(&file_path).await?;
++        self.publish_character_write(storage_identity.to_string(), character.clone())
++            .await;
++        Ok(character)
++    }
++
++    async fn export_card_png_bytes(
++        &self,
++        storage_identity: &str,
++        character_card_json: &str,
++    ) -> Result<Vec<u8>, DomainError> {
++        if !validate_path_segment(storage_identity) {
++            return Err(DomainError::InvalidData(
++                "Character storage identity is invalid".to_string(),
++            ));
++        }
++        CharacterRepository::export_character_png_bytes(
++            self,
++            storage_identity,
++            character_card_json,
++        )
++        .await
++    }
++}
