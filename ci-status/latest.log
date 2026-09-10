@@ -111,91 +111,22 @@
 1696:test result: ok. 94 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 1705:test repositories::content_repository::tests::stylesheet_and_error_pages_are_global_content ... ok
 1708:test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1714:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1720:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1726:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1732:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1738:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1744:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1750:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1756:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1762:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1768:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1774:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1780:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1786:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1792:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 # Tail
-test services::chat_completion_service::payload::openai_responses::tests::openai_responses_payload_rejects_image_content_outside_user_messages ... ok
-test services::chat_completion_service::payload::openai_responses::tests::openai_responses_payload_rejects_image_url_without_url ... ok
-test services::chat_completion_service::payload::openai_responses::tests::openai_responses_payload_rejects_orphan_tool_output ... ok
-test services::chat_completion_service::payload::openai_responses::tests::openai_responses_payload_replays_native_output_items ... ok
-test services::chat_completion_service::payload::openai_responses::tests::openai_responses_payload_uses_gpt56_extremes_and_text_verbosity ... ok
-test services::chat_completion_service::payload::openrouter::tests::openrouter_middleout_off_maps_to_empty_transforms ... ok
-test services::chat_completion_service::payload::openrouter::tests::openrouter_omits_auto_reasoning_effort ... ok
-test services::chat_completion_service::payload::openrouter::tests::openrouter_orders_project_extremes ... ok
-test services::chat_completion_service::payload::openrouter::tests::openrouter_preserves_remote_audio_url ... ok
-test services::chat_completion_service::payload::openrouter::tests::openrouter_payload_includes_provider_specific_fields ... ok
-test services::chat_completion_service::payload::openrouter::tests::openrouter_preserves_unrewritable_audio_url_parts ... ok
-test services::chat_completion_service::payload::openrouter::tests::openrouter_preserves_video_and_unknown_content_parts ... ok
-test services::chat_completion_service::payload::openrouter::tests::openrouter_quantizations_are_forwarded_without_provider_order ... ok
-test services::chat_completion_service::payload::openrouter::tests::openrouter_rewrites_audio_url_data_url_to_input_audio ... ok
-test services::chat_completion_service::payload::prompt_post_processing::tests::merge_keeps_unknown_structured_fields_unmerged ... ok
-test services::chat_completion_service::payload::prompt_post_processing::tests::merge_squashes_consecutive_roles ... ok
-test services::chat_completion_service::payload::prompt_post_processing::tests::merge_tools_keeps_structured_assistant_tool_call_turns ... ok
-test services::chat_completion_service::payload::prompt_post_processing::tests::strict_inserts_placeholder_user_first ... ok
-test services::chat_completion_service::payload::tests::claude_leaves_additional_body_overrides_to_service_layer ... ok
-test services::chat_completion_service::payload::tests::custom_openai_responses_rejects_orphan_tool_output_through_payload_boundary ... ok
-test services::chat_completion_service::payload::tests::custom_openai_responses_replays_native_function_call_through_payload_boundary ... ok
-test services::chat_completion_service::payload::tests::deepseek_leaves_additional_body_overrides_to_service_layer ... ok
-test services::chat_completion_service::payload::tool_calls::tests::extract_openai_tool_calls_parses_arguments_and_signature ... ok
-test services::chat_completion_service::payload::tool_calls::tests::normalize_tool_result_payload_wraps_plain_text ... ok
-test services::chat_completion_service::payload::tool_calls::tests::validate_openai_chat_tool_transcript_accepts_matching_tool_result ... ok
-test services::chat_completion_service::payload::tool_calls::tests::validate_openai_chat_tool_transcript_allows_incremental_tool_result ... ok
-test services::chat_completion_service::payload::tool_calls::tests::validate_openai_chat_tool_transcript_rejects_interrupted_tool_turn ... ok
-test services::chat_completion_service::payload::tool_calls::tests::validate_openai_chat_tool_transcript_rejects_missing_tool_call_id ... ok
-test services::chat_completion_service::payload::tool_calls::tests::validate_openai_chat_tool_transcript_rejects_orphan_tool_result ... ok
-test services::chat_completion_service::payload::tool_choice::tests::parses_canonical_and_specific_tool_choices ... ok
-test services::chat_completion_service::payload::vertexai::tests::vertex_claude_rejects_non_base64_image_sources ... ok
-test services::chat_completion_service::payload::vertexai::tests::vertex_claude_unlocks_contract_features_via_normalization ... ok
-test services::chat_completion_service::payload::vertexai::tests::vertex_claude_rewrites_to_raw_predict_and_injects_vertex_version ... ok
-test services::chat_completion_service::payload::workers_ai::tests::workers_ai_forwards_repetition_penalty ... ok
-test services::chat_completion_service::payload::workers_ai::tests::workers_ai_uses_cloudflare_json_schema_shape ... ok
-test services::chat_completion_service::payload::zai::tests::zai_glm52_maps_minimum_to_minimal ... ok
-test services::chat_completion_service::payload::zai::tests::zai_glm52_maps_project_maximum_to_xhigh ... ok
-test services::chat_completion_service::payload::zai::tests::zai_glm52_omits_auto_reasoning_effort ... ok
-test services::chat_completion_service::payload::zai::tests::zai_payload_disables_thinking_without_reasoning_effort ... ok
-test services::chat_completion_service::payload::zai::tests::zai_rejects_reasoning_effort_for_unsupported_models ... ok
-test services::chat_completion_service::payload::zai::tests::zai_payload_injects_thinking_flag ... ok
-test services::chat_completion_service::payload::zai::tests::zai_rejects_reasoning_effort_when_thinking_is_disabled ... ok
-test services::chat_completion_service::prompt_caching::tests::claude_explicit_prompt_caching_marks_lcp_and_final_blocks ... ok
-test services::chat_completion_service::prompt_caching::tests::claude_explicit_prompt_caching_marks_tool_definitions ... ok
-test services::chat_completion_service::prompt_caching::tests::claude_explicit_prompt_caching_omits_root_and_marks_final_block ... ok
-test services::chat_completion_service::prompt_caching::tests::claude_prompt_caching_inserts_expected_breakpoints ... ok
-test services::chat_completion_service::prompt_caching::tests::openrouter_prompt_caching_inserts_expected_breakpoints ... ok
-test services::chat_completion_service::prompt_caching::tests::claude_prompt_caching_marks_last_common_block_when_suffix_changes ... ok
-test services::chat_completion_service::prompt_caching_plan::tests::custom_claude_prompt_caching_requires_messages_endpoint ... ok
-test services::chat_completion_service::prompt_caching_plan::tests::custom_claude_prompt_caching_uses_scoped_storage_key ... ok
-test services::chat_completion_service::prompt_caching::tests::openrouter_prompt_caching_marks_last_common_block_when_suffix_changes ... ok
-test services::chat_completion_service::prompt_caching_plan::tests::openrouter_claude_models_use_openrouter_strategy ... ok
-test services::chat_completion_service::prompt_caching_plan::tests::parses_custom_prompt_caching_hint ... ok
-test services::chat_completion_service::prompt_caching_plan::tests::vertexai_claude_raw_predict_uses_vertex_strategy ... ok
-test services::chat_completion_service::prompt_caching_plan::tests::vertexai_gemini_generate_content_does_not_use_claude_strategy ... ok
-test services::chat_completion_service::tests::custom_claude_messages_status_uses_claude_transport ... ok
-test services::chat_completion_service::tests::custom_gemini_interactions_status_uses_makersuite_transport ... ok
-test services::chat_completion_service::tests::nanogpt_claude_cache_control_is_inserted_for_claude_models ... ok
-test services::chat_completion_service::tests::nanogpt_claude_cache_control_is_skipped_for_non_claude_models ... ok
-test services::chat_completion_service::tests::vertexai_claude_rejects_one_hour_cache_for_old_models ... ok
-test services::chat_completion_service::tests::vertexai_global_prompt_cache_adds_session_header ... ok
-test services::chat_completion_service::tests::vertexai_regional_prompt_cache_skips_session_header ... ok
-test services::chat_file_validation::tests::accepts_safe_chat_file_names_with_or_without_jsonl_extension ... ok
-test services::chat_file_validation::tests::rejects_path_components_that_sanitize_to_empty ... ok
-test services::chat_history_coordinator::tests::a_new_checkpoint_after_invalidation_authorizes_history_again ... ok
-test services::chat_history_coordinator::tests::active_generation_globally_stops_worker_admission ... ok
-test services::chat_history_coordinator::tests::checkpoint_and_outer_finish_schedule_the_latest_commit ... ok
-test services::chat_history_coordinator::tests::completed_generation_reports_a_full_pending_map ... ok
-test services::chat_history_coordinator::tests::explicit_completion_clears_an_older_suspended_request ... ok
-test services::chat_history_coordinator::tests::explicit_completion_preserves_a_newer_commit ... ok
-test services::chat_history_coordinator::tests::generation_without_a_commit_restores_existing_pending_request ... ok
-test services::chat_history_coordinator::tests::global_interval_applies_after_an_attempt_even_with_trailing_work ... ok
-test services::chat_history_coordinator::tests::in_flight_commit_creates_a_trailing_latest_request ... ok
-test services::chat_history_coordinator::tests::invalidate_all_preserves_generation_gate_and_global_cooldown ... ok
-test services::chat_history_coordinator::tests::invalidation_revokes_an_active_checkpoint ... ok
-test services::chat_history_coordinator::tests::maintenance_only_refreshes_an_existing_pending_request ... ok
-test services::chat_history_coordinator::tests::new_generation_replaces_stale_generation_state ... ok
-test services::chat_history_coordinator::tests::non_checkpoint_commit_invalidates_pre_generation_pending ... ok
-test services::chat_history_coordinator::tests::pending_capacity_still_allows_existing_locator_coalescing ... ok
-test services::chat_history_coordinator::tests::provider_only_generation_does_not_schedule_history ... ok
-test services::chat_history_coordinator::tests::repeated_commits_are_latest_wins_without_growing_the_map ... ok
-test services::chat_history_coordinator::tests::transient_attempt_is_deferred_without_consuming_the_global_interval ... ok
-test services::chat_history_coordinator::tests::transient_attempt_does_not_overwrite_a_newer_trailing_request ... ok
 test services::chat_history_coordinator::tests::unrelated_commit_waits_without_being_lost_during_generation ... ok
 test services::content_service::tests::download_external_import_url_returns_png_payload ... ok
 test services::data_archive_service::tests::cleanup_export_marks_artifact_disposed_and_is_idempotent ... ok
@@ -513,3 +444,86 @@ test repositories::tokenizer_repository::tests::openai_text_token_threshold_excl
 test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 [1m[92m   Doc-tests[0m tauritavern_lib
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_archive
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_extension
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_http
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_media
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_provider_http
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_storage_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_storage_userdata
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_sync
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_tokenization
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_application
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_contracts
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_domain
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_ports
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
