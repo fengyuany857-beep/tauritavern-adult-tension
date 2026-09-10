@@ -27,7 +27,14 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 -    FieldPresence, MergeFieldDecision, MergeFieldState, PortableReturnMetadata,
 +    FieldPresence, MergeFieldDecision, MergeFieldState, PortableReturnMetadata, ReturnRecognitionState,
  };
-@@ -348,6 +348,152 @@ fn field_presence(value: Option<&Value>) -> FieldPresence {
+@@ -341,12 +341,152 @@
+ fn field_presence(value: Option<&Value>) -> FieldPresence {
+     match value {
+         None => FieldPresence::Missing,
+         Some(Value::String(value)) if value.is_empty() => FieldPresence::Empty,
+         Some(Value::Array(value)) if value.is_empty() => FieldPresence::Empty,
+         Some(Value::Object(value)) if value.is_empty() => FieldPresence::Empty,
+         Some(_) => FieldPresence::Value,
      }
  }
 +
@@ -170,7 +177,10 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 +fn card_data_field<'a>(card: &'a Value, field: &str) -> Option<&'a Value> {
 +    card.get("data").and_then(|data| data.get(field))
 +}
-@@ -356,7 +502,7 @@ mod tests {
+ 
+ #[cfg(test)]
+ mod tests {
+@@ -356,7 +496,7 @@ mod tests {
              export_id: "export-abc".to_string(),
              binding_generation: 3,
              base_card_revision: 7,
