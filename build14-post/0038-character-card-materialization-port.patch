@@ -1,0 +1,92 @@
+diff --git a/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
+--- a/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
++++ b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
+@@ -371,6 +371,15 @@ pub struct UndoRecord {
+     pub created_at: String,
+ }
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct StagedCharacterCardImport {
++    /// [EXPORT-LOCAL-ONLY] Logical path under the materialization staging root.
++    pub logical_ref: String,
++    pub sha256: String,
++    pub byte_len: u64,
++    pub format: String,
++}
+ 
+ #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+ #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+diff --git a/src-tauri/crates/tt-ports/src/repositories/mod.rs b/src-tauri/crates/tt-ports/src/repositories/mod.rs
+--- a/src-tauri/crates/tt-ports/src/repositories/mod.rs
++++ b/src-tauri/crates/tt-ports/src/repositories/mod.rs
+@@ -6,6 +6,7 @@ pub mod asset_repository;
+ pub mod avatar_repository;
+ pub mod background_repository;
++pub mod character_card_materialization_repository;
+ pub mod character_repository;
+ pub mod chat_completion_repository;
+diff --git a/src-tauri/crates/tt-ports/src/repositories/character_card_materialization_repository.rs b/src-tauri/crates/tt-ports/src/repositories/character_card_materialization_repository.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-ports/src/repositories/character_card_materialization_repository.rs
+@@ -0,0 +1,86 @@
++use async_trait::async_trait;
++use tt_domain::errors::DomainError;
++use tt_domain::models::character_card_materialization::{
++    CharacterCardBinding, CharacterCardTransactionJournal, ExportRecord,
++    StagedCharacterCardImport, UndoRecord,
++};
++
++/// Persistence boundary for Character Card Materialization local orchestration.
++/// Portable Character Card bytes are intentionally not an authority source here.
++#[async_trait]
++pub trait CharacterCardMaterializationRepository: Send + Sync {
++    async fn read_binding(
++        &self,
++        binding_id: &str,
++    ) -> Result<Option<CharacterCardBinding>, DomainError>;
++
++    async fn write_binding(&self, binding: &CharacterCardBinding) -> Result<(), DomainError>;
++
++    async fn read_export_record(
++        &self,
++        export_id: &str,
++    ) -> Result<Option<ExportRecord>, DomainError>;
++
++    async fn write_export_record(&self, record: &ExportRecord) -> Result<(), DomainError>;
++
++    async fn read_transaction(
++        &self,
++        transaction_id: &str,
++    ) -> Result<Option<CharacterCardTransactionJournal>, DomainError>;
++
++    async fn write_transaction(
++        &self,
++        journal: &CharacterCardTransactionJournal,
++    ) -> Result<(), DomainError>;
++
++    async fn list_transactions(
++        &self,
++    ) -> Result<Vec<CharacterCardTransactionJournal>, DomainError>;
++
++    async fn write_undo_record(&self, record: &UndoRecord) -> Result<(), DomainError>;
++
++    async fn write_snapshot(&self, bytes: &[u8]) -> Result<String, DomainError>;
++
++    async fn read_snapshot(&self, logical_ref: &str) -> Result<Vec<u8>, DomainError>;
++
++    async fn stage_import(
++        &self,
++        transaction_id: &str,
++        format: &str,
++        bytes: &[u8],
++    ) -> Result<StagedCharacterCardImport, DomainError>;
++
++    async fn read_staged_import(&self, logical_ref: &str) -> Result<Vec<u8>, DomainError>;
++
++    async fn remove_staged_import(&self, logical_ref: &str) -> Result<(), DomainError>;
++
++    /// [EXPORT-LOCAL-ONLY] [LOG-NEVER]
++    async fn load_or_create_origin_secret(&self) -> Result<[u8; 32], DomainError>;
++}
