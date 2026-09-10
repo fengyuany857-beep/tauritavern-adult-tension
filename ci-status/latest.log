@@ -1,3 +1,15 @@
 # Diagnostic matches
 
 # Tail
+adult-tension-cbfdc623.zip: OK
+adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip: OK
+adult-tension-tauritavern-adapter-build14.zip: OK
+adult-tension-cbfdc623.zip: OK
+adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip: OK
+adult-tension-tauritavern-adapter-build14.zip: OK
+Embedded Adult Tension Runtime Skills into TauriTavern.app/AdultTensionRuntimeSkills
+Repacked IPA: /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/TauriTavern-unsigned.ipa
+Repacked app archive: /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/TauriTavern.app.zip
+a12bee086bd27ecbbfad77522584a7a663c60c11f344ad32f8cc774458d08681  TauriTavern-unsigned.ipa
+ec050680e95c60621cce368e26221788bd70e402eb89ce22fbc3ec98df647a08  TauriTavern.app.zip
+bd9784c6adb999116601a12eecac7adafc473ec9a3625fc570a52465b9a90773  build-info.json
