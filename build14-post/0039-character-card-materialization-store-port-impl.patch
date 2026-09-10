@@ -1,0 +1,112 @@
+diff --git a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+--- a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
++++ b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+@@ -1,5 +1,6 @@
+ use std::path::{Path, PathBuf};
+ 
++use async_trait::async_trait;
+ use serde::{Serialize, de::DeserializeOwned};
+ use sha2::{Digest, Sha256};
+ use tokio::fs;
+@@ -7,9 +8,11 @@ use tokio::io::AsyncWriteExt;
+ use tt_domain::errors::DomainError;
+ use tt_domain::models::character_card_materialization::{
+-    CharacterCardBinding, CharacterCardTransactionJournal, ExportRecord, UndoRecord,
++    CharacterCardBinding, CharacterCardTransactionJournal, ExportRecord,
++    StagedCharacterCardImport, UndoRecord,
+ };
++use tt_ports::repositories::character_card_materialization_repository::CharacterCardMaterializationRepository;
+@@ -354,6 +357,105 @@ fn validate_staging_ref(value: &str) -> Result<&str, DomainError> {
+     Ok(file_name)
+ }
++
++#[async_trait]
++impl CharacterCardMaterializationRepository for CharacterCardMaterializationStore {
++    async fn read_binding(
++        &self,
++        binding_id: &str,
++    ) -> Result<Option<CharacterCardBinding>, DomainError> {
++        CharacterCardMaterializationStore::read_binding(self, binding_id).await
++    }
++
++    async fn write_binding(&self, binding: &CharacterCardBinding) -> Result<(), DomainError> {
++        CharacterCardMaterializationStore::write_binding(self, binding).await
++    }
++
++    async fn read_export_record(
++        &self,
++        export_id: &str,
++    ) -> Result<Option<ExportRecord>, DomainError> {
++        CharacterCardMaterializationStore::read_export_record(self, export_id).await
++    }
++
++    async fn write_export_record(&self, record: &ExportRecord) -> Result<(), DomainError> {
++        CharacterCardMaterializationStore::write_export_record(self, record).await
++    }
++
++    async fn read_transaction(
++        &self,
++        transaction_id: &str,
++    ) -> Result<Option<CharacterCardTransactionJournal>, DomainError> {
++        CharacterCardMaterializationStore::read_transaction(self, transaction_id).await
++    }
++
++    async fn write_transaction(
++        &self,
++        journal: &CharacterCardTransactionJournal,
++    ) -> Result<(), DomainError> {
++        CharacterCardMaterializationStore::write_transaction(self, journal).await
++    }
++
++    async fn list_transactions(
++        &self,
++    ) -> Result<Vec<CharacterCardTransactionJournal>, DomainError> {
++        CharacterCardMaterializationStore::list_transactions(self).await
++    }
++
++    async fn write_undo_record(&self, record: &UndoRecord) -> Result<(), DomainError> {
++        CharacterCardMaterializationStore::write_undo_record(self, record).await
++    }
++
++    async fn write_snapshot(&self, bytes: &[u8]) -> Result<String, DomainError> {
++        CharacterCardMaterializationStore::write_snapshot(self, bytes).await
++    }
++
++    async fn read_snapshot(&self, logical_ref: &str) -> Result<Vec<u8>, DomainError> {
++        CharacterCardMaterializationStore::read_snapshot(self, logical_ref).await
++    }
++
++    async fn stage_import(
++        &self,
++        transaction_id: &str,
++        format: &str,
++        bytes: &[u8],
++    ) -> Result<StagedCharacterCardImport, DomainError> {
++        let normalized_format = format.to_ascii_lowercase();
++        let (logical_ref, sha256) = CharacterCardMaterializationStore::stage_import(
++            self,
++            transaction_id,
++            &normalized_format,
++            bytes,
++        )
++        .await?;
++        Ok(StagedCharacterCardImport {
++            logical_ref,
++            sha256,
++            byte_len: bytes.len() as u64,
++            format: normalized_format,
++        })
++    }
++
++    async fn read_staged_import(&self, logical_ref: &str) -> Result<Vec<u8>, DomainError> {
++        CharacterCardMaterializationStore::read_staged_import(self, logical_ref).await
++    }
++
++    async fn remove_staged_import(&self, logical_ref: &str) -> Result<(), DomainError> {
++        CharacterCardMaterializationStore::remove_staged_import(self, logical_ref).await
++    }
++
++    async fn load_or_create_origin_secret(&self) -> Result<[u8; 32], DomainError> {
++        CharacterCardMaterializationStore::load_or_create_origin_secret(self).await
++    }
++}
