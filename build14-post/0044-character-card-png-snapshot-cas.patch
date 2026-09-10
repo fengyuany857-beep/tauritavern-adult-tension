@@ -11,7 +11,7 @@ diff --git a/src-tauri/crates/tt-ports/src/repositories/character_card_materiali
 diff --git a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
 --- a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
 +++ b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
-@@ -157,32 +157,16 @@ impl CharacterCardMaterializationStore {
+@@ -157,36 +157,47 @@ impl CharacterCardMaterializationStore {
      /// Persist canonical JSON bytes using content-addressed storage and return
      /// a stable logical reference such as `snapshots/<sha256>.json`.
      pub async fn write_snapshot(&self, bytes: &[u8]) -> Result<String, DomainError> {
@@ -47,7 +47,6 @@ diff --git a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materia
          let file_name = logical_ref
              .strip_prefix("snapshots/")
              .ok_or_else(|| DomainError::InvalidData("invalid snapshot ref".to_string()))?;
-@@ -189,4 +173,31 @@ impl CharacterCardMaterializationStore {
          fs::read(self.snapshots_dir().join(file_name))
              .await
              .map_err(|error| map_io("read snapshot", error))
