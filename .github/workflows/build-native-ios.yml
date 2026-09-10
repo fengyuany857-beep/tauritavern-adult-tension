@@ -26,6 +26,7 @@ jobs:
       BUILD11_PATCH_SHA256: f32fced72ac46136d17ef0e4a916d0285bff178aaaccdd1e6ef17aa7e33f36c7
       TAURITAVERN_IOS_POLICY_PROFILE: full
       TAURITAVERN_DISTRIBUTION_FLAVOR: adult_tension_selfsign
+      TAURITAVERN_CI_STATUS_BRANCH: ci-status/run-${{ github.run_id }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout build control repository
