@@ -44,8 +44,14 @@ for candidate in "$TMP_DIR"/ipa/Payload/*.app; do
 done
 test -n "$APP_DIR"
 
-BUNDLE_DIR="$APP_DIR/$BUNDLE_DIR_NAME"
-rm -rf "$BUNDLE_DIR"
+# On iOS Tauri resolves BaseDirectory::Resource to <App>.app/assets.
+# Keep bundled Runtime Skills in that actual runtime resource root instead of
+# merely placing them at the .app top level, which is present in the IPA but
+# invisible to the normal Tauri resource resolver.
+RESOURCE_ROOT="$APP_DIR/assets"
+LEGACY_BUNDLE_DIR="$APP_DIR/$BUNDLE_DIR_NAME"
+BUNDLE_DIR="$RESOURCE_ROOT/$BUNDLE_DIR_NAME"
+rm -rf "$LEGACY_BUNDLE_DIR" "$BUNDLE_DIR"
 mkdir -p "$BUNDLE_DIR"
 
 for file in "${required_files[@]}"; do
@@ -91,7 +97,7 @@ mv "$TMP_DIR/TauriTavern.app.zip" "$APP_ZIP"
   sha256sum TauriTavern-unsigned.ipa TauriTavern.app.zip build-info.json > SHA256SUMS.txt
 )
 
-printf 'Embedded Adult Tension Runtime Skills into %s/%s\n' "$(basename "$APP_DIR")" "$BUNDLE_DIR_NAME"
+printf 'Embedded Adult Tension Runtime Skills into iOS resource path %s/assets/%s\n' "$(basename "$APP_DIR")" "$BUNDLE_DIR_NAME"
 printf 'Repacked IPA: %s\n' "$IPA"
 printf 'Repacked app archive: %s\n' "$APP_ZIP"
 cat "$IOS_DIR/SHA256SUMS.txt"
