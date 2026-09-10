@@ -6,8 +6,8 @@
   "trigger_sha": "a79c4ace5d8ebf4a250d8024cf2fc2d62bf1842c",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
   "stage": "Logging boundaries",
-  "state": "RUNNING",
+  "state": "PASS",
   "exit_code": 0,
-  "updated_at": "2026-09-10T12:48:51Z",
+  "updated_at": "2026-09-10T12:48:55Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-40-a1"
 }
