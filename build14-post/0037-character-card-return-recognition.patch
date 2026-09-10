@@ -178,7 +178,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 +            base_card_hash: "a".repeat(64),
              origin_proof: String::new(),
          }
-@@ -466,4 +612,96 @@ mod tests {
+@@ -466,3 +612,95 @@ mod tests {
          let missing = classify_three_way_field("scenario", None, None, None);
          assert_eq!(missing.imported_presence, FieldPresence::Missing);
      }
@@ -274,4 +274,3 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 +        }});
 +        assert!(content_identity_mismatch_suspected(&base, &imported, true));
 +    }
- }
