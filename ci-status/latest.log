@@ -1,4 +1,9 @@
 # Diagnostic matches
+19:[1m[91merror[0m[1m: this file contains an unclosed delimiter[0m
+22:[1m[94m186[0m [1m[94m|[0m fn parse_checksums(input: &str) -> Result<BTreeMap<String, String>, DomainError> {
+34:[1m[91merror[0m: could not compile `tauritavern` (lib) due to 1 previous error
+35:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+36: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
 
@@ -16,3 +21,24 @@
 [1m[92m   Compiling[0m tt-adapter-tokenization v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-tokenization)
 [1m[92m   Compiling[0m tt-application v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-application)
 [1m[92m   Compiling[0m tt-adapter-extension v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-extension)
+[1m[92m   Compiling[0m tt-adapter-media v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-media)
+[1m[92m   Compiling[0m tt-adapter-storage-userdata v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-userdata)
+[1m[92m   Compiling[0m tt-adapter-sync v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-sync)
+[1m[91merror[0m[1m: this file contains an unclosed delimiter[0m
+   [1m[94m--> [0mcrates/tauritavern/src/app/composition/services/bundled_skills.rs:196:17
+    [1m[94m|[0m
+[1m[94m186[0m [1m[94m|[0m fn parse_checksums(input: &str) -> Result<BTreeMap<String, String>, DomainError> {
+    [1m[94m|[0m                                                                                  [1m[94m-[0m [1m[94munclosed delimiter[0m
+[1m[94m187[0m [1m[94m|[0m     let mut result = BTreeMap::new();
+[1m[94m188[0m [1m[94m|[0m     for line in input.lines().map(str::trim).filter(|line| !line.is_empty()) {
+    [1m[94m|[0m                                                                              [1m[94m-[0m [1m[94munclosed delimiter[0m
+[1m[94m...[0m
+[1m[94m193[0m [1m[94m|[0m         let Some(file_name) = fields.next() else {
+    [1m[94m|[0m                                                  [1m[94m-[0m [1m[94munclosed delimiter[0m
+[1m[94m...[0m
+[1m[94m196[0m [1m[94m|[0m             ));
+    [1m[94m|[0m                [1m[91m^[0m
+
+[1m[91merror[0m: could not compile `tauritavern` (lib) due to 1 previous error
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+ ELIFECYCLE  Command failed with exit code 101.
