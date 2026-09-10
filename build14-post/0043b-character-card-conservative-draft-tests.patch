@@ -1,0 +1,81 @@
+diff --git a/src-tauri/crates/tt-application/src/services/mod.rs b/src-tauri/crates/tt-application/src/services/mod.rs
+--- a/src-tauri/crates/tt-application/src/services/mod.rs
++++ b/src-tauri/crates/tt-application/src/services/mod.rs
+@@ -19,4 +19,6 @@ pub mod character_card_materialization_service;
+ pub mod character_card_materialization_service;
+ #[cfg(test)]
+ mod character_card_materialization_return_tests;
++#[cfg(test)]
++mod character_card_materialization_draft_tests;
+ pub mod character_service;
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_draft_tests.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_draft_tests.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_draft_tests.rs
+@@ -0,0 +1,66 @@
++use super::character_card_materialization_service::{
++    build_conservative_draft, refresh_draft_source_state,
++};
++use tt_domain::models::character_card_materialization::DraftState;
++use tt_domain::models::rp_architecture::{
++    CharacterEntity, CharacterIdentity, CharacterOrigin, CharacterOriginKind, CharacterProfile,
++    ControlOwner, ControlPolicy, LifecycleStatus, NarrativeRole, RP_ARCHITECTURE_SCHEMA_VERSION,
++    SessionId,
++};
++
++fn stable_character() -> CharacterEntity {
++    CharacterEntity {
++        schema_version: RP_ARCHITECTURE_SCHEMA_VERSION,
++        character_id: tt_domain::models::rp_architecture::CharacterId("character-1".to_string()),
++        origin: CharacterOrigin {
++            kind: CharacterOriginKind::SessionCreated,
++            world_ref: None,
++            source_session_id: Some(SessionId("session-1".to_string())),
++        },
++        narrative_role: NarrativeRole::Incidental,
++        control_owner: ControlOwner::Ai,
++        control_policy: ControlPolicy::Normal,
++        lifecycle_status: LifecycleStatus::Active,
++        first_seen_turn: 1,
++        promoted_at_turn: None,
++        profile_revision: 3,
++        profile: CharacterProfile {
++            identity: CharacterIdentity {
++                canonical_name: Some("Lin Yue".to_string()),
++                display_name: Some("林月".to_string()),
++                aliases: vec![],
++            },
++            personality_invariants: vec!["慢热".to_string()],
++            values: vec!["重视承诺".to_string()],
++            ..Default::default()
++        },
++    }
++}
++
++#[test]
++fn conservative_draft_uses_stable_profile_and_keeps_high_impact_fields_blank() {
++    let draft = build_conservative_draft(&stable_character(), "draft-1", None, "now").unwrap();
++    assert_eq!(draft.definition["data"]["name"], "林月");
++    assert!(draft.definition["data"]["personality"]
++        .as_str()
++        .unwrap()
++        .contains("慢热"));
++    assert_eq!(draft.definition["data"]["scenario"], "");
++    assert_eq!(draft.definition["data"]["first_mes"], "");
++    assert_eq!(draft.definition["data"]["system_prompt"], "");
++    assert_eq!(draft.definition["data"]["post_history_instructions"], "");
++    assert!(draft.definition["data"]["alternate_greetings"]
++        .as_array()
++        .unwrap()
++        .is_empty());
++}
++
++#[test]
++fn user_edited_draft_is_never_silently_regenerated_when_profile_advances() {
++    let mut draft = build_conservative_draft(&stable_character(), "draft-1", None, "now").unwrap();
++    draft.user_edited = true;
++    draft.state = DraftState::UserEdited;
++    refresh_draft_source_state(&mut draft, 4);
++    assert_eq!(draft.state, DraftState::SourceAdvanced);
++    assert!(draft.user_edited);
++}
