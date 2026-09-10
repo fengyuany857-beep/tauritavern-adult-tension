@@ -1,0 +1,55 @@
+diff --git a/tests/agent-system-ios-bundle-diagnostic.test.mjs b/tests/agent-system-ios-bundle-diagnostic.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/agent-system-ios-bundle-diagnostic.test.mjs
+@@ -0,0 +1,48 @@
++import assert from 'node:assert/strict';
++import crypto from 'node:crypto';
++import fs from 'node:fs';
++import path from 'node:path';
++import test from 'node:test';
++
++const BUNDLE_PATH = path.join(
++    process.cwd(),
++    'src/scripts/extensions/agent-system/dist/index.bundle.js',
++);
++
++function contextAround(source, index, radius = 420) {
++    const start = Math.max(0, index - radius);
++    const end = Math.min(source.length, index + radius);
++    return source.slice(start, end).replaceAll('\n', '\\n');
++}
++
++test('diagnostic: report Safari eq.r production-bundle sites', () => {
++    const source = fs.readFileSync(BUNDLE_PATH, 'utf8');
++    const sha256 = crypto.createHash('sha256').update(source).digest('hex');
++    console.log(`[AGENT-IOS-DIAG] bundleBytes=${Buffer.byteLength(source)} sha256=${sha256}`);
++
++    const exact = [...source.matchAll(/\beq\.r\b/g)];
++    console.log(`[AGENT-IOS-DIAG] exact-eq-dot-r-count=${exact.length}`);
++    for (const [ordinal, match] of exact.slice(0, 24).entries()) {
++        console.log(
++            `[AGENT-IOS-DIAG] eq.r#${ordinal + 1} index=${match.index} context=${contextAround(source, match.index)}`,
++        );
++    }
++
++    if (exact.length === 0) {
++        const eqTokens = [...source.matchAll(/\beq\b/g)];
++        console.log(`[AGENT-IOS-DIAG] eq-token-count=${eqTokens.length}`);
++        for (const [ordinal, match] of eqTokens.slice(0, 24).entries()) {
++            console.log(
++                `[AGENT-IOS-DIAG] eq#${ordinal + 1} index=${match.index} context=${contextAround(source, match.index)}`,
++            );
++        }
++    }
++
++    const dotRTokens = [...source.matchAll(/\.r\b/g)];
++    console.log(`[AGENT-IOS-DIAG] dot-r-count=${dotRTokens.length}`);
++    for (const [ordinal, match] of dotRTokens.slice(0, 12).entries()) {
++        console.log(
++            `[AGENT-IOS-DIAG] .r#${ordinal + 1} index=${match.index} context=${contextAround(source, match.index)}`,
++        );
++    }
++
++    assert.ok(source.length > 0, 'Agent System production bundle must not be empty');
++});
