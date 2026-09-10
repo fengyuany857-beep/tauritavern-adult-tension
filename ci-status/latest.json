@@ -5,9 +5,9 @@
   "repository": "fengyuany857-beep/tauritavern-adult-tension",
   "trigger_sha": "35b60d2b63f1e2121bf72a14504a77585bcb8aac",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
-  "stage": "Embed three Runtime Skills into iOS app bundle",
-  "state": "PASS",
+  "stage": "Unsigned IPA verification",
+  "state": "RUNNING",
   "exit_code": 0,
-  "updated_at": "2026-09-10T10:32:02Z",
+  "updated_at": "2026-09-10T10:32:03Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-38-a1"
 }
