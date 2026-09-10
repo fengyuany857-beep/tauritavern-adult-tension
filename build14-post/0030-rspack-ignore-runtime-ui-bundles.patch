@@ -6,7 +6,7 @@ diff --git a/src/scripts/tauri/setting/dev-logs.js b/src/scripts/tauri/setting/d
  
  async function importDevLogsBundle() {
 -    return import(new URL('./dist/dev-logs.bundle.js', import.meta.url).href);
-+    return import(/* webpackIgnore: true */ new URL('./dist/dev-logs.bundle.js', import.meta.url).href);
++    return import(/* webpackIgnore: true */ new URL(/* webpackIgnore: true */ './dist/dev-logs.bundle.js', import.meta.url).href);
  }
  
  function createActions() {
@@ -18,7 +18,7 @@ diff --git a/src/scripts/tauri/setting/setting-panel/settings-popup.js b/src/scr
  
  async function importSettingsBundle() {
 -    return import(new URL('../dist/settings.bundle.js', import.meta.url).href);
-+    return import(/* webpackIgnore: true */ new URL('../dist/settings.bundle.js', import.meta.url).href);
++    return import(/* webpackIgnore: true */ new URL(/* webpackIgnore: true */ '../dist/settings.bundle.js', import.meta.url).href);
  }
  
  function readThemeOptions() {
@@ -30,7 +30,7 @@ diff --git a/src/scripts/tauri/setting/setting-panel/sync-listeners.js b/src/scr
  
  async function importSyncBundle() {
 -    return import(new URL('../dist/sync.bundle.js', import.meta.url).href);
-+    return import(/* webpackIgnore: true */ new URL('../dist/sync.bundle.js', import.meta.url).href);
++    return import(/* webpackIgnore: true */ new URL(/* webpackIgnore: true */ '../dist/sync.bundle.js', import.meta.url).href);
  }
  
  function getListen() {
@@ -42,7 +42,7 @@ diff --git a/src/scripts/tauri/setting/setting-panel/sync-popup.js b/src/scripts
  
  async function importSyncBundle() {
 -    return import(new URL('../dist/sync.bundle.js', import.meta.url).href);
-+    return import(/* webpackIgnore: true */ new URL('../dist/sync.bundle.js', import.meta.url).href);
++    return import(/* webpackIgnore: true */ new URL(/* webpackIgnore: true */ '../dist/sync.bundle.js', import.meta.url).href);
  }
  
  function createPopupColumn() {
