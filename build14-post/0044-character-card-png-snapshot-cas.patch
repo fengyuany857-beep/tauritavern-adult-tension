@@ -1,0 +1,108 @@
+diff --git a/src-tauri/crates/tt-ports/src/repositories/character_card_materialization_repository.rs b/src-tauri/crates/tt-ports/src/repositories/character_card_materialization_repository.rs
+--- a/src-tauri/crates/tt-ports/src/repositories/character_card_materialization_repository.rs
++++ b/src-tauri/crates/tt-ports/src/repositories/character_card_materialization_repository.rs
+@@ -43,6 +43,9 @@ pub trait CharacterCardMaterializationRepository: Send + Sync {
+ 
+     async fn write_snapshot(&self, bytes: &[u8]) -> Result<String, DomainError>;
++
++    async fn write_png_snapshot(&self, bytes: &[u8]) -> Result<String, DomainError>;
+ 
+     async fn read_snapshot(&self, logical_ref: &str) -> Result<Vec<u8>, DomainError>;
+diff --git a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+--- a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
++++ b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+@@ -157,32 +157,16 @@ impl CharacterCardMaterializationStore {
+     /// Persist canonical JSON bytes using content-addressed storage and return
+     /// a stable logical reference such as `snapshots/<sha256>.json`.
+     pub async fn write_snapshot(&self, bytes: &[u8]) -> Result<String, DomainError> {
+-        let digest = Sha256::digest(bytes);
+-        let hash = format!("{digest:x}");
+-        let file_name = format!("{hash}.json");
+-        let target = self.snapshots_dir().join(&file_name);
+-        match fs::metadata(&target).await {
+-            Ok(metadata) if metadata.is_file() => return Ok(format!("{SNAPSHOTS_DIR}/{file_name}")),
+-            Ok(_) => {
+-                return Err(DomainError::InvalidData(
+-                    "Snapshot hash target exists but is not a file".to_string(),
+-                ));
+-            }
+-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+-            Err(error) => {
+-                return Err(DomainError::InternalError(format!(
+-                    "Failed to inspect snapshot target: {error}"
+-                )));
+-            }
+-        }
+-        atomic_write_bytes(&target, bytes).await?;
+-        Ok(format!("{SNAPSHOTS_DIR}/{file_name}"))
++        self.write_content_addressed_snapshot(bytes, "json").await
++    }
++
++    pub async fn write_png_snapshot(&self, bytes: &[u8]) -> Result<String, DomainError> {
++        self.write_content_addressed_snapshot(bytes, "png").await
+     }
+ 
+     pub async fn read_snapshot(&self, logical_ref: &str) -> Result<Vec<u8>, DomainError> {
+-        validate_snapshot_ref(logical_ref)?;
++        validate_snapshot_ref(logical_ref)?;
+         let file_name = logical_ref
+             .strip_prefix("snapshots/")
+             .ok_or_else(|| DomainError::InvalidData("invalid snapshot ref".to_string()))?;
+@@ -191,6 +175,35 @@ impl CharacterCardMaterializationStore {
+             .map_err(|error| map_io("read snapshot", error))
+     }
++
++    async fn write_content_addressed_snapshot(
++        &self,
++        bytes: &[u8],
++        extension: &str,
++    ) -> Result<String, DomainError> {
++        let digest = Sha256::digest(bytes);
++        let hash = format!("{digest:x}");
++        let file_name = format!("{hash}.{extension}");
++        let target = self.snapshots_dir().join(&file_name);
++        match fs::metadata(&target).await {
++            Ok(metadata) if metadata.is_file() => return Ok(format!("{SNAPSHOTS_DIR}/{file_name}")),
++            Ok(_) => {
++                return Err(DomainError::InvalidData(
++                    "Snapshot hash target exists but is not a file".to_string(),
++                ));
++            }
++            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
++            Err(error) => {
++                return Err(DomainError::InternalError(format!(
++                    "Failed to inspect snapshot target: {error}"
++                )));
++            }
++        }
++        atomic_write_bytes(&target, bytes).await?;
++        Ok(format!("{SNAPSHOTS_DIR}/{file_name}"))
++    }
+@@ -383,11 +396,16 @@ fn validate_snapshot_ref(value: &str) -> Result<(), DomainError> {
+-    let Some(hash) = file_name.strip_suffix(".json") else {
++    let Some((hash, extension)) = file_name.rsplit_once('.') else {
+         return Err(DomainError::InvalidData(
+-            "snapshotRef must end in .json".to_string(),
++            "snapshotRef must include a file type".to_string(),
+         ));
+     };
++    if !matches!(extension, "json" | "png") {
++        return Err(DomainError::InvalidData(
++            "snapshotRef has an unsupported file type".to_string(),
++        ));
++    }
+     if hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+@@ -432,6 +450,10 @@ impl CharacterCardMaterializationRepository for CharacterCardMaterializationStore {
+         CharacterCardMaterializationStore::write_snapshot(self, bytes).await
+     }
++
++    async fn write_png_snapshot(&self, bytes: &[u8]) -> Result<String, DomainError> {
++        CharacterCardMaterializationStore::write_png_snapshot(self, bytes).await
++    }
+@@ -515,6 +537,9 @@ mod tests {
+         let digest = "a".repeat(64);
+         assert!(validate_snapshot_ref(&format!("snapshots/{digest}.json")).is_ok());
++        assert!(validate_snapshot_ref(&format!("snapshots/{digest}.png")).is_ok());
++        assert!(validate_snapshot_ref(&format!("snapshots/{digest}.bin")).is_err());
+         assert!(validate_snapshot_ref("snapshots/not-a-hash.json").is_err());
+     }
