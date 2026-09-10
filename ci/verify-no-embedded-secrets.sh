@@ -8,21 +8,18 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 unzip -qq "$IPA_PATH" -d "$tmp"
 
-mapfile -t forbidden < <(
-  find "$tmp/Payload/TauriTavern.app" -type f \( \
-    -iname 'secrets.json' -o \
-    -iname '.env' -o \
-    -iname '*.pem' -o \
-    -iname '*.p12' -o \
-    -iname '*.pfx' -o \
-    -iname '*.mobileprovision' -o \
-    -iname '*.key' \
-  \) -print
-)
+forbidden="$(find "$tmp/Payload/TauriTavern.app" -type f \( \
+  -iname 'secrets.json' -o \
+  -iname '.env' -o \
+  -iname '*.pem' -o \
+  -iname '*.p12' -o \
+  -iname '*.pfx' -o \
+  -iname '*.mobileprovision' -o \
+  -iname '*.key' \
+\) -print)"
 
-if (( ${#forbidden[@]} > 0 )); then
-  printf 'RELEASE_BLOCKED: secret/private file paths embedded in final IPA:\n' >&2
-  printf '  %s\n' "${forbidden[@]}" >&2
+if [[ -n "$forbidden" ]]; then
+  printf 'RELEASE_BLOCKED: secret/private file paths embedded in final IPA:\n%s\n' "$forbidden" >&2
   exit 71
 fi
 
@@ -37,6 +34,7 @@ if find "$tmp/Payload/TauriTavern.app" -type d -name '.git' -print -quit | grep 
 fi
 
 while IFS= read -r skill_zip; do
+  [[ -n "$skill_zip" ]] || continue
   if unzip -Z1 "$skill_zip" | grep -Eqi '(^|/)(secrets\.json|\.env|[^/]+\.(pem|p12|pfx|mobileprovision|key))$'; then
     echo "RELEASE_BLOCKED: secret/private file path embedded inside Runtime Skill archive $(basename "$skill_zip")" >&2
     exit 74
