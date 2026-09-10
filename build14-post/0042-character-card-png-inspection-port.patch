@@ -1,0 +1,25 @@
+diff --git a/src-tauri/crates/tt-ports/src/repositories/character_card_return_repository.rs b/src-tauri/crates/tt-ports/src/repositories/character_card_return_repository.rs
+--- a/src-tauri/crates/tt-ports/src/repositories/character_card_return_repository.rs
++++ b/src-tauri/crates/tt-ports/src/repositories/character_card_return_repository.rs
+@@ -11,6 +11,11 @@ pub trait CharacterCardReturnRepository: Send + Sync {
+     async fn read_card_json(&self, storage_identity: &str) -> Result<String, DomainError>;
++
++    /// Parse Character Card metadata from untrusted PNG bytes without importing
++    /// or mutating any stored Character.
++    async fn inspect_png_card_json(&self, png_bytes: &[u8]) -> Result<String, DomainError>;
+ 
+     /// Read the exact stored PNG before a transaction. This is the rollback
+     /// snapshot for both metadata and avatar pixels.
+diff --git a/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_character_repository/repository.rs b/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_character_repository/repository.rs
+--- a/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_character_repository/repository.rs
++++ b/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_character_repository/repository.rs
+@@ -1030,6 +1030,10 @@ impl CharacterCardReturnRepository for FileCharacterRepository {
+         CharacterRepository::read_character_card_json(self, storage_identity).await
+     }
++
++    async fn inspect_png_card_json(&self, png_bytes: &[u8]) -> Result<String, DomainError> {
++        read_character_data_from_png(png_bytes)
++    }
+ 
+     async fn read_card_png_bytes(
+         &self,
