@@ -1,0 +1,253 @@
+diff --git a/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
+--- a/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
++++ b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
+@@ -1,3 +1,5 @@
++use std::collections::BTreeMap;
++
+ use serde::{Deserialize, Serialize};
+ use serde_json::Value;
+@@ -101,6 +103,18 @@ pub enum DraftState {
+     Archived,
+ }
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
++pub enum DraftSourceKind {
++    AuthorCanon,
++    StableProfile,
++    RepeatedEvidence,
++    SingleObservation,
++    Inference,
++    UserEdited,
++    ImportedCard,
++}
+@@ -119,6 +133,8 @@ pub struct CharacterCardDraft {
+     pub generated_base_hash: String,
+     pub user_edited: bool,
+     pub state: DraftState,
++    #[serde(default)]
++    pub field_provenance: BTreeMap<String, Vec<DraftSourceKind>>,
+     pub definition: Value,
+     pub updated_at: String,
+ }
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
+@@ -1,3 +1,5 @@
++use std::collections::BTreeMap;
++
+ use serde::Serialize;
+ use serde_json::{Map, Value, json};
+ use sha2::{Digest, Sha256};
+@@ -4,7 +6,10 @@ use sha2::{Digest, Sha256};
+ use tt_domain::models::character_card_materialization::{
+-    FieldPresence, MergeFieldDecision, MergeFieldState, PortableReturnMetadata, ReturnRecognitionState,
++    CharacterCardDraft, DraftSourceKind, DraftState, FieldPresence, MergeFieldDecision,
++    MergeFieldState, PortableReturnMetadata, ReturnRecognitionState,
+ };
++use tt_domain::models::rp_architecture::{CharacterEntity, CharacterProfile};
+@@ -492,6 +497,142 @@ fn card_data_field<'a>(card: &'a Value, field: &str) -> Option<&'a Value> {
+     card.get("data").and_then(|data| data.get(field))
+ }
++
++pub fn build_conservative_draft(
++    character: &CharacterEntity,
++    draft_id: impl Into<String>,
++    source_card_revision: Option<u64>,
++    updated_at: impl Into<String>,
++) -> Result<CharacterCardDraft, String> {
++    let name = character
++        .profile
++        .identity
++        .display_name
++        .as_deref()
++        .or(character.profile.identity.canonical_name.as_deref())
++        .map(str::trim)
++        .filter(|name| !name.is_empty())
++        .ok_or_else(|| {
++            "cannot materialize a Character Card without a stable character name".to_string()
++        })?;
++
++    let description = conservative_description(&character.profile);
++    let personality = conservative_personality(&character.profile);
++    let definition = json!({
++        "spec": "chara_card_v2",
++        "spec_version": "2.0",
++        "data": {
++            "name": name,
++            "description": description,
++            "personality": personality,
++            "scenario": "",
++            "first_mes": "",
++            "mes_example": "",
++            "creator_notes": "",
++            "system_prompt": "",
++            "post_history_instructions": "",
++            "tags": [],
++            "creator": "",
++            "character_version": "",
++            "alternate_greetings": [],
++            "extensions": {},
++            "character_book": null
++        }
++    });
++    let generated_base_hash = canonical_definition_hash(&definition)?;
++    let mut field_provenance = BTreeMap::new();
++    field_provenance.insert(
++        "data.name".to_string(),
++        vec![DraftSourceKind::StableProfile],
++    );
++    if !description.is_empty() {
++        field_provenance.insert(
++            "data.description".to_string(),
++            vec![DraftSourceKind::StableProfile],
++        );
++    }
++    if !personality.is_empty() {
++        field_provenance.insert(
++            "data.personality".to_string(),
++            vec![DraftSourceKind::StableProfile],
++        );
++    }
++
++    Ok(CharacterCardDraft {
++        draft_id: draft_id.into(),
++        character_id: character.character_id.clone(),
++        source_profile_revision: character.profile_revision,
++        source_card_revision,
++        draft_revision: 1,
++        generated_base_hash,
++        user_edited: false,
++        state: DraftState::Generated,
++        field_provenance,
++        definition,
++        updated_at: updated_at.into(),
++    })
++}
++
++fn conservative_description(profile: &CharacterProfile) -> String {
++    let mut lines = Vec::new();
++    if !profile.appearance.is_empty() {
++        lines.push("Appearance:".to_string());
++        for (key, value) in &profile.appearance {
++            lines.push(format!("- {key}: {}", compact_json_value(value)));
++        }
++    }
++    append_labeled_list(&mut lines, "Backstory", &profile.backstory);
++    append_labeled_list(&mut lines, "Capabilities", &profile.capabilities);
++    append_labeled_list(&mut lines, "Limitations", &profile.limitations);
++    lines.join("\n")
++}
++
++fn conservative_personality(profile: &CharacterProfile) -> String {
++    let mut lines = Vec::new();
++    append_labeled_list(
++        &mut lines,
++        "Personality invariants",
++        &profile.personality_invariants,
++    );
++    append_labeled_list(&mut lines, "Values", &profile.values);
++    append_labeled_list(
++        &mut lines,
++        "Long-term motivations",
++        &profile.long_term_motivations,
++    );
++    if !profile.speech_voice.is_empty() {
++        lines.push("Speech voice:".to_string());
++        for (key, value) in &profile.speech_voice {
++            lines.push(format!("- {key}: {}", compact_json_value(value)));
++        }
++    }
++    lines.join("\n")
++}
++
++fn append_labeled_list(output: &mut Vec<String>, label: &str, values: &[String]) {
++    if values.is_empty() {
++        return;
++    }
++    output.push(format!("{label}:"));
++    output.extend(values.iter().map(|value| format!("- {value}")));
++}
++
++fn compact_json_value(value: &Value) -> String {
++    match value {
++        Value::String(value) => value.clone(),
++        _ => value.to_string(),
++    }
++}
++
++pub fn refresh_draft_source_state(
++    draft: &mut CharacterCardDraft,
++    current_profile_revision: u64,
++) {
++    if current_profile_revision > draft.source_profile_revision {
++        draft.state = DraftState::SourceAdvanced;
++    }
++}
+@@ -715,4 +856,74 @@ mod tests {
+         assert!(content_identity_mismatch_suspected(&base, &imported, true));
+     }
++
++    fn stable_character() -> CharacterEntity {
++        use tt_domain::models::rp_architecture::{
++            CharacterIdentity, CharacterOrigin, CharacterOriginKind, ControlOwner, ControlPolicy,
++            LifecycleStatus, NarrativeRole, RP_ARCHITECTURE_SCHEMA_VERSION,
++        };
++        CharacterEntity {
++            schema_version: RP_ARCHITECTURE_SCHEMA_VERSION,
++            character_id: tt_domain::models::rp_architecture::CharacterId("character-1".to_string()),
++            origin: CharacterOrigin {
++                kind: CharacterOriginKind::SessionCreated,
++                world_ref: None,
++                source_session_id: Some(tt_domain::models::rp_architecture::SessionId(
++                    "session-1".to_string(),
++                )),
++            },
++            narrative_role: NarrativeRole::Incidental,
++            control_owner: ControlOwner::Ai,
++            control_policy: ControlPolicy::Normal,
++            lifecycle_status: LifecycleStatus::Active,
++            first_seen_turn: 1,
++            promoted_at_turn: None,
++            profile_revision: 3,
++            profile: CharacterProfile {
++                identity: CharacterIdentity {
++                    canonical_name: Some("Lin Yue".to_string()),
++                    display_name: Some("林月".to_string()),
++                    aliases: vec![],
++                },
++                personality_invariants: vec!["慢热".to_string()],
++                values: vec!["重视承诺".to_string()],
++                ..Default::default()
++            },
++        }
++    }
++
++    #[test]
++    fn conservative_draft_uses_stable_profile_and_keeps_high_impact_fields_blank() {
++        let draft = build_conservative_draft(&stable_character(), "draft-1", None, "now").unwrap();
++        assert_eq!(draft.definition["data"]["name"], "林月");
++        assert!(draft.definition["data"]["personality"]
++            .as_str()
++            .unwrap()
++            .contains("慢热"));
++        assert_eq!(draft.definition["data"]["scenario"], "");
++        assert_eq!(draft.definition["data"]["first_mes"], "");
++        assert_eq!(draft.definition["data"]["system_prompt"], "");
++        assert_eq!(draft.definition["data"]["post_history_instructions"], "");
++        assert!(draft.definition["data"]["alternate_greetings"]
++            .as_array()
++            .unwrap()
++            .is_empty());
++    }
++
++    #[test]
++    fn user_edited_draft_is_never_silently_regenerated_when_profile_advances() {
++        let mut draft = build_conservative_draft(&stable_character(), "draft-1", None, "now").unwrap();
++        draft.user_edited = true;
++        draft.state = DraftState::UserEdited;
++        refresh_draft_source_state(&mut draft, 4);
++        assert_eq!(draft.state, DraftState::SourceAdvanced);
++        assert!(draft.user_edited);
++    }
+ }
