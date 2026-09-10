@@ -5,9 +5,9 @@
   "repository": "fengyuany857-beep/tauritavern-adult-tension",
   "trigger_sha": "466b4e91132edb6512c52ff8dfe997852bc9bf2b",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
-  "stage": "Native RP and Agent contracts",
-  "state": "PASS",
+  "stage": "Frontend guardrails",
+  "state": "RUNNING",
   "exit_code": 0,
-  "updated_at": "2026-09-10T08:41:14Z",
+  "updated_at": "2026-09-10T08:41:15Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-33-a1"
 }
