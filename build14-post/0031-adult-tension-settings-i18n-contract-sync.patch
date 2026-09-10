@@ -1,0 +1,60 @@
+diff --git a/src/scripts/extensions/agent-system/i18n/zh-cn.json b/src/scripts/extensions/agent-system/i18n/zh-cn.json
+--- a/src/scripts/extensions/agent-system/i18n/zh-cn.json
++++ b/src/scripts/extensions/agent-system/i18n/zh-cn.json
+@@ -21,6 +21,11 @@
+     "agent_system.agentProfileSaved": "Agent 配置已保存。",
+     "agent_system.agentRunActive": "Agent 正在运行",
+     "agent_system.agentSystem": "Agent 系统",
++    "agent_system.adultTensionReadiness": "Adult Tension 就绪状态",
++    "agent_system.readinessReady": "已就绪",
++    "agent_system.readinessNeedsSetup": "需要设置",
++    "agent_system.refreshReadiness": "刷新就绪状态",
++    "agent_system.readinessLocalNote": "仅执行本地预检查，不会发送实时 LLM 请求。",
+     "agent_system.agentSystemDialogUnsupported": "Agent 系统需要 dialog.showModal 支持。",
+     "agent_system.agentSystemElementUnsupported": "Agent 系统需要 HTMLDialogElement 支持。",
+     "agent_system.agentSystemPrompt": "Agent 系统提示词",
+diff --git a/src/scripts/extensions/agent-system/i18n/zh-tw.json b/src/scripts/extensions/agent-system/i18n/zh-tw.json
+--- a/src/scripts/extensions/agent-system/i18n/zh-tw.json
++++ b/src/scripts/extensions/agent-system/i18n/zh-tw.json
+@@ -21,6 +21,11 @@
+     "agent_system.agentProfileSaved": "Agent 設定檔已儲存。",
+     "agent_system.agentRunActive": "Agent 正在執行",
+     "agent_system.agentSystem": "Agent 系統",
++    "agent_system.adultTensionReadiness": "Adult Tension 就緒狀態",
++    "agent_system.readinessReady": "已就緒",
++    "agent_system.readinessNeedsSetup": "需要設定",
++    "agent_system.refreshReadiness": "重新整理就緒狀態",
++    "agent_system.readinessLocalNote": "僅執行本機預檢，不會送出即時 LLM 請求。",
+     "agent_system.agentSystemDialogUnsupported": "Agent 系統需要 dialog.showModal 支援。",
+     "agent_system.agentSystemElementUnsupported": "Agent 系統需要 HTMLDialogElement 支援。",
+     "agent_system.agentSystemPrompt": "Agent 系統提示詞",
+diff --git a/tests/agent-frontend-contract.test.mjs b/tests/agent-frontend-contract.test.mjs
+--- a/tests/agent-frontend-contract.test.mjs
++++ b/tests/agent-frontend-contract.test.mjs
+@@ -91,6 +91,8 @@ test('Agent System settings use the extension store and publish changes', async (
+         editingProfileId: 'default-writer',
+         activeTab: 'profiles',
+         runTimelineHeightPx: null,
++        adultTensionBootstrapVersion: 0,
++        adultTensionContextBootstrapVersion: 0,
+     });
+     assert.equal(writes.length, 0);
+ 
+@@ -104,6 +106,8 @@ test('Agent System settings use the extension store and publish changes', async (
+         editingProfileId: 'legacy-writer',
+         activeTab: 'profiles',
+         runTimelineHeightPx: null,
++        adultTensionBootstrapVersion: 0,
++        adultTensionContextBootstrapVersion: 0,
+     });
+ 
+     let emitted = null;
+@@ -124,6 +128,8 @@ test('Agent System settings use the extension store and publish changes', async (
+         editingProfileId: 'editor',
+         activeTab: 'profiles',
+         runTimelineHeightPx: null,
++        adultTensionBootstrapVersion: 0,
++        adultTensionContextBootstrapVersion: 0,
+     });
+     assert.deepEqual(emitted, saved);
+ });
