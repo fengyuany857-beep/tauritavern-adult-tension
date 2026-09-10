@@ -1,0 +1,277 @@
+diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
+--- a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
++++ b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
+@@ -1,5 +1,6 @@
+ mod agent;
+ mod archive;
++mod bundled_skills;
+ mod sync;
+ 
+ use std::sync::Arc;
+@@ -80,6 +81,7 @@ pub(super) async fn build(
+         repositories.skill_repository.clone(),
+         external_import_downloader,
+     ));
++    bundled_skills::bootstrap(app_handle, skill_service.as_ref()).await?;
+     let llm_connection_service = Arc::new(LlmConnectionService::new(
+         repositories.llm_connection_repository.clone(),
+     ));
+diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/bundled_skills.rs b/src-tauri/crates/tauritavern/src/app/composition/services/bundled_skills.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tauritavern/src/app/composition/services/bundled_skills.rs
+@@ -0,0 +1,196 @@
++use std::collections::BTreeMap;
++
++use base64::Engine as _;
++use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
++use serde::Deserialize;
++use serde_json::json;
++use tauri::AppHandle;
++
++use tt_application::services::skill_service::SkillService;
++use tt_domain::errors::DomainError;
++use tt_domain::models::skill::{
++    SkillImportConflictKind, SkillImportInput, SkillInstallAction, SkillInstallConflictStrategy,
++    SkillInstallRequest, SkillScope,
++};
++
++use crate::infrastructure::assets;
++
++const BUNDLE_ROOT: &str = "AdultTensionRuntimeSkills";
++const BUNDLE_SUITE: &str = "adult-tension-runtime-skills";
++const MANIFEST_FILE: &str = "skills-manifest.json";
++const CHECKSUM_FILE: &str = "SKILL-SHA256SUMS.txt";
++
++#[derive(Clone, Copy)]
++struct ExpectedBundledSkill {
++    archive: &'static str,
++    skill_name: &'static str,
++}
++
++const EXPECTED_SKILLS: [ExpectedBundledSkill; 3] = [
++    ExpectedBundledSkill {
++        archive: "adult-tension-cbfdc623.zip",
++        skill_name: "adult-tension",
++    },
++    ExpectedBundledSkill {
++        archive: "adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip",
++        skill_name: "adult-tension-continuity",
++    },
++    ExpectedBundledSkill {
++        archive: "adult-tension-tauritavern-adapter-build14.zip",
++        skill_name: "adult-tension-tauritavern-adapter",
++    },
++];
++
++#[derive(Debug, Deserialize)]
++#[serde(rename_all = "camelCase")]
++struct BundledSkillManifest {
++    schema_version: u32,
++    suite: String,
++    install_order: Vec<String>,
++}
++
++pub(super) async fn bootstrap(
++    app_handle: &AppHandle,
++    skill_service: &SkillService,
++) -> Result<(), DomainError> {
++    let manifest_path = bundle_path(MANIFEST_FILE);
++    let manifest_bytes = match assets::read_resource_bytes(app_handle, &manifest_path) {
++        Ok(bytes) => bytes,
++        Err(DomainError::NotFound(_)) => return Ok(()),
++        Err(error) => return Err(error),
++    };
++
++    let manifest: BundledSkillManifest = serde_json::from_slice(&manifest_bytes).map_err(|error| {
++        DomainError::InvalidData(format!(
++            "Invalid bundled Adult Tension Skill manifest: {error}"
++        ))
++    })?;
++    validate_manifest(&manifest)?;
++
++    let checksum_bytes = assets::read_resource_bytes(app_handle, &bundle_path(CHECKSUM_FILE))?;
++    let checksum_text = std::str::from_utf8(&checksum_bytes).map_err(|error| {
++        DomainError::InvalidData(format!(
++            "Bundled Adult Tension Skill checksums are not UTF-8: {error}"
++        ))
++    })?;
++    let checksums = parse_checksums(checksum_text)?;
++
++    let mut prepared = Vec::with_capacity(EXPECTED_SKILLS.len());
++    for expected in EXPECTED_SKILLS {
++        let expected_sha256 = checksums.get(expected.archive).ok_or_else(|| {
++            DomainError::InvalidData(format!(
++                "Bundled Adult Tension Skill checksum missing for '{}'",
++                expected.archive
++            ))
++        })?;
++        let bytes = assets::read_resource_bytes(app_handle, &bundle_path(expected.archive))?;
++        let input = SkillImportInput::ArchiveBase64 {
++            file_name: expected.archive.to_string(),
++            content_base64: BASE64_STANDARD.encode(bytes),
++            sha256: Some(expected_sha256.clone()),
++            source: json!({
++                "kind": "bundled",
++                "id": BUNDLE_SUITE,
++                "label": "Bundled Adult Tension Runtime Skills"
++            }),
++        };
++
++        let preview = skill_service
++            .preview_import(input.clone(), SkillScope::Global)
++            .await
++            .map_err(|error| application_error("Failed to preview bundled Skill", error))?;
++        if preview.skill.name != expected.skill_name {
++            return Err(DomainError::InvalidData(format!(
++                "Bundled Skill '{}' declares unexpected name '{}'; expected '{}'",
++                expected.archive, preview.skill.name, expected.skill_name
++            )));
++        }
++        if matches!(preview.conflict.kind, SkillImportConflictKind::Different) {
++            tracing::warn!(
++                skill = expected.skill_name,
++                "Bundled Adult Tension Skill differs from the installed copy; preserving the installed copy"
++            );
++        }
++        prepared.push((expected, input));
++    }
++
++    for (expected, input) in prepared {
++        let result = skill_service
++            .install_import(SkillInstallRequest {
++                input,
++                target_scope: SkillScope::Global,
++                conflict_strategy: Some(SkillInstallConflictStrategy::Skip),
++            })
++            .await
++            .map_err(|error| application_error("Failed to install bundled Skill", error))?;
++
++        if result.name != expected.skill_name {
++            return Err(DomainError::InvalidData(format!(
++                "Bundled Skill install returned unexpected name '{}'; expected '{}'",
++                result.name, expected.skill_name
++            )));
++        }
++
++        match result.action {
++            SkillInstallAction::Installed | SkillInstallAction::AlreadyInstalled => {
++                tracing::info!(
++                    skill = expected.skill_name,
++                    action = ?result.action,
++                    "Bundled Adult Tension Runtime Skill is registered"
++                );
++            }
++            SkillInstallAction::Skipped => {
++                tracing::warn!(
++                    skill = expected.skill_name,
++                    "Bundled Adult Tension Runtime Skill bootstrap skipped a different installed copy"
++                );
++            }
++            SkillInstallAction::Replaced => {
++                return Err(DomainError::InternalError(format!(
++                    "Bundled Skill bootstrap unexpectedly replaced '{}' despite skip policy",
++                    expected.skill_name
++                )));
++            }
++        }
++    }
++
++    Ok(())
++}
++
++fn validate_manifest(manifest: &BundledSkillManifest) -> Result<(), DomainError> {
++    if manifest.schema_version != 1 {
++        return Err(DomainError::InvalidData(format!(
++            "Unsupported bundled Adult Tension Skill manifest schemaVersion {}",
++            manifest.schema_version
++        )));
++    }
++    if manifest.suite != BUNDLE_SUITE {
++        return Err(DomainError::InvalidData(format!(
++            "Unexpected bundled Skill suite '{}'",
++            manifest.suite
++        )));
++    }
++    let expected_order = EXPECTED_SKILLS
++        .iter()
++        .map(|skill| skill.archive.to_string())
++        .collect::<Vec<_>>();
++    if manifest.install_order != expected_order {
++        return Err(DomainError::InvalidData(
++            "Bundled Adult Tension Skill installOrder does not match the frozen three-Skill suite"
++                .to_string(),
++        ));
++    }
++    Ok(())
++}
++
++fn parse_checksums(input: &str) -> Result<BTreeMap<String, String>, DomainError> {
++    let mut result = BTreeMap::new();
++    for line in input.lines().map(str::trim).filter(|line| !line.is_empty()) {
++        let mut fields = line.split_whitespace();
++        let Some(hash) = fields.next() else {
++            continue;
++        };
++        let Some(file_name) = fields.next() else {
++            return Err(DomainError::InvalidData(
++                "Malformed bundled Adult Tension Skill checksum line".to_string(),
++            ));
++        };
++        if fields.next().is_some()
++            || hash.len() != 64
++            || !hash.bytes().all(|byte| byte.is_ascii_hexdigit())
++        {
++            return Err(DomainError::InvalidData(format!(
++                "Malformed bundled Adult Tension Skill checksum for '{file_name}'"
++            )));
++        }
++        if result
++            .insert(file_name.to_string(), hash.to_ascii_lowercase())
++            .is_some()
++        {
++            return Err(DomainError::InvalidData(format!(
++                "Duplicate bundled Adult Tension Skill checksum for '{file_name}'"
++            )));
++        }
++    }
++    Ok(result)
++}
++
++fn bundle_path(file_name: &str) -> String {
++    format!("{BUNDLE_ROOT}/{file_name}")
++}
++
++fn application_error(context: &str, error: impl std::fmt::Display) -> DomainError {
++    DomainError::InternalError(format!("{context}: {error}"))
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn checksum_parser_accepts_three_skill_sha256_file() {
++        let input = concat!(
++            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa  adult-tension-cbfdc623.zip\n",
++            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb  adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip\n",
++            "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc  adult-tension-tauritavern-adapter-build14.zip\n",
++        );
++        let parsed = parse_checksums(input).expect("parse bundled skill checksums");
++        assert_eq!(parsed.len(), 3);
++        assert_eq!(parsed["adult-tension-cbfdc623.zip"], "a".repeat(64));
++    }
++
++    #[test]
++    fn manifest_requires_frozen_install_order() {
++        let manifest = BundledSkillManifest {
++            schema_version: 1,
++            suite: BUNDLE_SUITE.to_string(),
++            install_order: EXPECTED_SKILLS
++                .iter()
++                .map(|skill| skill.archive.to_string())
++                .collect(),
++        };
++        validate_manifest(&manifest).expect("valid bundled skill manifest");
++    }
++}
