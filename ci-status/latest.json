@@ -6,8 +6,8 @@
   "trigger_sha": "2f36937bdae567f9edf3daca708b3d726b5a5726",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
   "stage": "Frontend guardrails",
-  "state": "RUNNING",
+  "state": "PASS",
   "exit_code": 0,
-  "updated_at": "2026-09-10T08:10:20Z",
+  "updated_at": "2026-09-10T08:10:24Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-33-a1"
 }
