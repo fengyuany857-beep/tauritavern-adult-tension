@@ -1,0 +1,128 @@
+diff --git a/src-tauri/crates/tt-application/src/services/mod.rs b/src-tauri/crates/tt-application/src/services/mod.rs
+--- a/src-tauri/crates/tt-application/src/services/mod.rs
++++ b/src-tauri/crates/tt-application/src/services/mod.rs
+@@ -17,4 +17,6 @@ pub mod background_service;
+ pub mod background_service;
+ pub mod bundled_template_service;
+ pub mod character_card_materialization_service;
++#[cfg(test)]
++mod character_card_materialization_return_tests;
+ pub mod character_service;
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_return_tests.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_return_tests.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_return_tests.rs
+@@ -0,0 +1,113 @@
++use super::character_card_materialization_service::{
++    ExportAnnotations, ReturnRecognitionContext, attach_portable_return_metadata,
++    compute_origin_proof, content_identity_mismatch_suspected, recognize_return_card,
++};
++use serde_json::{Value, json};
++use tt_domain::models::character_card_materialization::{
++    PortableReturnMetadata, ReturnRecognitionState,
++};
++
++fn metadata() -> PortableReturnMetadata {
++    PortableReturnMetadata {
++        binding_id: "binding-abc".to_string(),
++        export_id: "export-abc".to_string(),
++        binding_generation: 3,
++        base_card_revision: 7,
++        base_card_hash: "a".repeat(64),
++        origin_proof: String::new(),
++    }
++}
++
++fn recognition_context() -> ReturnRecognitionContext {
++    ReturnRecognitionContext {
++        user_indicated_return: true,
++        binding_exists: true,
++        local_binding_generation: Some(3),
++        target_exists: true,
++        card_exists: true,
++        base_snapshot_exists: true,
++        export_already_committed: false,
++    }
++}
++
++fn signed_return_card(secret: &[u8]) -> Value {
++    let mut link = metadata();
++    link.origin_proof = compute_origin_proof(secret, &link);
++    let mut card = json!({"data":{"name":"Lin","extensions":{}}});
++    attach_portable_return_metadata(&mut card, &link, &ExportAnnotations::default()).unwrap();
++    card
++}
++
++#[test]
++fn exact_valid_return_reaches_three_way_path() {
++    let secret = b"local-secret";
++    let card = signed_return_card(secret);
++    assert_eq!(
++        recognize_return_card(&card, secret, &recognition_context()),
++        ReturnRecognitionState::KnownExactReturn
++    );
++}
++
++#[test]
++fn forged_proof_never_auto_binds() {
++    let secret = b"local-secret";
++    let mut card = signed_return_card(secret);
++    card["data"]["extensions"]["tauritavern"]["characterCardLink"]["returnMetadata"]["originProof"] =
++        json!("0".repeat(64));
++    assert_eq!(
++        recognize_return_card(&card, secret, &recognition_context()),
++        ReturnRecognitionState::UnverifiedReturnMetadata
++    );
++}
++
++#[test]
++fn stale_generation_and_missing_base_are_distinct() {
++    let secret = b"local-secret";
++    let card = signed_return_card(secret);
++    let mut stale = recognition_context();
++    stale.local_binding_generation = Some(4);
++    assert_eq!(
++        recognize_return_card(&card, secret, &stale),
++        ReturnRecognitionState::StaleBindingGeneration
++    );
++
++    let mut missing_base = recognition_context();
++    missing_base.base_snapshot_exists = false;
++    assert_eq!(
++        recognize_return_card(&card, secret, &missing_base),
++        ReturnRecognitionState::KnownReturnBaseMissing
++    );
++}
++
++#[test]
++fn metadata_stripped_never_name_matches() {
++    let card = json!({"data":{"name":"Same Name As Local Character"}});
++    assert_eq!(
++        recognize_return_card(&card, b"secret", &recognition_context()),
++        ReturnRecognitionState::MetadataStripped
++    );
++
++    let mut ordinary = recognition_context();
++    ordinary.user_indicated_return = false;
++    assert_eq!(
++        recognize_return_card(&card, b"secret", &ordinary),
++        ReturnRecognitionState::OrdinaryCharacterCard
++    );
++}
++
++#[test]
++fn copied_metadata_with_radical_body_change_warns_but_is_not_proof_failure() {
++    let base = json!({"data":{
++        "name":"Lin",
++        "description":"student",
++        "personality":"quiet",
++        "character_book":{"entries":[{"keys":["Lin"]}]}
++    }});
++    let imported = json!({"data":{
++        "name":"Completely Different",
++        "description":"different identity",
++        "personality":"opposite",
++        "character_book":{"entries":[]}
++    }});
++    assert!(content_identity_mismatch_suspected(&base, &imported, true));
++}
