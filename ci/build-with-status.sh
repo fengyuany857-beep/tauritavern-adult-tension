@@ -5,6 +5,7 @@ SOURCE_DIR="${SOURCE_DIR:-$GITHUB_WORKSPACE/source}"
 CONTROL_DIR="${CONTROL_DIR:-$GITHUB_WORKSPACE/control}"
 STATUS_DIR="$CONTROL_DIR/ci-status"
 LOG_DIR="$GITHUB_WORKSPACE/ci-stage-logs"
+STATUS_BRANCH="${TAURITAVERN_CI_STATUS_BRANCH:-ci-status/ios-agent-continuity-20260910}"
 mkdir -p "$STATUS_DIR" "$LOG_DIR"
 
 export GIT_TERMINAL_PROMPT=0
@@ -34,7 +35,8 @@ data = {
     "run_number": os.environ.get("GITHUB_RUN_NUMBER"),
     "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
     "repository": os.environ.get("GITHUB_REPOSITORY"),
-    "trigger_sha": os.environ.get("GITHUB_SHA"),
+    "control_repo_source_sha": os.environ.get("GITHUB_SHA"),
+    "workflow_trigger_sha": os.environ.get("GITHUB_SHA"),
     "upstream_sha": os.environ.get("UPSTREAM_SHA"),
     "stage": stage,
     "state": state,
@@ -58,6 +60,7 @@ PY
 - Stage: **$stage**
 - Exit code: **$exit_code**
 - Run: **${GITHUB_RUN_NUMBER:-?} / attempt ${GITHUB_RUN_ATTEMPT:-?}**
+- Control source: \`${GITHUB_SHA:-unknown}\`
 - Upstream: \`${UPSTREAM_SHA:-unknown}\`
 - Updated: **$now**
 EOF
@@ -69,10 +72,10 @@ EOF
   if [[ -n "$log_file" && -f "$log_file" ]]; then
     {
       echo "# Diagnostic matches"
-      grep -nEi 'error|failed|failure|warning:|clippy|panic|denied|xcodebuild|codesign|provision|undefined reference|linker command' "$log_file" | head -n 160 || true
+      grep -nEi 'AGENT-IOS-DIAG|agent-system-ios|error|failed|failure|warning:|clippy|panic|denied|xcodebuild|codesign|provision|undefined reference|linker command' "$log_file" | head -n 220 || true
       echo
       echo "# Tail"
-      tail -n 260 "$log_file" || true
+      tail -n 320 "$log_file" || true
     } > "$STATUS_DIR/latest.log"
   else
     : > "$STATUS_DIR/latest.log"
@@ -81,7 +84,7 @@ EOF
   git -C "$CONTROL_DIR" add ci-status
   if ! git -C "$CONTROL_DIR" diff --cached --quiet; then
     git -C "$CONTROL_DIR" commit -m "ci-status: $state $slug [skip ci]"
-    git -C "$CONTROL_DIR" push origin HEAD:main
+    git -C "$CONTROL_DIR" push origin "HEAD:refs/heads/$STATUS_BRANCH"
   fi
 }
 
@@ -164,6 +167,7 @@ run_stage "release" "Publish self-sign IPA with embedded auto-registering three-
     dist/runtime-skills/skills-manifest.json \
     dist/runtime-skills/SKILL-SHA256SUMS.txt \
     --repo '${GITHUB_REPOSITORY}' \
+    --target '${GITHUB_SHA}' \
     --title 'TauriTavern Adult Tension iOS Self-sign ${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}' \
     --notes 'Unsigned iPhone arm64 build with the matching three Adult Tension Runtime Skills embedded inside TauriTavern.app/AdultTensionRuntimeSkills. Startup bootstrap is compiled in: it preflights the bundled manifest and hashes, installs new Skills into global scope, treats identical copies as already installed, and preserves a different user-modified installed copy via skip policy. Final IPA is re-opened and hash-verified after embedding. Re-sign the IPA with your own iOS self-signing tool before installation.'"
 
