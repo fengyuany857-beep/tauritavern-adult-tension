@@ -31,6 +31,13 @@ jobs:
         with:
           path: control
 
+      - name: Checkout pinned adult-tension Skill source
+        uses: actions/checkout@v4
+        with:
+          repository: daha1216/dsh-adult-tension
+          ref: cbfdc623fccc91247cbb37783757fc157406c2a5
+          path: adult-tension-src
+
       - name: Checkout exact TauriTavern baseline
         uses: actions/checkout@v4
         with:
@@ -122,19 +129,22 @@ jobs:
         working-directory: source
         run: pnpm install --frozen-lockfile
 
-      - name: Run quality gates, build iPhone app, verify IPA, publish self-sign release
+      - name: Run quality gates, package Skills, build iPhone app, verify IPA, publish release
         shell: bash
         run: bash control/ci/build-with-status.sh
 
-      - name: Upload unsigned iOS artifact backup
+      - name: Upload iOS and three-Skill artifact backup
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
-          name: TauriTavern-Adult-Tension-Native-iOS-${{ github.run_number }}
+          name: TauriTavern-Adult-Tension-OpenBox-iOS-${{ github.run_number }}
           path: |
             source/dist/ios-unsigned/TauriTavern-unsigned.ipa
             source/dist/ios-unsigned/TauriTavern.app.zip
             source/dist/ios-unsigned/build-info.json
             source/dist/ios-unsigned/SHA256SUMS.txt
+            source/dist/runtime-skills/*.zip
+            source/dist/runtime-skills/*.json
+            source/dist/runtime-skills/*SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
