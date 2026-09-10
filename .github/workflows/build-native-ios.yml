@@ -99,7 +99,15 @@ jobs:
             echo "Applying Build 14 architecture patch: $patch"
             normalized="$(mktemp)"
             sed 's/^ diff --git /diff --git /' "$patch" > "$normalized"
-            git apply --recount --check "$normalized"
+            if [[ "$(basename "$patch")" == "0036-character-card-staging-origin-secret.patch" ]]; then
+              echo "--- 0036 target preimage (lines 12-65) ---"
+              nl -ba src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs | sed -n '12,65p'
+              echo "--- 0036 patch head ---"
+              sed -n '1,40p' "$normalized"
+              git apply --recount --verbose --check "$normalized"
+            else
+              git apply --recount --check "$normalized"
+            fi
             git apply --recount "$normalized"
             rm -f "$normalized"
           done
