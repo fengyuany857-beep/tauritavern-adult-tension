@@ -1,10 +1,10 @@
 # TauriTavern Adult Tension iOS build status
 
-- State: **PASS**
-- Stage: **Publish self-sign IPA and three-Skill release**
+- State: **COMPLETE**
+- Stage: **Complete: self-sign IPA + three Skills ready**
 - Exit code: **0**
 - Run: **37 / attempt 1**
 - Upstream: `3a8c5401c859ac15ac11f3339846360615232896`
-- Updated: **2026-09-10T08:46:57Z**
+- Updated: **2026-09-10T08:46:58Z**
 
-- Self-sign release: https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-33-a1
+- Self-sign release: https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-37-a1
