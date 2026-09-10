@@ -151,7 +151,7 @@ run_stage "bundled-skills-verify" "Bundled Runtime Skills verification" \
 
 release_tag="selfsign-ios-${GITHUB_RUN_NUMBER}-a${GITHUB_RUN_ATTEMPT}"
 release_url="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${release_tag}"
-run_stage "release" "Publish self-sign IPA with embedded three-Skill bundle" \
+run_stage "release" "Publish self-sign IPA with embedded auto-registering three-Skill bundle" \
   "gh release create '${release_tag}' \
     dist/ios-unsigned/TauriTavern-unsigned.ipa \
     dist/ios-unsigned/TauriTavern.app.zip \
@@ -165,9 +165,9 @@ run_stage "release" "Publish self-sign IPA with embedded three-Skill bundle" \
     dist/runtime-skills/SKILL-SHA256SUMS.txt \
     --repo '${GITHUB_REPOSITORY}' \
     --title 'TauriTavern Adult Tension iOS Self-sign ${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}' \
-    --notes 'Unsigned iPhone arm64 build with the matching three Adult Tension Runtime Skills embedded inside TauriTavern.app/AdultTensionRuntimeSkills. Final IPA is re-opened and hash-verified after embedding. Runtime bootstrap/automatic Skill registration is not enabled yet. Re-sign the IPA with your own iOS self-signing tool before installation.'"
+    --notes 'Unsigned iPhone arm64 build with the matching three Adult Tension Runtime Skills embedded inside TauriTavern.app/AdultTensionRuntimeSkills. Startup bootstrap is compiled in: it preflights the bundled manifest and hashes, installs new Skills into global scope, treats identical copies as already installed, and preserves a different user-modified installed copy via skip policy. Final IPA is re-opened and hash-verified after embedding. Re-sign the IPA with your own iOS self-signing tool before installation.'"
 
 printf '%s\n' "$release_url" > "$STATUS_DIR/latest-release.txt"
-publish_status "Complete: self-sign IPA + embedded three Skills ready" "COMPLETE" 0 "$LOG_DIR/release.log"
+publish_status "Complete: self-sign IPA + embedded auto-registering three Skills ready" "COMPLETE" 0 "$LOG_DIR/release.log"
 
 echo "SELF_SIGN_RELEASE=$release_url"
