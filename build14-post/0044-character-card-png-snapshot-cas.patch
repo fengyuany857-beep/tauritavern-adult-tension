@@ -79,13 +79,18 @@ diff --git a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materia
 +        ));
 +    }
      if hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit()) {
-@@ -432,6 +460,10 @@ impl CharacterCardMaterializationRepository for CharacterCardMaterializationStore {
+@@ -431,7 +459,11 @@ impl CharacterCardMaterializationRepository for CharacterCardMaterializationStore {
+     async fn write_snapshot(&self, bytes: &[u8]) -> Result<String, DomainError> {
          CharacterCardMaterializationStore::write_snapshot(self, bytes).await
      }
 +
 +    async fn write_png_snapshot(&self, bytes: &[u8]) -> Result<String, DomainError> {
 +        CharacterCardMaterializationStore::write_png_snapshot(self, bytes).await
 +    }
+ 
+     async fn read_snapshot(&self, logical_ref: &str) -> Result<Vec<u8>, DomainError> {
+         CharacterCardMaterializationStore::read_snapshot(self, logical_ref).await
+     }
 @@ -515,6 +547,9 @@ mod tests {
          let digest = "a".repeat(64);
          assert!(validate_snapshot_ref(&format!("snapshots/{digest}.json")).is_ok());
