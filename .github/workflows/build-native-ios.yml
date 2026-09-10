@@ -108,6 +108,11 @@ jobs:
             git apply --check "$patch"
             git apply "$patch"
           done
+          for patch in ../control/agent-fix-post/*.patch; do
+            echo "Applying Agent iOS runtime fix: $patch"
+            git apply --check "$patch"
+            git apply "$patch"
+          done
           git diff --check
 
       - name: Install Rust toolchain
