@@ -1,0 +1,54 @@
+diff --git a/src-tauri/crates/tt-ports/src/repositories/mod.rs b/src-tauri/crates/tt-ports/src/repositories/mod.rs
+--- a/src-tauri/crates/tt-ports/src/repositories/mod.rs
++++ b/src-tauri/crates/tt-ports/src/repositories/mod.rs
+@@ -7,6 +7,7 @@ pub mod avatar_repository;
+ pub mod background_repository;
+ pub mod character_card_materialization_repository;
++pub mod character_card_return_repository;
+ pub mod character_repository;
+ pub mod chat_completion_repository;
+diff --git a/src-tauri/crates/tt-ports/src/repositories/character_card_return_repository.rs b/src-tauri/crates/tt-ports/src/repositories/character_card_return_repository.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-ports/src/repositories/character_card_return_repository.rs
+@@ -0,0 +1,44 @@
++use async_trait::async_trait;
++use tt_domain::errors::DomainError;
++use tt_domain::models::character::Character;
++
++/// [RETURN-IMPORT-ONLY]
++/// Low-level primitives required to replace only a Character Card definition
++/// while preserving the existing storage identity and making full-PNG rollback
++/// possible. Ordinary import/replace workflows must not be routed here.
++#[async_trait]
++pub trait CharacterCardReturnRepository: Send + Sync {
++    async fn read_card_json(&self, storage_identity: &str) -> Result<String, DomainError>;
++
++    /// Read the exact stored PNG before a transaction. This is the rollback
++    /// snapshot for both metadata and avatar pixels.
++    async fn read_card_png_bytes(&self, storage_identity: &str) -> Result<Vec<u8>, DomainError>;
++
++    /// Replace metadata on the same stored Character. If `avatar_png` is None,
++    /// the existing PNG carrier is preserved. If present, its image is used as
++    /// the new avatar carrier while supplied JSON becomes the authoritative card
++    /// metadata. No chat directory/import preparation is involved.
++    async fn write_return_definition(
++        &self,
++        storage_identity: &str,
++        character_card_json: &str,
++        avatar_png: Option<&[u8]>,
++    ) -> Result<Character, DomainError>;
++
++    /// Restore an exact previously-read PNG snapshot after a failed transaction.
++    async fn restore_card_png_bytes(
++        &self,
++        storage_identity: &str,
++        png_bytes: &[u8],
++    ) -> Result<Character, DomainError>;
++
++    async fn export_card_png_bytes(
++        &self,
++        storage_identity: &str,
++        character_card_json: &str,
++    ) -> Result<Vec<u8>, DomainError>;
++}
