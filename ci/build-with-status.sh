@@ -72,10 +72,10 @@ EOF
   if [[ -n "$log_file" && -f "$log_file" ]]; then
     {
       echo "# Diagnostic matches"
-      grep -nEi 'AGENT-IOS|BUNDLE-ID|continuity|error|failed|failure|warning:|clippy|panic|denied|xcodebuild|codesign|provision|undefined reference|linker command' "$log_file" | head -n 260 || true
+      grep -nEi 'AGENT-IOS|BUNDLE-ID|SECRET-ABSENCE|BUILD-INFO|continuity|error|failed|failure|warning:|clippy|panic|denied|xcodebuild|codesign|provision|undefined reference|linker command' "$log_file" | head -n 300 || true
       echo
       echo "# Tail"
-      tail -n 360 "$log_file" || true
+      tail -n 400 "$log_file" || true
     } > "$STATUS_DIR/latest.log"
   else
     : > "$STATUS_DIR/latest.log"
@@ -159,6 +159,10 @@ run_stage "ipa-verify" "Unsigned IPA verification" \
   "./scripts/ci/verify-ios-unsigned.sh dist/ios-unsigned/TauriTavern-unsigned.ipa"
 run_stage "bundled-skills-verify" "Bundled Runtime Skills verification" \
   "SOURCE_DIR='${SOURCE_DIR}' bash '${CONTROL_DIR}/ci/verify-bundled-runtime-skills-ios.sh' dist/ios-unsigned/TauriTavern-unsigned.ipa"
+run_stage "secret-absence" "Final IPA secret/private-file absence" \
+  "bash '${CONTROL_DIR}/ci/verify-no-embedded-secrets.sh' dist/ios-unsigned/TauriTavern-unsigned.ipa"
+run_stage "build-provenance" "Build info provenance" \
+  "SOURCE_DIR='${SOURCE_DIR}' CONTROL_DIR='${CONTROL_DIR}' python3 '${CONTROL_DIR}/ci/augment-build-info.py' && cat dist/ios-unsigned/build-info.json"
 
 release_tag="selfsign-ios-${GITHUB_RUN_NUMBER}-a${GITHUB_RUN_ATTEMPT}"
 release_url="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${release_tag}"
@@ -177,7 +181,7 @@ run_stage "release" "Publish self-sign IPA with embedded auto-registering three-
     --repo '${GITHUB_REPOSITORY}' \
     --target '${GITHUB_SHA}' \
     --title 'TauriTavern Adult Tension iOS Self-sign ${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}' \
-    --notes 'Unsigned iPhone arm64 build with the matching three Adult Tension Runtime Skills embedded inside TauriTavern.app/AdultTensionRuntimeSkills. Data continuity preflight now classifies legacy data before DataDirectory initialization, snapshots legacy worlds before the continuity marker is created, and only then allows bundled Skill reconciliation. Agent System readiness resolves the current model through the host context so the independent production bundle no longer duplicates the main chat runtime. Final IPA Bundle ID and bundled Skill hashes are verified. Re-sign the IPA with your own iOS self-signing tool before installation.'"
+    --notes 'Unsigned iPhone arm64 build with the matching three Adult Tension Runtime Skills embedded inside TauriTavern.app/AdultTensionRuntimeSkills. Data continuity preflight classifies legacy data before DataDirectory initialization, snapshots legacy worlds before the continuity marker is created, and only then allows bundled Skill reconciliation. Agent System readiness resolves the current model through the host context so the independent production bundle no longer duplicates the main chat runtime. Final IPA Bundle ID, Runtime Skill hashes, secret-file absence, and build provenance are verified. Re-sign the IPA with your own iOS self-signing tool before installation.'"
 
 printf '%s\n' "$release_url" > "$STATUS_DIR/latest-release.txt"
 publish_status "Complete: self-sign IPA + Agent fix + continuity + three Skills ready" "COMPLETE" 0 "$LOG_DIR/release.log"
