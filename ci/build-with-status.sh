@@ -128,7 +128,7 @@ run_stage() {
 publish_status "Environment ready" "RUNNING" 0 ""
 
 run_stage "native-contracts" "Native RP and Agent contracts" \
-  "node --test tests/agent-rp-native-contract.test.mjs tests/agent-api-contract.test.mjs tests/personal-ios-unsigned-build.test.mjs tests/ios-runtime-acceptance-contract.test.mjs"
+  "node --test tests/agent-rp-native-contract.test.mjs tests/agent-api-contract.test.mjs tests/personal-ios-unsigned-build.test.mjs tests/ios-runtime-acceptance-contract.test.mjs tests/adult-tension-open-box-contract.test.mjs"
 run_stage "frontend-guardrails" "Frontend guardrails" "pnpm run check:frontend"
 run_stage "typescript" "TypeScript" "pnpm run check:types"
 run_stage "logging-boundaries" "Logging boundaries" "pnpm run check:logging-boundaries"
@@ -137,6 +137,8 @@ run_stage "contracts" "Full contract tests" "pnpm run test:contracts"
 run_stage "rust-tests" "Rust tests" "pnpm run test:rust"
 run_stage "clippy" "Rust Clippy" "pnpm run check:rust:clippy"
 run_stage "frontend-build" "Frontend production build" "pnpm run web:build"
+run_stage "runtime-skills" "Runtime Skill packages" \
+  "CONTROL_DIR='${CONTROL_DIR}' SOURCE_DIR='${SOURCE_DIR}' ADULT_TENSION_SOURCE_DIR='${GITHUB_WORKSPACE}/adult-tension-src' bash '${CONTROL_DIR}/ci/package-runtime-skills.sh'"
 run_stage "mobile-http" "iOS mobile HTTP compatibility" "./scripts/ci/configure-mobile-http.sh enable ios"
 run_stage "ios-arm64" "Unsigned iPhone arm64 build" \
   "TAURITAVERN_CONTROL_SHA=${GITHUB_SHA} TAURITAVERN_BUILD_RUN_ID=${GITHUB_RUN_ID} TAURITAVERN_BUILD_RUN_NUMBER=${GITHUB_RUN_NUMBER} TAURITAVERN_UPSTREAM_SHA=${UPSTREAM_SHA} TAURITAVERN_BUILD_BRANCH=adult-tension-native-v1.1 TAURITAVERN_BUILD_REVISION=${UPSTREAM_SHA}+adult-tension-native-v1.1 TAURITAVERN_IOS_POLICY_PROFILE=full ./scripts/ci/build-ios-unsigned.sh"
@@ -145,10 +147,23 @@ run_stage "ipa-verify" "Unsigned IPA verification" \
 
 release_tag="selfsign-ios-${GITHUB_RUN_NUMBER}-a${GITHUB_RUN_ATTEMPT}"
 release_url="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${release_tag}"
-run_stage "release" "Publish self-sign IPA release" \
-  "gh release create '${release_tag}' dist/ios-unsigned/TauriTavern-unsigned.ipa dist/ios-unsigned/TauriTavern.app.zip dist/ios-unsigned/build-info.json dist/ios-unsigned/SHA256SUMS.txt --repo '${GITHUB_REPOSITORY}' --title 'TauriTavern Adult Tension iOS Self-sign ${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}' --notes 'Unsigned iPhone arm64 build. Re-sign with your own iOS self-signing tool before installation.'"
+run_stage "release" "Publish self-sign IPA and three-Skill release" \
+  "gh release create '${release_tag}' \
+    dist/ios-unsigned/TauriTavern-unsigned.ipa \
+    dist/ios-unsigned/TauriTavern.app.zip \
+    dist/ios-unsigned/build-info.json \
+    dist/ios-unsigned/SHA256SUMS.txt \
+    dist/runtime-skills/adult-tension-cbfdc623.zip \
+    dist/runtime-skills/adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip \
+    dist/runtime-skills/adult-tension-tauritavern-adapter-build14.zip \
+    dist/runtime-skills/Adult-Tension-3-Skills.zip \
+    dist/runtime-skills/skills-manifest.json \
+    dist/runtime-skills/SKILL-SHA256SUMS.txt \
+    --repo '${GITHUB_REPOSITORY}' \
+    --title 'TauriTavern Adult Tension iOS Self-sign ${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}' \
+    --notes 'Unsigned iPhone arm64 build plus the matching three Adult Tension runtime Skills. Re-sign the IPA with your own iOS self-signing tool before installation.'"
 
 printf '%s\n' "$release_url" > "$STATUS_DIR/latest-release.txt"
-publish_status "Complete: self-sign IPA ready" "COMPLETE" 0 "$LOG_DIR/release.log"
+publish_status "Complete: self-sign IPA + three Skills ready" "COMPLETE" 0 "$LOG_DIR/release.log"
 
 echo "SELF_SIGN_RELEASE=$release_url"
