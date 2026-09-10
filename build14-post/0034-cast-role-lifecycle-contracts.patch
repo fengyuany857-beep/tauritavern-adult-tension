@@ -1,15 +1,15 @@
 diff --git a/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
 --- a/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
 +++ b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
-@@ -1,7 +1,9 @@
- use serde::{Deserialize, Serialize};
+@@ -2,6 +2,7 @@
  use serde_json::Value;
  
--use super::rp_architecture::{BranchId, CharacterId, SessionId, WorldId};
-+use super::rp_architecture::{
-+    BranchId, CharacterId, NarrativeRole, SessionId, WorldId,
-+};
-@@ -170,6 +172,153 @@ impl Default for CastLifecyclePolicy {
+ use super::rp_architecture::{BranchId, CharacterId, SessionId, WorldId};
++use super::rp_architecture::NarrativeRole;
+ 
+ pub const CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION: u32 = 1;
+ 
+@@ -170,6 +171,153 @@ impl Default for CastLifecyclePolicy {
      }
  }
  
@@ -151,7 +151,7 @@ diff --git a/src-tauri/crates/tt-domain/src/models/character_card_materializatio
  #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
  #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
  pub enum ReturnRecognitionState {
-@@ -479,6 +628,72 @@ mod tests {
+@@ -479,6 +627,72 @@ mod tests {
          assert!(plan.validate_shape().is_ok());
      }
 +
@@ -222,4 +222,4 @@ diff --git a/src-tauri/crates/tt-domain/src/models/character_card_materializatio
 +        };
 +        assert!(control.blocks_runtime_transition(&NarrativeRole::Supporting, 50));
 +    }
- }
++}
