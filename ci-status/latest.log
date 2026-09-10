@@ -1,3 +1,112 @@
 # Diagnostic matches
+15:[1m[91merror[E0277][0m[1m: the trait bound `Array<u8, UInt<UInt<UInt<UInt<..., ...>, ...>, ...>, ...>>: LowerHex` is not satisfied[0m
+34:[1m[91merror[E0277][0m[1m: the trait bound `Array<u8, UInt<UInt<UInt<UInt<..., ...>, ...>, ...>, ...>>: LowerHex` is not satisfied[0m
+53:[1m[91merror[E0277][0m[1m: the trait bound `Array<u8, UInt<UInt<UInt<UInt<..., ...>, ...>, ...>, ...>>: LowerHex` is not satisfied[0m
+75:[1mFor more information about this error, try `rustc --explain E0277`.[0m
+76:[1m[91merror[0m: could not compile `tt-adapter-storage-core` (lib) due to 3 previous errors
+77:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+78:[1m[91merror[E0277][0m[1m: the trait bound `Array<u8, UInt<UInt<UInt<UInt<..., ...>, ...>, ...>, ...>>: LowerHex` is not satisfied[0m
+99:[1m[91merror[0m: could not compile `tt-application` (lib) due to 1 previous error
+100: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
+
+> tauritavern@2.2.0 test:rust /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> cargo test --manifest-path src-tauri/Cargo.toml --workspace --no-default-features
+
+[1m[92m   Compiling[0m tt-domain v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-domain)
+[1m[92m   Compiling[0m tauritavern v2.2.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern)
+[1m[92m   Compiling[0m tt-contracts v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-contracts)
+[1m[92m   Compiling[0m tt-ports v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-ports)
+[1m[92m   Compiling[0m tt-adapter-storage-core v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-core)
+[1m[92m   Compiling[0m tt-adapter-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-http)
+[1m[92m   Compiling[0m tt-application v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-application)
+[1m[92m   Compiling[0m tt-adapter-sync v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-sync)
+[1m[92m   Compiling[0m tt-adapter-tokenization v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-tokenization)
+[1m[92m   Compiling[0m tt-adapter-provider-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-provider-http)
+[1m[91merror[E0277][0m[1m: the trait bound `Array<u8, UInt<UInt<UInt<UInt<..., ...>, ...>, ...>, ...>>: LowerHex` is not satisfied[0m
+   [1m[94m--> [0mcrates/tt-adapter-storage-core/src/character_card_materialization_store.rs:183:29
+    [1m[94m|[0m
+[1m[94m183[0m [1m[94m|[0m         let hash = format!("{digest:x}");
+    [1m[94m|[0m                             [1m[91m^^^^^^^^^^[0m [1m[91mthe trait `LowerHex` is not implemented for `Array<u8, UInt<UInt<UInt<UInt<UInt<..., ...>, ...>, ...>, ...>, ...>>`[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: the following other types implement trait `LowerHex`:
+              &T
+              &mut T
+              Braced
+              Hyphenated
+              Saturating<T>
+              Simple
+              Urn
+              Uuid
+            and 29 others
+    [1m[94m= [0m[1mnote[0m: the full name for the type has been written to '/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/target/debug/deps/tt_adapter_storage_core-ae7297f54fad6e11.long-type-16609528680397757457.txt'
+    [1m[94m= [0m[1mnote[0m: consider using `--verbose` to print the full type name to the console
+
+[1m[91merror[E0277][0m[1m: the trait bound `Array<u8, UInt<UInt<UInt<UInt<..., ...>, ...>, ...>, ...>>: LowerHex` is not satisfied[0m
+   [1m[94m--> [0mcrates/tt-adapter-storage-core/src/character_card_materialization_store.rs:206:29
+    [1m[94m|[0m
+[1m[94m206[0m [1m[94m|[0m         let hash = format!("{digest:x}");
+    [1m[94m|[0m                             [1m[91m^^^^^^^^^^[0m [1m[91mthe trait `LowerHex` is not implemented for `Array<u8, UInt<UInt<UInt<UInt<UInt<..., ...>, ...>, ...>, ...>, ...>>`[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: the following other types implement trait `LowerHex`:
+              &T
+              &mut T
+              Braced
+              Hyphenated
+              Saturating<T>
+              Simple
+              Urn
+              Uuid
+            and 29 others
+    [1m[94m= [0m[1mnote[0m: the full name for the type has been written to '/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/target/debug/deps/tt_adapter_storage_core-ae7297f54fad6e11.long-type-16609528680397757457.txt'
+    [1m[94m= [0m[1mnote[0m: consider using `--verbose` to print the full type name to the console
+
+[1m[91merror[E0277][0m[1m: the trait bound `Array<u8, UInt<UInt<UInt<UInt<..., ...>, ...>, ...>, ...>>: LowerHex` is not satisfied[0m
+   [1m[94m--> [0mcrates/tt-adapter-storage-core/src/character_card_materialization_store.rs:272:36
+    [1m[94m|[0m
+[1m[94m272[0m [1m[94m|[0m         let hash = format!("{:x}", Sha256::digest(bytes));
+    [1m[94m|[0m                             [1m[94m----[0m   [1m[91m^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mthe trait `LowerHex` is not implemented for `Array<u8, UInt<UInt<UInt<UInt<UInt<..., ...>, ...>, ...>, ...>, ...>>`[0m
+    [1m[94m|[0m                             [1m[94m|[0m
+    [1m[94m|[0m                             [1m[94mrequired by this formatting parameter[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: the following other types implement trait `LowerHex`:
+              &T
+              &mut T
+              Braced
+              Hyphenated
+              Saturating<T>
+              Simple
+              Urn
+              Uuid
+            and 29 others
+    [1m[94m= [0m[1mnote[0m: the full name for the type has been written to '/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/target/debug/deps/tt_adapter_storage_core-ae7297f54fad6e11.long-type-16609528680397757457.txt'
+    [1m[94m= [0m[1mnote[0m: consider using `--verbose` to print the full type name to the console
+
+[1m[92m   Compiling[0m tt-adapter-archive v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-archive)
+[1mFor more information about this error, try `rustc --explain E0277`.[0m
+[1m[91merror[0m: could not compile `tt-adapter-storage-core` (lib) due to 3 previous errors
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+[1m[91merror[E0277][0m[1m: the trait bound `Array<u8, UInt<UInt<UInt<UInt<..., ...>, ...>, ...>, ...>>: LowerHex` is not satisfied[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_service.rs:171:24
+    [1m[94m|[0m
+[1m[94m171[0m [1m[94m|[0m     Ok(format!("{:x}", Sha256::digest(bytes)))
+    [1m[94m|[0m                 [1m[94m----[0m   [1m[91m^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mthe trait `LowerHex` is not implemented for `Array<u8, UInt<UInt<UInt<UInt<UInt<..., ...>, ...>, ...>, ...>, ...>>`[0m
+    [1m[94m|[0m                 [1m[94m|[0m
+    [1m[94m|[0m                 [1m[94mrequired by this formatting parameter[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: the following other types implement trait `LowerHex`:
+              &T
+              &mut T
+              Braced
+              BytesMut
+              Hyphenated
+              Saturating<T>
+              Simple
+              Urn
+            and 31 others
+    [1m[94m= [0m[1mnote[0m: the full name for the type has been written to '/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/target/debug/deps/tt_application-d86a7a0eb0c5bcdb.long-type-6949234232268911980.txt'
+    [1m[94m= [0m[1mnote[0m: consider using `--verbose` to print the full type name to the console
+
+[1m[91merror[0m: could not compile `tt-application` (lib) due to 1 previous error
+ ELIFECYCLE  Command failed with exit code 101.
