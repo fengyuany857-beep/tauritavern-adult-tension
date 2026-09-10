@@ -1,0 +1,48 @@
+diff --git a/src/scripts/tauri/setting/dev-logs.js b/src/scripts/tauri/setting/dev-logs.js
+--- a/src/scripts/tauri/setting/dev-logs.js
++++ b/src/scripts/tauri/setting/dev-logs.js
+@@ -28,7 +28,7 @@ function ensureDevLogsStyle() {
+ }
+ 
+ async function importDevLogsBundle() {
+-    return import(new URL('./dist/dev-logs.bundle.js', import.meta.url).href);
++    return import(/* webpackIgnore: true */ new URL('./dist/dev-logs.bundle.js', import.meta.url).href);
+ }
+ 
+ function createActions() {
+diff --git a/src/scripts/tauri/setting/setting-panel/settings-popup.js b/src/scripts/tauri/setting/setting-panel/settings-popup.js
+--- a/src/scripts/tauri/setting/setting-panel/settings-popup.js
++++ b/src/scripts/tauri/setting/setting-panel/settings-popup.js
+@@ -83,7 +83,7 @@ function ensureSettingsStyle() {
+ }
+ 
+ async function importSettingsBundle() {
+-    return import(new URL('../dist/settings.bundle.js', import.meta.url).href);
++    return import(/* webpackIgnore: true */ new URL('../dist/settings.bundle.js', import.meta.url).href);
+ }
+ 
+ function readThemeOptions() {
+diff --git a/src/scripts/tauri/setting/setting-panel/sync-listeners.js b/src/scripts/tauri/setting/setting-panel/sync-listeners.js
+--- a/src/scripts/tauri/setting/setting-panel/sync-listeners.js
++++ b/src/scripts/tauri/setting/setting-panel/sync-listeners.js
+@@ -28,7 +28,7 @@ function ensureSyncStyle() {
+ }
+ 
+ async function importSyncBundle() {
+-    return import(new URL('../dist/sync.bundle.js', import.meta.url).href);
++    return import(/* webpackIgnore: true */ new URL('../dist/sync.bundle.js', import.meta.url).href);
+ }
+ 
+ function getListen() {
+diff --git a/src/scripts/tauri/setting/setting-panel/sync-popup.js b/src/scripts/tauri/setting/setting-panel/sync-popup.js
+--- a/src/scripts/tauri/setting/setting-panel/sync-popup.js
++++ b/src/scripts/tauri/setting/setting-panel/sync-popup.js
+@@ -45,7 +45,7 @@ function ensureSyncStyle() {
+ }
+ 
+ async function importSyncBundle() {
+-    return import(new URL('../dist/sync.bundle.js', import.meta.url).href);
++    return import(/* webpackIgnore: true */ new URL('../dist/sync.bundle.js', import.meta.url).href);
+ }
+ 
+ function createPopupColumn() {
