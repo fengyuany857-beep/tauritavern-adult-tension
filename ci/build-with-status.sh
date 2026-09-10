@@ -142,12 +142,16 @@ run_stage "runtime-skills" "Runtime Skill packages" \
 run_stage "mobile-http" "iOS mobile HTTP compatibility" "./scripts/ci/configure-mobile-http.sh enable ios"
 run_stage "ios-arm64" "Unsigned iPhone arm64 build" \
   "TAURITAVERN_CONTROL_SHA=${GITHUB_SHA} TAURITAVERN_BUILD_RUN_ID=${GITHUB_RUN_ID} TAURITAVERN_BUILD_RUN_NUMBER=${GITHUB_RUN_NUMBER} TAURITAVERN_UPSTREAM_SHA=${UPSTREAM_SHA} TAURITAVERN_BUILD_BRANCH=adult-tension-native-v1.1 TAURITAVERN_BUILD_REVISION=${UPSTREAM_SHA}+adult-tension-native-v1.1 TAURITAVERN_IOS_POLICY_PROFILE=full ./scripts/ci/build-ios-unsigned.sh"
+run_stage "embed-runtime-skills" "Embed three Runtime Skills into iOS app bundle" \
+  "SOURCE_DIR='${SOURCE_DIR}' bash '${CONTROL_DIR}/ci/embed-runtime-skills-ios.sh'"
 run_stage "ipa-verify" "Unsigned IPA verification" \
   "./scripts/ci/verify-ios-unsigned.sh dist/ios-unsigned/TauriTavern-unsigned.ipa"
+run_stage "bundled-skills-verify" "Bundled Runtime Skills verification" \
+  "SOURCE_DIR='${SOURCE_DIR}' bash '${CONTROL_DIR}/ci/verify-bundled-runtime-skills-ios.sh' dist/ios-unsigned/TauriTavern-unsigned.ipa"
 
 release_tag="selfsign-ios-${GITHUB_RUN_NUMBER}-a${GITHUB_RUN_ATTEMPT}"
 release_url="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${release_tag}"
-run_stage "release" "Publish self-sign IPA and three-Skill release" \
+run_stage "release" "Publish self-sign IPA with embedded three-Skill bundle" \
   "gh release create '${release_tag}' \
     dist/ios-unsigned/TauriTavern-unsigned.ipa \
     dist/ios-unsigned/TauriTavern.app.zip \
@@ -161,9 +165,9 @@ run_stage "release" "Publish self-sign IPA and three-Skill release" \
     dist/runtime-skills/SKILL-SHA256SUMS.txt \
     --repo '${GITHUB_REPOSITORY}' \
     --title 'TauriTavern Adult Tension iOS Self-sign ${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}' \
-    --notes 'Unsigned iPhone arm64 build plus the matching three Adult Tension runtime Skills. Re-sign the IPA with your own iOS self-signing tool before installation.'"
+    --notes 'Unsigned iPhone arm64 build with the matching three Adult Tension Runtime Skills embedded inside TauriTavern.app/AdultTensionRuntimeSkills. Final IPA is re-opened and hash-verified after embedding. Runtime bootstrap/automatic Skill registration is not enabled yet. Re-sign the IPA with your own iOS self-signing tool before installation.'"
 
 printf '%s\n' "$release_url" > "$STATUS_DIR/latest-release.txt"
-publish_status "Complete: self-sign IPA + three Skills ready" "COMPLETE" 0 "$LOG_DIR/release.log"
+publish_status "Complete: self-sign IPA + embedded three Skills ready" "COMPLETE" 0 "$LOG_DIR/release.log"
 
 echo "SELF_SIGN_RELEASE=$release_url"
