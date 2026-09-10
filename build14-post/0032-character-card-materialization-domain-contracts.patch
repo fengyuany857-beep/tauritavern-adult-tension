@@ -1,0 +1,525 @@
+diff --git a/src-tauri/crates/tt-domain/src/models/mod.rs b/src-tauri/crates/tt-domain/src/models/mod.rs
+--- a/src-tauri/crates/tt-domain/src/models/mod.rs
++++ b/src-tauri/crates/tt-domain/src/models/mod.rs
+@@ -18,6 +18,7 @@ pub mod llm_connection;
+ pub mod preset;
+ pub mod quick_reply;
+ pub mod rp_architecture;
++pub mod character_card_materialization;
+ pub mod secret;
+ pub mod settings;
+ pub mod skill;
+diff --git a/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
+@@ -0,0 +1,486 @@
++use serde::{Deserialize, Serialize};
++use serde_json::Value;
++
++use super::rp_architecture::{BranchId, CharacterId, SessionId, WorldId};
++
++pub const CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION: u32 = 1;
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum CardMaterializationState {
++    NoCard,
++    DraftAvailable,
++    BoundCard,
++    CardMissing,
++    Detached,
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum BindingScopeKind {
++    SessionCharacter,
++    WorldCharacter,
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum BindingStatus {
++    Active,
++    CardMissing,
++    Detached,
++    TargetMissing,
++    Corrupted,
++    Archived,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardBindingTarget {
++    pub scope_kind: BindingScopeKind,
++    pub world_id: WorldId,
++    pub character_id: CharacterId,
++    pub source_session_id: Option<SessionId>,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardBindingContext {
++    pub session_id: SessionId,
++    pub branch_id: BranchId,
++    pub last_seen_profile_revision: Option<u64>,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardBinding {
++    pub schema_version: u32,
++    pub binding_id: String,
++    pub target: CharacterCardBindingTarget,
++    pub contexts: Vec<CharacterCardBindingContext>,
++    pub card_storage_identity: String,
++    pub card_revision: u64,
++    pub profile_revision_at_last_sync: Option<u64>,
++    pub generation: u64,
++    pub status: BindingStatus,
++    pub created_at: String,
++    pub updated_at: String,
++}
++
++impl CharacterCardBinding {
++    pub fn validate(&self) -> Result<(), String> {
++        if self.schema_version != CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION {
++            return Err("unsupported character card binding schema version".to_string());
++        }
++        if self.binding_id.trim().is_empty() {
++            return Err("bindingId must not be empty".to_string());
++        }
++        if self.target.character_id.0.trim().is_empty() {
++            return Err("characterId must not be empty".to_string());
++        }
++        if self.target.world_id.0.trim().is_empty() {
++            return Err("worldId must not be empty".to_string());
++        }
++        if self.generation == 0 {
++            return Err("binding generation must start at 1".to_string());
++        }
++        if !is_stable_storage_identity(&self.card_storage_identity) {
++            return Err("card storage identity must be stable and relative".to_string());
++        }
++        if self.target.scope_kind == BindingScopeKind::SessionCharacter
++            && self.target.source_session_id.is_none()
++        {
++            return Err("session character binding requires sourceSessionId provenance".to_string());
++        }
++        Ok(())
++    }
++}
++
++fn is_stable_storage_identity(value: &str) -> bool {
++    let value = value.trim();
++    if value.is_empty()
++        || value.starts_with('/')
++        || value.starts_with('\\')
++        || value.contains(":/")
++        || value.contains(":\\")
++    {
++        return false;
++    }
++    !value
++        .split(['/', '\\'])
++        .any(|segment| segment == ".." || segment.is_empty())
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum DraftState {
++    Generated,
++    UserEdited,
++    SourceAdvanced,
++    ReadyToMaterialize,
++    Archived,
++}
++
++#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardDraft {
++    pub draft_id: String,
++    pub character_id: CharacterId,
++    pub source_profile_revision: u64,
++    pub source_card_revision: Option<u64>,
++    pub draft_revision: u64,
++    pub generated_base_hash: String,
++    pub user_edited: bool,
++    pub state: DraftState,
++    pub definition: Value,
++    pub updated_at: String,
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum TransitionMode {
++    AutoAllowed,
++    UserConfirmRequired,
++    ManualOnly,
++    Disabled,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CastLifecyclePolicy {
++    pub schema_version: u32,
++    pub revision: u64,
++    pub auto_track: bool,
++    pub incidental_to_recurring: TransitionMode,
++    pub recurring_to_supporting: TransitionMode,
++    pub supporting_to_main: TransitionMode,
++    pub demotion_policy: TransitionMode,
++    pub candidate_cooldown_turns: u64,
++    pub reminder_policy: String,
++    pub evidence_policy: String,
++}
++
++impl Default for CastLifecyclePolicy {
++    fn default() -> Self {
++        Self {
++            schema_version: 1,
++            revision: 1,
++            auto_track: true,
++            incidental_to_recurring: TransitionMode::AutoAllowed,
++            recurring_to_supporting: TransitionMode::UserConfirmRequired,
++            supporting_to_main: TransitionMode::UserConfirmRequired,
++            demotion_policy: TransitionMode::ManualOnly,
++            candidate_cooldown_turns: 0,
++            reminder_policy: "new_evidence_only".to_string(),
++            evidence_policy: "accepted_committed_only".to_string(),
++        }
++    }
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
++pub enum ReturnRecognitionState {
++    KnownExactReturn,
++    KnownReturnBaseMissing,
++    StaleBindingGeneration,
++    UnverifiedReturnMetadata,
++    UnknownBinding,
++    MetadataStripped,
++    DuplicatedOrReplayedExport,
++    BindingTargetMissing,
++    CardTargetMissing,
++    FuturePromotionSchema,
++    ProtectedNamespaceViolation,
++    OrdinaryCharacterCard,
++    InvalidCard,
++    ReturnContentIdentityMismatchSuspected,
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
++pub enum FieldPresence {
++    Missing,
++    Empty,
++    Value,
++    UnsetIntent,
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
++pub enum MergeFieldState {
++    Unchanged,
++    LocalOnly,
++    ImportedOnly,
++    BothSame,
++    Conflict,
++    FieldMissingImported,
++    FieldMissingLocal,
++    UnsupportedChange,
++}
++
++#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct MergeFieldDecision {
++    pub field_path: String,
++    pub state: MergeFieldState,
++    pub base: Option<Value>,
++    pub local: Option<Value>,
++    pub imported: Option<Value>,
++    pub imported_presence: FieldPresence,
++    pub local_presence: FieldPresence,
++    pub resolution: Option<Value>,
++    pub requires_user_confirmation: bool,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct PortableReturnMetadata {
++    pub binding_id: String,
++    pub export_id: String,
++    pub binding_generation: u64,
++    pub base_card_revision: u64,
++    pub base_card_hash: String,
++    pub origin_proof: String,
++}
++
++impl PortableReturnMetadata {
++    pub fn validate_shape(&self) -> Result<(), String> {
++        if self.binding_id.trim().is_empty()
++            || self.export_id.trim().is_empty()
++            || self.base_card_hash.trim().is_empty()
++            || self.origin_proof.trim().is_empty()
++        {
++            return Err("return metadata contains an empty required value".to_string());
++        }
++        if self.binding_generation == 0 {
++            return Err("return metadata bindingGeneration must be non-zero".to_string());
++        }
++        Ok(())
++    }
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct ExportRecord {
++    pub schema_version: u32,
++    pub export_id: String,
++    pub binding_id: String,
++    pub binding_generation: u64,
++    pub base_card_revision: u64,
++    pub base_card_hash: String,
++    pub base_profile_revision: u64,
++    pub snapshot_ref: String,
++    pub exported_at: String,
++    pub format: String,
++    pub transaction_id: Option<String>,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct ReturnImportPlan {
++    pub plan_token: String,
++    pub target_binding_id: String,
++    pub expected_binding_generation: u64,
++    pub expected_card_revision: u64,
++    pub expected_card_hash: String,
++    pub expected_profile_revision: u64,
++    pub staged_import_hash: String,
++    pub base_snapshot_hash: Option<String>,
++    pub resolved_choices_hash: String,
++}
++
++impl ReturnImportPlan {
++    pub fn validate_shape(&self) -> Result<(), String> {
++        if self.plan_token.trim().is_empty()
++            || self.target_binding_id.trim().is_empty()
++            || self.expected_card_hash.trim().is_empty()
++            || self.staged_import_hash.trim().is_empty()
++            || self.resolved_choices_hash.trim().is_empty()
++        {
++            return Err("return import plan contains an empty CAS field".to_string());
++        }
++        if self.expected_binding_generation == 0 {
++            return Err("return import plan generation must be non-zero".to_string());
++        }
++        Ok(())
++    }
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
++pub enum CharacterCardTransactionState {
++    Prepared,
++    StagedInputVerified,
++    CardSnapshotSaved,
++    CardWritten,
++    BindingWritten,
++    RpProfileWritten,
++    IndexesInvalidated,
++    ReadbackVerified,
++    Committed,
++    RollingBack,
++    RolledBack,
++    RollbackFailed,
++}
++
++impl CharacterCardTransactionState {
++    pub fn is_terminal(self) -> bool {
++        matches!(
++            self,
++            Self::Committed | Self::RolledBack | Self::RollbackFailed
++        )
++    }
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardTransactionJournal {
++    pub schema_version: u32,
++    pub transaction_id: String,
++    pub plan_token: String,
++    pub binding_id: String,
++    pub state: CharacterCardTransactionState,
++    pub before_card_ref: Option<String>,
++    pub before_binding_ref: Option<String>,
++    pub before_profile_ref: Option<String>,
++    pub staged_import_ref: Option<String>,
++    pub created_at: String,
++    pub updated_at: String,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct UndoRecord {
++    pub transaction_id: String,
++    pub card_before_ref: String,
++    pub binding_before_ref: String,
++    pub profile_before_ref: Option<String>,
++    pub expected_after_card_hash: String,
++    pub expected_after_profile_hash: Option<String>,
++    pub created_at: String,
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
++pub enum RecallProjectionState {
++    Current,
++    Stale,
++    Diverged,
++    Error,
++    Absent,
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
++pub enum RecallProjectionScope {
++    World,
++    Session,
++    Branch,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct RecallProjectionRecord {
++    pub character_id: CharacterId,
++    pub scope: RecallProjectionScope,
++    pub source_revision: u64,
++    pub source_hash: String,
++    pub projection_revision: u64,
++    pub state: RecallProjectionState,
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn binding(scope_kind: BindingScopeKind) -> CharacterCardBinding {
++        CharacterCardBinding {
++            schema_version: CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
++            binding_id: "binding-random-1".to_string(),
++            target: CharacterCardBindingTarget {
++                scope_kind,
++                world_id: WorldId("world-a".to_string()),
++                character_id: CharacterId("character-stable-a".to_string()),
++                source_session_id: Some(SessionId("session-origin".to_string())),
++            },
++            contexts: vec![CharacterCardBindingContext {
++                session_id: SessionId("session-current".to_string()),
++                branch_id: BranchId("branch-a".to_string()),
++                last_seen_profile_revision: Some(9),
++            }],
++            card_storage_identity: "characters/lin-yue.png".to_string(),
++            card_revision: 7,
++            profile_revision_at_last_sync: Some(9),
++            generation: 3,
++            status: BindingStatus::Active,
++            created_at: "2026-09-11T00:00:00Z".to_string(),
++            updated_at: "2026-09-11T00:00:00Z".to_string(),
++        }
++    }
++
++    #[test]
++    fn binding_identity_is_character_not_branch() {
++        let mut value = binding(BindingScopeKind::SessionCharacter);
++        let identity_before = value.target.character_id.clone();
++        value.contexts[0].branch_id = BranchId("branch-b".to_string());
++        assert_eq!(value.target.character_id, identity_before);
++        assert!(value.validate().is_ok());
++    }
++
++    #[test]
++    fn canonized_binding_keeps_identity_and_binding_lineage() {
++        let mut value = binding(BindingScopeKind::SessionCharacter);
++        let character_id = value.target.character_id.clone();
++        let binding_id = value.binding_id.clone();
++        value.target.scope_kind = BindingScopeKind::WorldCharacter;
++        assert_eq!(value.target.character_id, character_id);
++        assert_eq!(value.binding_id, binding_id);
++        assert!(value.validate().is_ok());
++    }
++
++    #[test]
++    fn binding_rejects_absolute_ios_sandbox_path() {
++        let mut value = binding(BindingScopeKind::SessionCharacter);
++        value.card_storage_identity =
++            "/private/var/mobile/Containers/Data/Application/UUID/card.png".to_string();
++        assert!(value.validate().is_err());
++    }
++
++    #[test]
++    fn default_role_policy_matches_v13_confirmation_boundaries() {
++        let policy = CastLifecyclePolicy::default();
++        assert_eq!(policy.incidental_to_recurring, TransitionMode::AutoAllowed);
++        assert_eq!(
++            policy.recurring_to_supporting,
++            TransitionMode::UserConfirmRequired
++        );
++        assert_eq!(
++            policy.supporting_to_main,
++            TransitionMode::UserConfirmRequired
++        );
++        assert_eq!(policy.demotion_policy, TransitionMode::ManualOnly);
++    }
++
++    #[test]
++    fn portable_return_metadata_has_no_rp_address_fields() {
++        let metadata = PortableReturnMetadata {
++            binding_id: "binding-random-1".to_string(),
++            export_id: "export-random-1".to_string(),
++            binding_generation: 1,
++            base_card_revision: 7,
++            base_card_hash: "abc123".to_string(),
++            origin_proof: "proof".to_string(),
++        };
++        let json = serde_json::to_value(metadata).expect("metadata serializes");
++        assert!(json.get("characterId").is_none());
++        assert!(json.get("worldId").is_none());
++        assert!(json.get("sessionId").is_none());
++        assert!(json.get("branchId").is_none());
++    }
++
++    #[test]
++    fn transaction_terminal_states_are_explicit() {
++        assert!(CharacterCardTransactionState::Committed.is_terminal());
++        assert!(CharacterCardTransactionState::RolledBack.is_terminal());
++        assert!(CharacterCardTransactionState::RollbackFailed.is_terminal());
++        assert!(!CharacterCardTransactionState::CardWritten.is_terminal());
++    }
++
++    #[test]
++    fn missing_and_empty_are_not_collapsed() {
++        assert_ne!(FieldPresence::Missing, FieldPresence::Empty);
++        assert_ne!(FieldPresence::Missing, FieldPresence::UnsetIntent);
++    }
++
++    #[test]
++    fn return_plan_requires_generation_and_hashes() {
++        let plan = ReturnImportPlan {
++            plan_token: "plan-random".to_string(),
++            target_binding_id: "binding-random".to_string(),
++            expected_binding_generation: 4,
++            expected_card_revision: 8,
++            expected_card_hash: "cardhash".to_string(),
++            expected_profile_revision: 11,
++            staged_import_hash: "importhash".to_string(),
++            base_snapshot_hash: Some("basehash".to_string()),
++            resolved_choices_hash: "choiceshash".to_string(),
++        };
++        assert!(plan.validate_shape().is_ok());
++    }
++}
