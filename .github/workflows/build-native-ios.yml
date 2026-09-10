@@ -109,13 +109,13 @@ jobs:
           done
           for patch in ../control/agent-fix-post/*.patch; do
             echo "Applying Agent iOS runtime fix: $patch"
-            git apply --check "$patch"
-            git apply "$patch"
+            git apply --recount --check "$patch"
+            git apply --recount "$patch"
           done
           for patch in ../control/continuity-post/*.patch; do
             echo "Applying data continuity patch: $patch"
-            git apply --check "$patch"
-            git apply "$patch"
+            git apply --recount --check "$patch"
+            git apply --recount "$patch"
           done
           git diff --check
 
