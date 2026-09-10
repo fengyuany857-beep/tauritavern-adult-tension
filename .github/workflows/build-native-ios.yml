@@ -26,7 +26,6 @@ jobs:
       BUILD11_PATCH_SHA256: f32fced72ac46136d17ef0e4a916d0285bff178aaaccdd1e6ef17aa7e33f36c7
       TAURITAVERN_IOS_POLICY_PROFILE: full
       TAURITAVERN_DISTRIBUTION_FLAVOR: adult_tension_selfsign
-      TAURITAVERN_CI_STATUS_BRANCH: ci-status/ios-agent-continuity-20260910
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout build control repository
@@ -113,6 +112,11 @@ jobs:
             git apply --check "$patch"
             git apply "$patch"
           done
+          for patch in ../control/continuity-post/*.patch; do
+            echo "Applying data continuity patch: $patch"
+            git apply --check "$patch"
+            git apply "$patch"
+          done
           git diff --check
 
       - name: Install Rust toolchain
@@ -141,17 +145,6 @@ jobs:
       - name: Install dependencies
         working-directory: source
         run: pnpm install --frozen-lockfile
-
-      - name: Capture Agent System production bundle diagnostics
-        working-directory: source
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p ../ci-stage-logs
-          pnpm run web:build > ../ci-stage-logs/agent-bundle-diag.log 2>&1
-          node ../control/ci/agent-system-ios-bundle-diagnostic.mjs | tee -a ../ci-stage-logs/agent-bundle-diag.log
-          echo "[AGENT-IOS-DIAG] DIAGNOSTIC_GATE_INTENTIONAL_STOP" | tee -a ../ci-stage-logs/agent-bundle-diag.log
-          exit 86
 
       - name: Run quality gates, package Skills, build iPhone app, verify IPA, publish release
         shell: bash
