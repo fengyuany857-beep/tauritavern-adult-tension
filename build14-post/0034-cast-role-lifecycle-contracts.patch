@@ -1,0 +1,225 @@
+diff --git a/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
+--- a/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
++++ b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
+@@ -1,7 +1,9 @@
+ use serde::{Deserialize, Serialize};
+ use serde_json::Value;
+ 
+-use super::rp_architecture::{BranchId, CharacterId, SessionId, WorldId};
++use super::rp_architecture::{
++    BranchId, CharacterId, NarrativeRole, SessionId, WorldId,
++};
+@@ -170,6 +172,153 @@ impl Default for CastLifecyclePolicy {
+     }
+ }
+ 
++impl CastLifecyclePolicy {
++    /// Runtime transition policy only. Explicit user-direct role assignment is
++    /// handled separately and is intentionally not forced through this path.
++    pub fn runtime_transition_mode(
++        &self,
++        from: &NarrativeRole,
++        to: &NarrativeRole,
++    ) -> TransitionMode {
++        use NarrativeRole::{Incidental, Main, Recurring, Supporting};
++        match (from, to) {
++            (Incidental, Recurring) => self.incidental_to_recurring,
++            (Recurring, Supporting) => self.recurring_to_supporting,
++            (Supporting, Main) => self.supporting_to_main,
++            (left, right) if role_rank(right) < role_rank(left) => self.demotion_policy,
++            _ => TransitionMode::Disabled,
++        }
++    }
++}
++
++fn role_rank(role: &NarrativeRole) -> u8 {
++    match role {
++        NarrativeRole::Incidental => 0,
++        NarrativeRole::Recurring => 1,
++        NarrativeRole::Supporting => 2,
++        NarrativeRole::Main => 3,
++    }
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CastTrackingStats {
++    pub character_id: CharacterId,
++    pub first_seen_turn: u64,
++    pub last_seen_turn: u64,
++    pub appearance_count: u64,
++    pub distinct_scene_count: u64,
++    pub distinct_episode_count: u64,
++    pub direct_dialogue_count: u64,
++    pub player_interaction_count: u64,
++    pub relation_event_count: u64,
++    pub plot_dependency_count: u64,
++    pub autonomous_goal_count: u64,
++    pub unresolved_hook_count: u64,
++    pub profile_evidence_count: u64,
++    pub referenced_by_character_count: u64,
++    pub accepted_beat_count: u64,
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
++pub enum RoleTransitionCandidateState {
++    Pending,
++    Deferred,
++    Accepted,
++    Rejected,
++    Suppressed,
++    Stale,
++    Superseded,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct RoleTransitionCandidate {
++    pub candidate_id: String,
++    pub character_id: CharacterId,
++    pub branch_id: BranchId,
++    pub from_role: NarrativeRole,
++    pub to_role: NarrativeRole,
++    pub policy_revision: u64,
++    pub evidence_summary: Vec<String>,
++    /// [EXPORT-LOCAL-ONLY] Structured refs only, never full private chat text.
++    pub evidence_refs: Vec<String>,
++    pub created_at_turn: u64,
++    pub state: RoleTransitionCandidateState,
++    pub snooze_until: Option<u64>,
++    pub superseded_by: Option<String>,
++}
++
++impl RoleTransitionCandidate {
++    pub fn is_effective(&self) -> bool {
++        matches!(
++            self.state,
++            RoleTransitionCandidateState::Pending | RoleTransitionCandidateState::Deferred
++        )
++    }
++
++    pub fn mark_stale(&mut self) {
++        if self.is_effective() {
++            self.state = RoleTransitionCandidateState::Stale;
++        }
++    }
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum RoleTransitionDecisionKind {
++    Automatic,
++    UserConfirmed,
++    UserDirect,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct RoleTransitionRecord {
++    pub id: String,
++    pub character_id: CharacterId,
++    pub branch_id: BranchId,
++    pub from_role: NarrativeRole,
++    pub to_role: NarrativeRole,
++    pub decision_kind: RoleTransitionDecisionKind,
++    pub policy_revision: u64,
++    /// Human-readable compact explanation. Full user chat is forbidden here.
++    pub evidence_summary: Vec<String>,
++    pub created_at_turn: u64,
++    pub superseded: bool,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct RoleSuggestionControl {
++    pub character_id: CharacterId,
++    pub branch_id: BranchId,
++    pub locked_role: Option<NarrativeRole>,
++    pub suppressed_targets: Vec<NarrativeRole>,
++    pub snooze_until_turn: Option<u64>,
++}
++
++impl RoleSuggestionControl {
++    pub fn blocks_runtime_transition(&self, target: &NarrativeRole, turn: u64) -> bool {
++        self.locked_role.is_some()
++            || self.suppressed_targets.contains(target)
++            || self.snooze_until_turn.is_some_and(|until| turn < until)
++    }
++}
++
+ #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+ #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+ pub enum ReturnRecognitionState {
+@@ -479,6 +628,72 @@ mod tests {
+         assert!(plan.validate_shape().is_ok());
+     }
++
++    #[test]
++    fn runtime_policy_never_auto_promotes_supporting_or_main() {
++        let policy = CastLifecyclePolicy::default();
++        assert_eq!(
++            policy.runtime_transition_mode(&NarrativeRole::Incidental, &NarrativeRole::Recurring),
++            TransitionMode::AutoAllowed
++        );
++        assert_eq!(
++            policy.runtime_transition_mode(&NarrativeRole::Recurring, &NarrativeRole::Supporting),
++            TransitionMode::UserConfirmRequired
++        );
++        assert_eq!(
++            policy.runtime_transition_mode(&NarrativeRole::Supporting, &NarrativeRole::Main),
++            TransitionMode::UserConfirmRequired
++        );
++    }
++
++    #[test]
++    fn runtime_policy_does_not_treat_absence_as_role_demotion() {
++        let policy = CastLifecyclePolicy::default();
++        assert_eq!(
++            policy.runtime_transition_mode(&NarrativeRole::Main, &NarrativeRole::Supporting),
++            TransitionMode::ManualOnly
++        );
++    }
++
++    #[test]
++    fn non_adjacent_runtime_upgrade_is_disabled_but_user_direct_remains_separate() {
++        let policy = CastLifecyclePolicy::default();
++        assert_eq!(
++            policy.runtime_transition_mode(&NarrativeRole::Incidental, &NarrativeRole::Main),
++            TransitionMode::Disabled
++        );
++    }
++
++    #[test]
++    fn retraction_can_stale_pending_candidate_without_downgrading_role() {
++        let mut candidate = RoleTransitionCandidate {
++            candidate_id: "candidate-1".to_string(),
++            character_id: CharacterId("character-1".to_string()),
++            branch_id: BranchId("branch-a".to_string()),
++            from_role: NarrativeRole::Recurring,
++            to_role: NarrativeRole::Supporting,
++            policy_revision: 1,
++            evidence_summary: vec!["cross-scene recurrence".to_string()],
++            evidence_refs: vec!["event-1".to_string()],
++            created_at_turn: 10,
++            state: RoleTransitionCandidateState::Pending,
++            snooze_until: None,
++            superseded_by: None,
++        };
++        candidate.mark_stale();
++        assert_eq!(candidate.state, RoleTransitionCandidateState::Stale);
++        assert_eq!(candidate.from_role, NarrativeRole::Recurring);
++    }
++
++    #[test]
++    fn role_lock_and_suppression_block_runtime_suggestions() {
++        let control = RoleSuggestionControl {
++            character_id: CharacterId("character-1".to_string()),
++            branch_id: BranchId("branch-a".to_string()),
++            locked_role: Some(NarrativeRole::Recurring),
++            suppressed_targets: Vec::new(),
++            snooze_until_turn: None,
++        };
++        assert!(control.blocks_runtime_transition(&NarrativeRole::Supporting, 50));
++    }
+ }
