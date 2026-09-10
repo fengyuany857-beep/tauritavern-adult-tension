@@ -1,0 +1,663 @@
+diff --git a/src-tauri/crates/tt-application/src/services/mod.rs b/src-tauri/crates/tt-application/src/services/mod.rs
+--- a/src-tauri/crates/tt-application/src/services/mod.rs
++++ b/src-tauri/crates/tt-application/src/services/mod.rs
+@@ -17,6 +17,7 @@ pub mod background_service;
+ pub mod bundled_template_service;
++pub mod character_card_materialization_service;
+ pub mod character_service;
+ pub mod chat_completion_service;
+ mod chat_file_validation;
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
+@@ -0,0 +1,469 @@
++use serde::Serialize;
++use serde_json::{Map, Value, json};
++use sha2::{Digest, Sha256};
++use tt_domain::models::character_card_materialization::{
++    FieldPresence, MergeFieldDecision, MergeFieldState, PortableReturnMetadata,
++};
++
++const RETURN_PROOF_DOMAIN: &[u8] = b"tauritavern.character-card-return.v1\0";
++const CARD_LINK_SCHEMA_VERSION: u64 = 1;
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct ExportAnnotations {
++    pub draft_mode: String,
++    pub contains_runtime_state: bool,
++    pub contains_chat_transcript: bool,
++    pub contains_internal_rp_identity: bool,
++    pub contains_user_private_messages: bool,
++}
++
++impl Default for ExportAnnotations {
++    fn default() -> Self {
++        Self {
++            draft_mode: "conservative".to_string(),
++            contains_runtime_state: false,
++            contains_chat_transcript: false,
++            contains_internal_rp_identity: false,
++            contains_user_private_messages: false,
++        }
++    }
++}
++
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub enum PortableSecurityViolation {
++    ProtectedNamespace(String),
++    InternalId(String),
++    AbsolutePath(String),
++    Secret(String),
++    RuntimeState(String),
++    RawHistory(String),
++}
++
++/// [EXPORT-NEVER] Convert a stored/raw card into a portable definition before
++/// Return Metadata is added. Local orchestration and RP authority fields are
++/// removed here, then a separate fail-closed scanner verifies no forbidden
++/// material survived.
++pub fn portable_definition_projection(mut card: Value) -> Value {
++    for key in ["chat", "create_date", "date_added", "fav"] {
++        remove_object_key(&mut card, key);
++    }
++
++    if let Some(data) = card.get_mut("data") {
++        for key in ["chat", "create_date", "date_added", "fav"] {
++            remove_object_key(data, key);
++        }
++        if let Some(extensions) = data.get_mut("extensions").and_then(Value::as_object_mut) {
++            // The local primary World/Lorebook binding is not the embedded
++            // Character Book and must not become portable authority.
++            extensions.remove("world");
++            extensions.remove("fav");
++            // TauriTavern internal namespace is rebuilt from an explicit
++            // portable whitelist after the definition has been sanitized.
++            extensions.remove("tauritavern");
++        }
++    }
++
++    strip_known_internal_keys(&mut card);
++    card
++}
++
++fn strip_known_internal_keys(value: &mut Value) {
++    match value {
++        Value::Array(items) => {
++            for item in items {
++                strip_known_internal_keys(item);
++            }
++        }
++        Value::Object(object) => {
++            for key in [
++                "character_id",
++                "characterId",
++                "worldId",
++                "sessionId",
++                "branchId",
++                "runId",
++                "workspaceId",
++                "toolCallId",
++                "installationId",
++                "control_owner",
++                "controlOwner",
++                "controlPolicy",
++                "safetyState",
++            ] {
++                object.remove(key);
++            }
++            for child in object.values_mut() {
++                strip_known_internal_keys(child);
++            }
++        }
++        _ => {}
++    }
++}
++
++fn remove_object_key(value: &mut Value, key: &str) {
++    if let Some(object) = value.as_object_mut() {
++        object.remove(key);
++    }
++}
++
++/// Add only the v1 portable return-link whitelist. Proof validity never grants
++/// authority and never skips Diff/Preview/user confirmation.
++pub fn attach_portable_return_metadata(
++    card: &mut Value,
++    metadata: &PortableReturnMetadata,
++    annotations: &ExportAnnotations,
++) -> Result<(), String> {
++    metadata.validate_shape()?;
++    let root = card
++        .as_object_mut()
++        .ok_or_else(|| "character card root must be an object".to_string())?;
++    let data = ensure_object(root, "data")?;
++    let extensions = ensure_object(data, "extensions")?;
++    let metadata_value = serde_json::to_value(metadata)
++        .map_err(|error| format!("failed to serialize return metadata: {error}"))?;
++    let annotations_value = serde_json::to_value(annotations)
++        .map_err(|error| format!("failed to serialize export annotations: {error}"))?;
++    extensions.insert(
++        "tauritavern".to_string(),
++        json!({
++            "characterCardLink": {
++                "schemaVersion": CARD_LINK_SCHEMA_VERSION,
++                "returnMetadata": metadata_value,
++                "exportAnnotations": annotations_value,
++            }
++        }),
++    );
++    Ok(())
++}
++
++fn ensure_object<'a>(
++    parent: &'a mut Map<String, Value>,
++    key: &str,
++) -> Result<&'a mut Map<String, Value>, String> {
++    if !parent.contains_key(key) {
++        parent.insert(key.to_string(), Value::Object(Map::new()));
++    }
++    parent
++        .get_mut(key)
++        .and_then(Value::as_object_mut)
++        .ok_or_else(|| format!("character card {key} must be an object"))
++}
++
++/// Canonical definition bytes used for BASE snapshots and baseCardHash.
++/// Formatting, object insertion order and portable Return Metadata do not
++/// influence the digest. Array order remains semantic.
++pub fn canonical_definition_bytes(card: &Value) -> Result<Vec<u8>, String> {
++    let mut value = card.clone();
++    remove_return_metadata_for_hash(&mut value);
++    let mut output = Vec::new();
++    write_canonical_json(&value, &mut output)?;
++    Ok(output)
++}
++
++pub fn canonical_definition_hash(card: &Value) -> Result<String, String> {
++    let bytes = canonical_definition_bytes(card)?;
++    Ok(format!("{:x}", Sha256::digest(bytes)))
++}
++
++fn remove_return_metadata_for_hash(card: &mut Value) {
++    let Some(data) = card.get_mut("data").and_then(Value::as_object_mut) else {
++        return;
++    };
++    let Some(extensions) = data.get_mut("extensions").and_then(Value::as_object_mut) else {
++        return;
++    };
++    let remove_namespace = if let Some(tauri) = extensions.get_mut("tauritavern") {
++        if let Some(tauri_object) = tauri.as_object_mut() {
++            tauri_object.remove("characterCardLink");
++            tauri_object.is_empty()
++        } else {
++            false
++        }
++    } else {
++        false
++    };
++    if remove_namespace {
++        extensions.remove("tauritavern");
++    }
++}
++
++fn write_canonical_json(value: &Value, output: &mut Vec<u8>) -> Result<(), String> {
++    match value {
++        Value::Null => output.extend_from_slice(b"null"),
++        Value::Bool(true) => output.extend_from_slice(b"true"),
++        Value::Bool(false) => output.extend_from_slice(b"false"),
++        Value::Number(number) => output.extend_from_slice(number.to_string().as_bytes()),
++        Value::String(string) => output.extend_from_slice(
++            serde_json::to_string(string)
++                .map_err(|error| format!("failed to canonicalize JSON string: {error}"))?
++                .as_bytes(),
++        ),
++        Value::Array(items) => {
++            output.push(b'[');
++            for (index, item) in items.iter().enumerate() {
++                if index != 0 {
++                    output.push(b',');
++                }
++                write_canonical_json(item, output)?;
++            }
++            output.push(b']');
++        }
++        Value::Object(object) => {
++            output.push(b'{');
++            let mut keys = object.keys().collect::<Vec<_>>();
++            keys.sort_unstable();
++            for (index, key) in keys.into_iter().enumerate() {
++                if index != 0 {
++                    output.push(b',');
++                }
++                output.extend_from_slice(
++                    serde_json::to_string(key)
++                        .map_err(|error| format!("failed to canonicalize JSON key: {error}"))?
++                        .as_bytes(),
++                );
++                output.push(b':');
++                write_canonical_json(&object[key], output)?;
++            }
++            output.push(b'}');
++        }
++    }
++    Ok(())
++}
++
++/// originProof authenticates only the exported return locator/base tuple. It
++/// intentionally does not authenticate the card's current editable body.
++pub fn compute_origin_proof(secret: &[u8], metadata: &PortableReturnMetadata) -> String {
++    let mut message = Vec::from(RETURN_PROOF_DOMAIN);
++    append_proof_component(&mut message, metadata.binding_id.as_bytes());
++    append_proof_component(&mut message, metadata.export_id.as_bytes());
++    append_proof_component(
++        &mut message,
++        metadata.binding_generation.to_string().as_bytes(),
++    );
++    append_proof_component(
++        &mut message,
++        metadata.base_card_revision.to_string().as_bytes(),
++    );
++    append_proof_component(&mut message, metadata.base_card_hash.as_bytes());
++    hex_lower(&hmac_sha256(secret, &message))
++}
++
++pub fn verify_origin_proof(secret: &[u8], metadata: &PortableReturnMetadata) -> bool {
++    let expected = compute_origin_proof(secret, metadata);
++    constant_time_eq(expected.as_bytes(), metadata.origin_proof.as_bytes())
++}
++
++fn append_proof_component(output: &mut Vec<u8>, value: &[u8]) {
++    output.extend_from_slice(&(value.len() as u64).to_be_bytes());
++    output.extend_from_slice(value);
++}
++
++fn hmac_sha256(secret: &[u8], message: &[u8]) -> [u8; 32] {
++    const BLOCK: usize = 64;
++    let mut key = [0u8; BLOCK];
++    if secret.len() > BLOCK {
++        key[..32].copy_from_slice(&Sha256::digest(secret));
++    } else {
++        key[..secret.len()].copy_from_slice(secret);
++    }
++    let mut inner_pad = [0x36u8; BLOCK];
++    let mut outer_pad = [0x5cu8; BLOCK];
++    for index in 0..BLOCK {
++        inner_pad[index] ^= key[index];
++        outer_pad[index] ^= key[index];
++    }
++    let mut inner = Sha256::new();
++    inner.update(inner_pad);
++    inner.update(message);
++    let inner_digest = inner.finalize();
++    let mut outer = Sha256::new();
++    outer.update(outer_pad);
++    outer.update(inner_digest);
++    outer.finalize().into()
++}
++
++fn hex_lower(bytes: &[u8]) -> String {
++    let mut output = String::with_capacity(bytes.len() * 2);
++    for byte in bytes {
++        use std::fmt::Write as _;
++        let _ = write!(&mut output, "{byte:02x}");
++    }
++    output
++}
++
++fn constant_time_eq(left: &[u8], right: &[u8]) -> bool {
++    if left.len() != right.len() {
++        return false;
++    }
++    let mut difference = 0u8;
++    for (left, right) in left.iter().zip(right) {
++        difference |= left ^ right;
++    }
++    difference == 0
++}
++
++pub fn scan_portable_card(card: &Value) -> Result<(), PortableSecurityViolation> {
++    scan_value(card, &mut Vec::new())
++}
++
++fn scan_value(
++    value: &Value,
++    path: &mut Vec<String>,
++) -> Result<(), PortableSecurityViolation> {
++    match value {
++        Value::String(text) => scan_text(text, path),
++        Value::Array(items) => {
++            for (index, item) in items.iter().enumerate() {
++                path.push(index.to_string());
++                scan_value(item, path)?;
++                path.pop();
++            }
++            Ok(())
++        }
++        Value::Object(object) => {
++            for (key, child) in object {
++                path.push(key.clone());
++                scan_key(key, path)?;
++                if key == "tauritavern" && path_ends_with(path, &["data", "extensions", "tauritavern"])
++                {
++                    validate_tauritavern_namespace(child, path)?;
++                } else {
++                    scan_value(child, path)?;
++                }
++                path.pop();
++            }
++            Ok(())
++        }
++        _ => Ok(()),
++    }
++}
++
++fn scan_key(key: &str, path: &[String]) -> Result<(), PortableSecurityViolation> {
++    let normalized = key.to_ascii_lowercase();
++    let location = path.join(".");
++    if matches!(
++        normalized.as_str(),
++        "character_id" | "characterid" | "worldid" | "sessionid" | "branchid"
++            | "runid" | "workspaceid" | "toolcallid" | "installationid"
++    ) {
++        return Err(PortableSecurityViolation::InternalId(location));
++    }
++    if matches!(
++        normalized.as_str(),
++        "apikey" | "api_key" | "authorization" | "bearer" | "cookie" | "password"
++    ) {
++        return Err(PortableSecurityViolation::Secret(location));
++    }
++    if matches!(
++        normalized.as_str(),
++        "control_owner" | "controlowner" | "controlpolicy" | "safetystate" | "grants" | "boundaries"
++    ) {
++        return Err(PortableSecurityViolation::RuntimeState(location));
++    }
++    Ok(())
++}
++
++fn scan_text(text: &str, path: &[String]) -> Result<(), PortableSecurityViolation> {
++    let lower = text.to_ascii_lowercase();
++    if text.starts_with("/private/var/mobile/")
++        || text.contains("/Containers/Data/Application/")
++        || text.contains("\\AppData\\")
++        || looks_like_windows_absolute_path(text)
++    {
++        return Err(PortableSecurityViolation::AbsolutePath(path.join(".")));
++    }
++    if lower.starts_with("bearer ")
++        || lower.contains("authorization: bearer ")
++        || lower.contains("api_key=")
++        || lower.contains("apikey=")
++    {
++        return Err(PortableSecurityViolation::Secret(path.join(".")));
++    }
++    Ok(())
++}
++
++fn looks_like_windows_absolute_path(text: &str) -> bool {
++    let bytes = text.as_bytes();
++    bytes.len() >= 3
++        && bytes[0].is_ascii_alphabetic()
++        && bytes[1] == b':'
++        && matches!(bytes[2], b'\\' | b'/')
++}
++
++fn validate_tauritavern_namespace(
++    value: &Value,
++    path: &mut Vec<String>,
++) -> Result<(), PortableSecurityViolation> {
++    let Some(namespace) = value.as_object() else {
++        return Err(PortableSecurityViolation::ProtectedNamespace(path.join(".")));
++    };
++    if namespace.keys().any(|key| key != "characterCardLink") {
++        return Err(PortableSecurityViolation::ProtectedNamespace(path.join(".")));
++    }
++    let Some(link) = namespace.get("characterCardLink").and_then(Value::as_object) else {
++        return Err(PortableSecurityViolation::ProtectedNamespace(path.join(".")));
++    };
++    if link.keys().any(|key| {
++        !matches!(
++            key.as_str(),
++            "schemaVersion" | "returnMetadata" | "exportAnnotations"
++        )
++    }) {
++        return Err(PortableSecurityViolation::ProtectedNamespace(path.join(".")));
++    }
++    if link.get("schemaVersion").and_then(Value::as_u64) != Some(CARD_LINK_SCHEMA_VERSION) {
++        return Err(PortableSecurityViolation::ProtectedNamespace(path.join(".")));
++    }
++    for key in ["returnMetadata", "exportAnnotations"] {
++        if let Some(child) = link.get(key) {
++            path.push("characterCardLink".to_string());
++            path.push(key.to_string());
++            scan_value(child, path)?;
++            path.pop();
++            path.pop();
++        }
++    }
++    Ok(())
++}
++
++fn path_ends_with(path: &[String], suffix: &[&str]) -> bool {
++    path.len() >= suffix.len()
++        && path[path.len() - suffix.len()..]
++            .iter()
++            .map(String::as_str)
++            .eq(suffix.iter().copied())
++}
++
++pub fn classify_three_way_field(
++    field_path: impl Into<String>,
++    base: Option<&Value>,
++    local: Option<&Value>,
++    imported: Option<&Value>,
++) -> MergeFieldDecision {
++    let imported_presence = field_presence(imported);
++    let local_presence = field_presence(local);
++    let state = match (base, local, imported) {
++        (None, None, None) => MergeFieldState::Unchanged,
++        (None, Some(_), None) => MergeFieldState::LocalOnly,
++        (None, None, Some(_)) => MergeFieldState::ImportedOnly,
++        (None, Some(local), Some(imported)) if local == imported => MergeFieldState::BothSame,
++        (None, Some(_), Some(_)) => MergeFieldState::Conflict,
++        (Some(_), Some(_), None) => MergeFieldState::FieldMissingImported,
++        (Some(_), None, Some(_)) => MergeFieldState::FieldMissingLocal,
++        (Some(base), Some(local), Some(imported)) if local == base && imported == base => {
++            MergeFieldState::Unchanged
++        }
++        (Some(base), Some(local), Some(imported)) if local != base && imported == base => {
++            MergeFieldState::LocalOnly
++        }
++        (Some(base), Some(local), Some(imported)) if local == base && imported != base => {
++            MergeFieldState::ImportedOnly
++        }
++        (Some(_), Some(local), Some(imported)) if local == imported => MergeFieldState::BothSame,
++        (Some(_), Some(_), Some(_)) => MergeFieldState::Conflict,
++        (Some(_), None, None) => MergeFieldState::FieldMissingImported,
++    };
++    let requires_user_confirmation = matches!(
++        state,
++        MergeFieldState::Conflict
++            | MergeFieldState::FieldMissingImported
++            | MergeFieldState::FieldMissingLocal
++            | MergeFieldState::UnsupportedChange
++    );
++    let resolution = match state {
++        MergeFieldState::Unchanged | MergeFieldState::LocalOnly => local.cloned(),
++        MergeFieldState::ImportedOnly | MergeFieldState::BothSame => imported.cloned(),
++        _ => None,
++    };
++    MergeFieldDecision {
++        field_path: field_path.into(),
++        state,
++        base: base.cloned(),
++        local: local.cloned(),
++        imported: imported.cloned(),
++        imported_presence,
++        local_presence,
++        resolution,
++        requires_user_confirmation,
++    }
++}
++
++fn field_presence(value: Option<&Value>) -> FieldPresence {
++    match value {
++        None => FieldPresence::Missing,
++        Some(Value::String(value)) if value.is_empty() => FieldPresence::Empty,
++        Some(Value::Array(value)) if value.is_empty() => FieldPresence::Empty,
++        Some(Value::Object(value)) if value.is_empty() => FieldPresence::Empty,
++        Some(_) => FieldPresence::Value,
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn metadata() -> PortableReturnMetadata {
++        PortableReturnMetadata {
++            binding_id: "binding-abc".to_string(),
++            export_id: "export-abc".to_string(),
++            binding_generation: 3,
++            base_card_revision: 7,
++            base_card_hash: "abc123".to_string(),
++            origin_proof: String::new(),
++        }
++    }
++
++    #[test]
++    fn semantic_object_key_order_has_same_hash() {
++        let left = json!({"data":{"name":"Lin","tags":["a","b"]},"spec":"chara_card_v2"});
++        let right: Value = serde_json::from_str(
++            r#"{"spec":"chara_card_v2","data":{"tags":["a","b"],"name":"Lin"}}"#,
++        )
++        .expect("valid json");
++        assert_eq!(
++            canonical_definition_hash(&left).unwrap(),
++            canonical_definition_hash(&right).unwrap()
++        );
++    }
++
++    #[test]
++    fn return_metadata_does_not_change_base_hash() {
++        let clean = json!({"data":{"name":"Lin","extensions":{}}});
++        let mut exported = clean.clone();
++        let mut link = metadata();
++        link.origin_proof = "proof".to_string();
++        attach_portable_return_metadata(&mut exported, &link, &ExportAnnotations::default()).unwrap();
++        assert_eq!(
++            canonical_definition_hash(&clean).unwrap(),
++            canonical_definition_hash(&exported).unwrap()
++        );
++    }
++
++    #[test]
++    fn origin_proof_detects_mutated_locator_tuple() {
++        let secret = b"local-installation-secret-for-test";
++        let mut value = metadata();
++        value.origin_proof = compute_origin_proof(secret, &value);
++        assert!(verify_origin_proof(secret, &value));
++        value.binding_generation += 1;
++        assert!(!verify_origin_proof(secret, &value));
++    }
++
++    #[test]
++    fn origin_proof_does_not_cover_editable_card_body() {
++        let secret = b"local-installation-secret-for-test";
++        let mut value = metadata();
++        value.origin_proof = compute_origin_proof(secret, &value);
++        let mut card = json!({"data":{"name":"Original"}});
++        attach_portable_return_metadata(&mut card, &value, &ExportAnnotations::default()).unwrap();
++        card["data"]["name"] = json!("Edited externally");
++        assert!(verify_origin_proof(secret, &value));
++    }
++
++    #[test]
++    fn portable_projection_strips_internal_identity_and_local_state() {
++        let card = json!({
++            "chat":"chat-file",
++            "characterId":"internal-character",
++            "data":{
++                "name":"Lin",
++                "extensions":{
++                    "world":"local-world-binding",
++                    "fav":true,
++                    "third.party":{"safe":"kept"},
++                    "tauritavern":{"private":"removed"}
++                }
++            }
++        });
++        let projected = portable_definition_projection(card);
++        assert!(projected.get("chat").is_none());
++        assert!(projected.get("characterId").is_none());
++        assert!(projected["data"]["extensions"].get("world").is_none());
++        assert_eq!(projected["data"]["extensions"]["third.party"]["safe"], "kept");
++    }
++
++    #[test]
++    fn scanner_blocks_ios_path_and_secret() {
++        assert!(matches!(
++            scan_portable_card(&json!({"data":{"notes":"/private/var/mobile/Containers/Data/Application/UUID/x"}})),
++            Err(PortableSecurityViolation::AbsolutePath(_))
++        ));
++        assert!(matches!(
++            scan_portable_card(&json!({"data":{"notes":"Authorization: Bearer token"}})),
++            Err(PortableSecurityViolation::Secret(_))
++        ));
++    }
++
++    #[test]
++    fn scanner_allows_only_portable_tauritavern_namespace() {
++        let mut card = json!({"data":{"name":"Lin","extensions":{}}});
++        let mut link = metadata();
++        link.origin_proof = "proof".to_string();
++        attach_portable_return_metadata(&mut card, &link, &ExportAnnotations::default()).unwrap();
++        assert!(scan_portable_card(&card).is_ok());
++        card["data"]["extensions"]["tauritavern"]["control_owner"] = json!("ai");
++        assert!(matches!(
++            scan_portable_card(&card),
++            Err(PortableSecurityViolation::ProtectedNamespace(_))
++        ));
++    }
++
++    #[test]
++    fn three_way_merge_handles_imported_only_local_only_and_conflict() {
++        let base = json!("base");
++        let local = json!("local");
++        let imported = json!("imported");
++        assert_eq!(
++            classify_three_way_field("personality", Some(&base), Some(&base), Some(&imported)).state,
++            MergeFieldState::ImportedOnly
++        );
++        assert_eq!(
++            classify_three_way_field("personality", Some(&base), Some(&local), Some(&base)).state,
++            MergeFieldState::LocalOnly
++        );
++        assert_eq!(
++            classify_three_way_field("personality", Some(&base), Some(&local), Some(&imported)).state,
++            MergeFieldState::Conflict
++        );
++    }
++
++    #[test]
++    fn imported_missing_never_silently_deletes_local() {
++        let base = json!("base");
++        let local = json!("local");
++        let decision = classify_three_way_field("description", Some(&base), Some(&local), None);
++        assert_eq!(decision.state, MergeFieldState::FieldMissingImported);
++        assert!(decision.requires_user_confirmation);
++        assert!(decision.resolution.is_none());
++    }
++
++    #[test]
++    fn empty_and_missing_remain_distinct() {
++        let empty = json!("");
++        let decision = classify_three_way_field("scenario", None, None, Some(&empty));
++        assert_eq!(decision.imported_presence, FieldPresence::Empty);
++        let missing = classify_three_way_field("scenario", None, None, None);
++        assert_eq!(missing.imported_presence, FieldPresence::Missing);
++    }
++}
