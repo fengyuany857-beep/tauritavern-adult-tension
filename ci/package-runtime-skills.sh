@@ -8,17 +8,14 @@ ADULT_TENSION_SOURCE_DIR="${ADULT_TENSION_SOURCE_DIR:-$WORKSPACE_ROOT/adult-tens
 OUT_DIR="${SKILL_OUT_DIR:-$SOURCE_DIR/dist/runtime-skills}"
 CONTINUITY_SHA256="4fbead4ed0deaa157f498a32ae6ee7ba077eaee0f046a1b71eb194c31a3d9201"
 CONTINUITY_NAME="adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip"
+CONTINUITY_SOURCE="$CONTROL_DIR/vendor/continuity/$CONTINUITY_NAME"
 
 rm -rf "$OUT_DIR" /tmp/adult-tension-package /tmp/adapter-package
 mkdir -p "$OUT_DIR" /tmp/adult-tension-package /tmp/adapter-package
 
-parts=("$CONTROL_DIR"/continuity64/p*.txt)
-if [[ ${#parts[@]} -lt 2 || ! -f "${parts[0]}" ]]; then
-  echo "continuity source chunks are missing" >&2
-  exit 1
-fi
-cat "${parts[@]}" | tr -d '\r\n' | base64 --decode > "$OUT_DIR/$CONTINUITY_NAME"
-printf '%s  %s\n' "$CONTINUITY_SHA256" "$OUT_DIR/$CONTINUITY_NAME" | sha256sum -c -
+test -f "$CONTINUITY_SOURCE"
+printf '%s  %s\n' "$CONTINUITY_SHA256" "$CONTINUITY_SOURCE" | sha256sum -c -
+cp "$CONTINUITY_SOURCE" "$OUT_DIR/$CONTINUITY_NAME"
 unzip -t "$OUT_DIR/$CONTINUITY_NAME" >/dev/null
 unzip -p "$OUT_DIR/$CONTINUITY_NAME" SKILL.md | grep -q '^name: adult-tension-continuity$'
 
@@ -53,6 +50,8 @@ data = {
         "revision": "cbfdc623fccc91247cbb37783757fc157406c2a5"
     },
     "continuitySource": {
+        "type": "vendored-binary",
+        "path": "vendor/continuity/adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip",
         "package": "adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip",
         "sha256": continuity_sha
     },
