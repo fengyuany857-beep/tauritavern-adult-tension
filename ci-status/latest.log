@@ -1,3 +1,29 @@
 # Diagnostic matches
+9:[rspack-cli] [31m[Error:   [31m×[0m Module not found: Can't resolve './dist/dev-logs.bundle.js' in '/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src/scripts/tauri/setting'
+19:  code: 'GenericFailure'
+21: ELIFECYCLE  Command failed with exit code 2.
+22: ELIFECYCLE  Command failed with exit code 2.
 
 # Tail
+
+> tauritavern@2.2.0 test:contracts /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> pnpm run web:build && node --test --test-concurrency=1 "tests/**/*.test.mjs"
+
+
+> tauritavern@2.2.0 web:build /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> rspack build --config rspack.config.js
+
+[rspack-cli] [31m[Error:   [31m×[0m Module not found: Can't resolve './dist/dev-logs.bundle.js' in '/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src/scripts/tauri/setting'
+    ╭─[31:44]
+ [2m29[0m │ 
+ [2m30[0m │ async function importDevLogsBundle() {
+ [2m31[0m │     return import(/* webpackIgnore: true */ new URL('./dist/dev-logs.bundle.js', import.meta.url).href);
+    · [35;1m                                            ─────────────────────────────────────────────────────[0m
+ [2m32[0m │ }
+ [2m33[0m │ 
+    ╰────
+] {
+  code: 'GenericFailure'
+}[39m
+ ELIFECYCLE  Command failed with exit code 2.
+ ELIFECYCLE  Command failed with exit code 2.
