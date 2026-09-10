@@ -7,7 +7,7 @@ diff --git a/src/scripts/extensions/agent-system/src/adult-tension-readiness.js 
  import { loadSettings, patchSettings } from './settings-store.js';
  import { requireAgentApi, requireSkillApi, requireSillyTavernContext } from './host-api.js';
  
-@@ -96,7 +95,7 @@ export async function checkAdultTensionReadiness() {
+@@ -96,6 +95,6 @@ export async function checkAdultTensionReadiness() {
      const maxContext = Number(chatSettings.openai_max_context || 0);
      const responseLength = Number(chatSettings.openai_max_tokens || 0);
 -    const model = context.mainApi === 'openai' ? String(getChatCompletionModel(chatSettings) || '').trim() : '';
