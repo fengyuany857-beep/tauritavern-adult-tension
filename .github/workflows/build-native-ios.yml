@@ -100,11 +100,26 @@ jobs:
             normalized="$(mktemp)"
             sed 's/^ diff --git /diff --git /' "$patch" > "$normalized"
             if [[ "$(basename "$patch")" == "0036-character-card-staging-origin-secret.patch" ]]; then
+              target="src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs"
               echo "--- 0036 target preimage (lines 12-65) ---"
-              nl -ba src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs | sed -n '12,65p'
-              echo "--- 0036 patch head ---"
-              sed -n '1,40p' "$normalized"
-              git apply --recount --verbose --check "$normalized"
+              nl -ba "$target" | sed -n '12,65p'
+              echo "--- 0036 byte diagnostics ---"
+              TARGET="$target" PATCH="$normalized" python3 - <<'PY'
+          import os
+          from pathlib import Path
+          target = Path(os.environ['TARGET']).read_bytes().splitlines(keepends=True)
+          patch = Path(os.environ['PATCH']).read_bytes().splitlines(keepends=True)
+          for n in (19, 20, 21):
+              print(f'target[{n}] repr={target[n-1]!r} hex={target[n-1].hex()}')
+          for i, line in enumerate(patch[:14], 1):
+              print(f'patch[{i}] repr={line!r} hex={line.hex()}')
+          PY
+              echo "--- git apply verbose ---"
+              if ! git apply --recount --verbose --check "$normalized"; then
+                echo "--- patch(1) dry-run ---"
+                patch --dry-run --batch --forward -p1 < "$normalized" || true
+                exit 41
+              fi
             else
               git apply --recount --check "$normalized"
             fi
