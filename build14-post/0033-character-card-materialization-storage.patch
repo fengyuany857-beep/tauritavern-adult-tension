@@ -1,0 +1,417 @@
+diff --git a/src-tauri/crates/tt-adapter-storage-core/src/lib.rs b/src-tauri/crates/tt-adapter-storage-core/src/lib.rs
+--- a/src-tauri/crates/tt-adapter-storage-core/src/lib.rs
++++ b/src-tauri/crates/tt-adapter-storage-core/src/lib.rs
+@@ -1,4 +1,5 @@
+ pub mod chat_directory_identity;
++pub mod character_card_materialization_store;
+ mod chat_format_importers;
+ pub mod file_system;
+ mod jsonl_utils;
+@@ -7,6 +8,7 @@ pub mod repositories;
+ pub mod sillytavern_sorting;
+ 
+ pub use file_system::DataDirectory;
++pub use character_card_materialization_store::CharacterCardMaterializationStore;
+ pub use repositories::{
+     FileAssetRepository, FileChatRepository, FileExtensionStoreRepository, FileGroupRepository,
+     FileLlmConnectionRepository, FilePromptCacheRepository, FileQuickReplyRepository,
+diff --git a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+@@ -0,0 +1,338 @@
++use std::path::{Path, PathBuf};
++
++use serde::{Serialize, de::DeserializeOwned};
++use sha2::{Digest, Sha256};
++use tokio::fs;
++use tokio::io::AsyncWriteExt;
++use tt_domain::errors::DomainError;
++use tt_domain::models::character_card_materialization::{
++    CharacterCardBinding, CharacterCardTransactionJournal, ExportRecord, UndoRecord,
++};
++
++use crate::file_system::{DataDirectory, replace_file_with_fallback, unique_temp_path};
++
++const SUBSYSTEM_DIR: &str = "character-card-materialization";
++const BINDINGS_DIR: &str = "bindings";
++const EXPORTS_DIR: &str = "exports";
++const SNAPSHOTS_DIR: &str = "snapshots";
++const TRANSACTIONS_DIR: &str = "transactions";
++const UNDO_DIR: &str = "undo";
++const KEYS_DIR: &str = "keys";
++
++/// Continuity-backed local storage for Character Card Materialization.
++///
++/// [NO-ABSOLUTE-SANDBOX-PATH] All persisted references returned by this store
++/// are logical paths relative to the subsystem root. Absolute iOS container
++/// paths are never serialized into domain records by this layer.
++#[derive(Debug, Clone)]
++pub struct CharacterCardMaterializationStore {
++    root: PathBuf,
++}
++
++impl CharacterCardMaterializationStore {
++    pub fn new(data_directory: &DataDirectory) -> Self {
++        Self {
++            root: data_directory
++                .root()
++                .join("_tauritavern")
++                .join(SUBSYSTEM_DIR),
++        }
++    }
++
++    pub fn root(&self) -> &Path {
++        &self.root
++    }
++
++    pub async fn initialize(&self) -> Result<(), DomainError> {
++        for directory in [
++            self.bindings_dir(),
++            self.exports_dir(),
++            self.snapshots_dir(),
++            self.transactions_dir(),
++            self.undo_dir(),
++            self.keys_dir(),
++        ] {
++            fs::create_dir_all(&directory).await.map_err(|error| {
++                DomainError::InternalError(format!(
++                    "Failed to initialize Character Card Materialization directory: {error}"
++                ))
++            })?;
++        }
++        Ok(())
++    }
++
++    pub async fn read_binding(
++        &self,
++        binding_id: &str,
++    ) -> Result<Option<CharacterCardBinding>, DomainError> {
++        let path = self.bindings_dir().join(json_file_name(binding_id)?);
++        read_optional_json(&path).await
++    }
++
++    pub async fn write_binding(&self, binding: &CharacterCardBinding) -> Result<(), DomainError> {
++        binding.validate().map_err(DomainError::InvalidData)?;
++        let path = self
++            .bindings_dir()
++            .join(json_file_name(&binding.binding_id)?);
++        atomic_write_json(&path, binding).await
++    }
++
++    pub async fn read_export_record(
++        &self,
++        export_id: &str,
++    ) -> Result<Option<ExportRecord>, DomainError> {
++        let path = self.exports_dir().join(json_file_name(export_id)?);
++        read_optional_json(&path).await
++    }
++
++    pub async fn write_export_record(&self, record: &ExportRecord) -> Result<(), DomainError> {
++        validate_opaque_id(&record.export_id)?;
++        validate_opaque_id(&record.binding_id)?;
++        validate_snapshot_ref(&record.snapshot_ref)?;
++        let path = self.exports_dir().join(json_file_name(&record.export_id)?);
++        atomic_write_json(&path, record).await
++    }
++
++    pub async fn read_transaction(
++        &self,
++        transaction_id: &str,
++    ) -> Result<Option<CharacterCardTransactionJournal>, DomainError> {
++        let path = self
++            .transactions_dir()
++            .join(json_file_name(transaction_id)?);
++        read_optional_json(&path).await
++    }
++
++    pub async fn write_transaction(
++        &self,
++        journal: &CharacterCardTransactionJournal,
++    ) -> Result<(), DomainError> {
++        validate_opaque_id(&journal.transaction_id)?;
++        validate_opaque_id(&journal.binding_id)?;
++        validate_opaque_id(&journal.plan_token)?;
++        validate_optional_logical_ref(journal.before_card_ref.as_deref())?;
++        validate_optional_logical_ref(journal.before_binding_ref.as_deref())?;
++        validate_optional_logical_ref(journal.before_profile_ref.as_deref())?;
++        validate_optional_logical_ref(journal.staged_import_ref.as_deref())?;
++        let path = self
++            .transactions_dir()
++            .join(json_file_name(&journal.transaction_id)?);
++        atomic_write_json(&path, journal).await
++    }
++
++    pub async fn list_transactions(
++        &self,
++    ) -> Result<Vec<CharacterCardTransactionJournal>, DomainError> {
++        let mut output = Vec::new();
++        let mut entries = match fs::read_dir(self.transactions_dir()).await {
++            Ok(entries) => entries,
++            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(output),
++            Err(error) => {
++                return Err(DomainError::InternalError(format!(
++                    "Failed to list Character Card transactions: {error}"
++                )));
++            }
++        };
++        while let Some(entry) = entries.next_entry().await.map_err(|error| {
++            DomainError::InternalError(format!(
++                "Failed to inspect Character Card transaction directory: {error}"
++            ))
++        })? {
++            let file_type = entry.file_type().await.map_err(|error| {
++                DomainError::InternalError(format!(
++                    "Failed to inspect Character Card transaction entry: {error}"
++                ))
++            })?;
++            if !file_type.is_file() {
++                continue;
++            }
++            let file_name = entry.file_name();
++            let Some(file_name) = file_name.to_str() else {
++                continue;
++            };
++            if !file_name.ends_with(".json") {
++                continue;
++            }
++            output.push(read_json(entry.path()).await?);
++        }
++        output.sort_by(|left, right| left.transaction_id.cmp(&right.transaction_id));
++        Ok(output)
++    }
++
++    pub async fn write_undo_record(&self, record: &UndoRecord) -> Result<(), DomainError> {
++        validate_opaque_id(&record.transaction_id)?;
++        validate_logical_ref(&record.card_before_ref)?;
++        validate_logical_ref(&record.binding_before_ref)?;
++        validate_optional_logical_ref(record.profile_before_ref.as_deref())?;
++        let path = self
++            .undo_dir()
++            .join(json_file_name(&record.transaction_id)?);
++        atomic_write_json(&path, record).await
++    }
++
++    /// Persist canonical JSON bytes using content-addressed storage and return
++    /// a stable logical reference such as `snapshots/<sha256>.json`.
++    pub async fn write_snapshot(&self, bytes: &[u8]) -> Result<String, DomainError> {
++        let digest = Sha256::digest(bytes);
++        let hash = format!("{digest:x}");
++        let file_name = format!("{hash}.json");
++        let target = self.snapshots_dir().join(&file_name);
++        match fs::metadata(&target).await {
++            Ok(metadata) if metadata.is_file() => return Ok(format!("{SNAPSHOTS_DIR}/{file_name}")),
++            Ok(_) => {
++                return Err(DomainError::InvalidData(
++                    "Snapshot hash target exists but is not a file".to_string(),
++                ));
++            }
++            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
++            Err(error) => {
++                return Err(DomainError::InternalError(format!(
++                    "Failed to inspect snapshot target: {error}"
++                )));
++            }
++        }
++        atomic_write_bytes(&target, bytes).await?;
++        Ok(format!("{SNAPSHOTS_DIR}/{file_name}"))
++    }
++
++    pub async fn read_snapshot(&self, logical_ref: &str) -> Result<Vec<u8>, DomainError> {
++        validate_snapshot_ref(logical_ref)?;
++        let file_name = logical_ref
++            .strip_prefix("snapshots/")
++            .ok_or_else(|| DomainError::InvalidData("invalid snapshot ref".to_string()))?;
++        fs::read(self.snapshots_dir().join(file_name))
++            .await
++            .map_err(|error| map_io("read snapshot", error))
++    }
++
++    fn bindings_dir(&self) -> PathBuf {
++        self.root.join(BINDINGS_DIR)
++    }
++
++    fn exports_dir(&self) -> PathBuf {
++        self.root.join(EXPORTS_DIR)
++    }
++
++    fn snapshots_dir(&self) -> PathBuf {
++        self.root.join(SNAPSHOTS_DIR)
++    }
++
++    fn transactions_dir(&self) -> PathBuf {
++        self.root.join(TRANSACTIONS_DIR)
++    }
++
++    fn undo_dir(&self) -> PathBuf {
++        self.root.join(UNDO_DIR)
++    }
++
++    fn keys_dir(&self) -> PathBuf {
++        self.root.join(KEYS_DIR)
++    }
++}
++
++fn json_file_name(id: &str) -> Result<String, DomainError> {
++    validate_opaque_id(id)?;
++    Ok(format!("{id}.json"))
++}
++
++fn validate_opaque_id(value: &str) -> Result<(), DomainError> {
++    if value.is_empty()
++        || value.len() > 128
++        || !value
++            .bytes()
++            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
++    {
++        return Err(DomainError::InvalidData(
++            "Character Card local identifier is invalid".to_string(),
++        ));
++    }
++    Ok(())
++}
++
++fn validate_snapshot_ref(value: &str) -> Result<(), DomainError> {
++    let Some(file_name) = value.strip_prefix("snapshots/") else {
++        return Err(DomainError::InvalidData(
++            "snapshotRef must be a snapshots/ logical reference".to_string(),
++        ));
++    };
++    let Some(hash) = file_name.strip_suffix(".json") else {
++        return Err(DomainError::InvalidData(
++            "snapshotRef must end in .json".to_string(),
++        ));
++    };
++    if hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit()) {
++        return Err(DomainError::InvalidData(
++            "snapshotRef must contain a SHA-256 digest".to_string(),
++        ));
++    }
++    Ok(())
++}
++
++fn validate_optional_logical_ref(value: Option<&str>) -> Result<(), DomainError> {
++    if let Some(value) = value {
++        validate_logical_ref(value)?;
++    }
++    Ok(())
++}
++
++fn validate_logical_ref(value: &str) -> Result<(), DomainError> {
++    if value.is_empty()
++        || value.starts_with('/')
++        || value.starts_with('\\')
++        || value.contains(":/")
++        || value.contains(":\\")
++        || value
++            .split(|character| character == '/' || character == '\\')
++            .any(|segment| segment.is_empty() || segment == "..")
++    {
++        return Err(DomainError::InvalidData(
++            "Character Card persisted reference must be stable and relative".to_string(),
++        ));
++    }
++    Ok(())
++}
++
++async fn read_optional_json<T: DeserializeOwned>(path: &Path) -> Result<Option<T>, DomainError> {
++    match fs::read(path).await {
++        Ok(bytes) => serde_json::from_slice(&bytes)
++            .map(Some)
++            .map_err(|error| DomainError::InvalidData(format!("Invalid stored JSON: {error}"))),
++        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
++        Err(error) => Err(map_io("read local record", error)),
++    }
++}
++
++async fn read_json<T: DeserializeOwned>(path: PathBuf) -> Result<T, DomainError> {
++    let bytes = fs::read(path)
++        .await
++        .map_err(|error| map_io("read local record", error))?;
++    serde_json::from_slice(&bytes)
++        .map_err(|error| DomainError::InvalidData(format!("Invalid stored JSON: {error}")))
++}
++
++async fn atomic_write_json<T: Serialize>(path: &Path, value: &T) -> Result<(), DomainError> {
++    let bytes = serde_json::to_vec(value).map_err(|error| {
++        DomainError::InvalidData(format!("Failed to serialize local record: {error}"))
++    })?;
++    atomic_write_bytes(path, &bytes).await
++}
++
++async fn atomic_write_bytes(path: &Path, bytes: &[u8]) -> Result<(), DomainError> {
++    let parent = path.parent().ok_or_else(|| {
++        DomainError::InvalidData("Character Card storage target has no parent".to_string())
++    })?;
++    fs::create_dir_all(parent)
++        .await
++        .map_err(|error| map_io("create local record directory", error))?;
++    let temp = unique_temp_path(path);
++    let mut file = fs::OpenOptions::new()
++        .write(true)
++        .create_new(true)
++        .open(&temp)
++        .await
++        .map_err(|error| map_io("create local record temp file", error))?;
++    if let Err(error) = file.write_all(bytes).await {
++        let _ = fs::remove_file(&temp).await;
++        return Err(map_io("write local record temp file", error));
++    }
++    if let Err(error) = file.sync_all().await {
++        let _ = fs::remove_file(&temp).await;
++        return Err(map_io("sync local record temp file", error));
++    }
++    drop(file);
++    if let Err(error) = replace_file_with_fallback(&temp, path).await {
++        let _ = fs::remove_file(&temp).await;
++        return Err(error);
++    }
++    Ok(())
++}
++
++fn map_io(operation: &str, error: std::io::Error) -> DomainError {
++    DomainError::InternalError(format!("Failed to {operation}: {error}"))
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn subsystem_root_tracks_data_root_without_persisting_container_uuid() {
++        let data = DataDirectory::new(PathBuf::from("/tmp/runtime-container-A"));
++        let store = CharacterCardMaterializationStore::new(&data);
++        assert_eq!(
++            store.root(),
++            Path::new("/tmp/runtime-container-A/_tauritavern/character-card-materialization")
++        );
++        let data_after_move = DataDirectory::new(PathBuf::from("/tmp/runtime-container-B"));
++        let moved_store = CharacterCardMaterializationStore::new(&data_after_move);
++        assert_eq!(
++            moved_store.root(),
++            Path::new("/tmp/runtime-container-B/_tauritavern/character-card-materialization")
++        );
++    }
++
++    #[test]
++    fn opaque_ids_reject_path_traversal() {
++        assert!(validate_opaque_id("binding-abc_123").is_ok());
++        assert!(validate_opaque_id("../binding").is_err());
++        assert!(validate_opaque_id("a/b").is_err());
++        assert!(validate_opaque_id("a\\b").is_err());
++    }
++
++    #[test]
++    fn logical_refs_reject_absolute_paths_and_parent_segments() {
++        assert!(validate_logical_ref("transactions/a.json").is_ok());
++        assert!(validate_logical_ref("/private/var/mobile/card.json").is_err());
++        assert!(validate_logical_ref("snapshots/../keys/secret").is_err());
++    }
++
++    #[test]
++    fn snapshot_refs_are_content_addressed() {
++        let digest = "a".repeat(64);
++        assert!(validate_snapshot_ref(&format!("snapshots/{digest}.json")).is_ok());
++        assert!(validate_snapshot_ref("snapshots/not-a-hash.json").is_err());
++    }
++}
