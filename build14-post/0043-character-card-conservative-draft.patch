@@ -6,10 +6,10 @@ diff --git a/src-tauri/crates/tt-domain/src/models/character_card_materializatio
 +
  use serde::{Deserialize, Serialize};
  use serde_json::Value;
-@@ -101,6 +103,18 @@ pub enum DraftState {
+@@ -102,4 +104,16 @@ pub enum DraftState {
      Archived,
  }
-+
+ 
 +#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 +#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 +pub enum DraftSourceKind {
@@ -21,7 +21,9 @@ diff --git a/src-tauri/crates/tt-domain/src/models/character_card_materializatio
 +    UserEdited,
 +    ImportedCard,
 +}
-@@ -119,6 +133,8 @@ pub struct CharacterCardDraft {
++
+ #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+@@ -120,6 +134,8 @@ pub struct CharacterCardDraft {
      pub generated_base_hash: String,
      pub user_edited: bool,
      pub state: DraftState,
@@ -33,20 +35,19 @@ diff --git a/src-tauri/crates/tt-domain/src/models/character_card_materializatio
 diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
 --- a/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
 +++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
-@@ -1,3 +1,5 @@
+@@ -1,6 +1,10 @@
 +use std::collections::BTreeMap;
 +
  use serde::Serialize;
  use serde_json::{Map, Value, json};
  use sha2::{Digest, Sha256};
-@@ -4,7 +6,10 @@ use sha2::{Digest, Sha256};
  use tt_domain::models::character_card_materialization::{
 -    FieldPresence, MergeFieldDecision, MergeFieldState, PortableReturnMetadata, ReturnRecognitionState,
 +    CharacterCardDraft, DraftSourceKind, DraftState, FieldPresence, MergeFieldDecision,
 +    MergeFieldState, PortableReturnMetadata, ReturnRecognitionState,
  };
 +use tt_domain::models::rp_architecture::{CharacterEntity, CharacterProfile};
-@@ -492,6 +497,142 @@ fn card_data_field<'a>(card: &'a Value, field: &str) -> Option<&'a Value> {
+@@ -492,6 +496,142 @@ fn card_data_field<'a>(card: &'a Value, field: &str) -> Option<&'a Value> {
      card.get("data").and_then(|data| data.get(field))
  }
 +
@@ -184,70 +185,6 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 +        draft.state = DraftState::SourceAdvanced;
 +    }
 +}
-@@ -715,4 +856,74 @@ mod tests {
-         assert!(content_identity_mismatch_suspected(&base, &imported, true));
-     }
-+
-+    fn stable_character() -> CharacterEntity {
-+        use tt_domain::models::rp_architecture::{
-+            CharacterIdentity, CharacterOrigin, CharacterOriginKind, ControlOwner, ControlPolicy,
-+            LifecycleStatus, NarrativeRole, RP_ARCHITECTURE_SCHEMA_VERSION,
-+        };
-+        CharacterEntity {
-+            schema_version: RP_ARCHITECTURE_SCHEMA_VERSION,
-+            character_id: tt_domain::models::rp_architecture::CharacterId("character-1".to_string()),
-+            origin: CharacterOrigin {
-+                kind: CharacterOriginKind::SessionCreated,
-+                world_ref: None,
-+                source_session_id: Some(tt_domain::models::rp_architecture::SessionId(
-+                    "session-1".to_string(),
-+                )),
-+            },
-+            narrative_role: NarrativeRole::Incidental,
-+            control_owner: ControlOwner::Ai,
-+            control_policy: ControlPolicy::Normal,
-+            lifecycle_status: LifecycleStatus::Active,
-+            first_seen_turn: 1,
-+            promoted_at_turn: None,
-+            profile_revision: 3,
-+            profile: CharacterProfile {
-+                identity: CharacterIdentity {
-+                    canonical_name: Some("Lin Yue".to_string()),
-+                    display_name: Some("林月".to_string()),
-+                    aliases: vec![],
-+                },
-+                personality_invariants: vec!["慢热".to_string()],
-+                values: vec!["重视承诺".to_string()],
-+                ..Default::default()
-+            },
-+        }
-+    }
-+
-+    #[test]
-+    fn conservative_draft_uses_stable_profile_and_keeps_high_impact_fields_blank() {
-+        let draft = build_conservative_draft(&stable_character(), "draft-1", None, "now").unwrap();
-+        assert_eq!(draft.definition["data"]["name"], "林月");
-+        assert!(draft.definition["data"]["personality"]
-+            .as_str()
-+            .unwrap()
-+            .contains("慢热"));
-+        assert_eq!(draft.definition["data"]["scenario"], "");
-+        assert_eq!(draft.definition["data"]["first_mes"], "");
-+        assert_eq!(draft.definition["data"]["system_prompt"], "");
-+        assert_eq!(draft.definition["data"]["post_history_instructions"], "");
-+        assert!(draft.definition["data"]["alternate_greetings"]
-+            .as_array()
-+            .unwrap()
-+            .is_empty());
-+    }
-+
-+    #[test]
-+    fn user_edited_draft_is_never_silently_regenerated_when_profile_advances() {
-+        let mut draft = build_conservative_draft(&stable_character(), "draft-1", None, "now").unwrap();
-+        draft.user_edited = true;
-+        draft.state = DraftState::UserEdited;
-+        refresh_draft_source_state(&mut draft, 4);
-+        assert_eq!(draft.state, DraftState::SourceAdvanced);
-+        assert!(draft.user_edited);
-+    }
- }
+ 
+ #[cfg(test)]
+ mod tests {
