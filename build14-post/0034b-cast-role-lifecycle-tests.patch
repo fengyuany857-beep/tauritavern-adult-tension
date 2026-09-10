@@ -1,0 +1,78 @@
+diff --git a/src-tauri/crates/tt-domain/tests/character_card_materialization_lifecycle.rs b/src-tauri/crates/tt-domain/tests/character_card_materialization_lifecycle.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-domain/tests/character_card_materialization_lifecycle.rs
+@@ -0,0 +1,67 @@
++use tt_domain::models::character_card_materialization::{
++    CastLifecyclePolicy, RoleSuggestionControl, RoleTransitionCandidate,
++    RoleTransitionCandidateState, TransitionMode,
++};
++use tt_domain::models::rp_architecture::{BranchId, CharacterId, NarrativeRole};
++
++#[test]
++fn runtime_policy_never_auto_promotes_supporting_or_main() {
++    let policy = CastLifecyclePolicy::default();
++    assert_eq!(
++        policy.runtime_transition_mode(&NarrativeRole::Incidental, &NarrativeRole::Recurring),
++        TransitionMode::AutoAllowed
++    );
++    assert_eq!(
++        policy.runtime_transition_mode(&NarrativeRole::Recurring, &NarrativeRole::Supporting),
++        TransitionMode::UserConfirmRequired
++    );
++    assert_eq!(
++        policy.runtime_transition_mode(&NarrativeRole::Supporting, &NarrativeRole::Main),
++        TransitionMode::UserConfirmRequired
++    );
++}
++
++#[test]
++fn runtime_policy_does_not_treat_absence_as_role_demotion() {
++    let policy = CastLifecyclePolicy::default();
++    assert_eq!(
++        policy.runtime_transition_mode(&NarrativeRole::Main, &NarrativeRole::Supporting),
++        TransitionMode::ManualOnly
++    );
++}
++
++#[test]
++fn non_adjacent_runtime_upgrade_is_disabled_but_user_direct_remains_separate() {
++    let policy = CastLifecyclePolicy::default();
++    assert_eq!(
++        policy.runtime_transition_mode(&NarrativeRole::Incidental, &NarrativeRole::Main),
++        TransitionMode::Disabled
++    );
++}
++
++#[test]
++fn retraction_can_stale_pending_candidate_without_downgrading_role() {
++    let mut candidate = RoleTransitionCandidate {
++        candidate_id: "candidate-1".to_string(),
++        character_id: CharacterId("character-1".to_string()),
++        branch_id: BranchId("branch-a".to_string()),
++        from_role: NarrativeRole::Recurring,
++        to_role: NarrativeRole::Supporting,
++        policy_revision: 1,
++        evidence_summary: vec!["cross-scene recurrence".to_string()],
++        evidence_refs: vec!["event-1".to_string()],
++        created_at_turn: 10,
++        state: RoleTransitionCandidateState::Pending,
++        snooze_until: None,
++        superseded_by: None,
++    };
++    candidate.mark_stale();
++    assert_eq!(candidate.state, RoleTransitionCandidateState::Stale);
++    assert_eq!(candidate.from_role, NarrativeRole::Recurring);
++}
++
++#[test]
++fn role_lock_and_suppression_block_runtime_suggestions() {
++    let control = RoleSuggestionControl {
++        character_id: CharacterId("character-1".to_string()),
++        branch_id: BranchId("branch-a".to_string()),
++        locked_role: Some(NarrativeRole::Recurring),
++        suppressed_targets: Vec::new(),
++        snooze_until_turn: None,
++    };
++    assert!(control.blocks_runtime_transition(&NarrativeRole::Supporting, 50));
++}
