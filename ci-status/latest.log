@@ -1,3 +1,24 @@
 # Diagnostic matches
+7:[1m[91merror[E0063][0m[1m: missing fields `branch_id`, `expected_final_card_hash`, `format` and 4 other fields in initializer of `character_card_materialization::ReturnImportPlan`[0m
+13:[1mFor more information about this error, try `rustc --explain E0063`.[0m
+14:[1m[91merror[0m: could not compile `tt-domain` (lib test) due to 1 previous error
+15:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+16: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
+
+> tauritavern@2.2.0 test:rust /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> cargo test --manifest-path src-tauri/Cargo.toml --workspace --no-default-features
+
+[1m[92m   Compiling[0m tt-domain v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-domain)
+[1m[92m   Compiling[0m tauritavern v2.2.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern)
+[1m[91merror[E0063][0m[1m: missing fields `branch_id`, `expected_final_card_hash`, `format` and 4 other fields in initializer of `character_card_materialization::ReturnImportPlan`[0m
+   [1m[94m--> [0mcrates/tt-domain/src/models/character_card_materialization.rs:718:20
+    [1m[94m|[0m
+[1m[94m718[0m [1m[94m|[0m         let plan = ReturnImportPlan {
+    [1m[94m|[0m                    [1m[91m^^^^^^^^^^^^^^^^[0m [1m[91mmissing `branch_id`, `expected_final_card_hash`, `format` and 4 other fields[0m
+
+[1mFor more information about this error, try `rustc --explain E0063`.[0m
+[1m[91merror[0m: could not compile `tt-domain` (lib test) due to 1 previous error
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+ ELIFECYCLE  Command failed with exit code 101.

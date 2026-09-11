@@ -1,11 +1,11 @@
 # TauriTavern Adult Tension iOS build status
 
-- State: **RUNNING**
+- State: **FAIL**
 - Stage: **Rust tests**
-- Exit code: **0**
+- Exit code: **101**
 - Run: **110 / attempt 1**
 - Control source: `9a0fba7a123493aeedfa58ea6c74d28fcac1643a`
 - Upstream: `3a8c5401c859ac15ac11f3339846360615232896`
-- Updated: **2026-09-11T20:12:27Z**
+- Updated: **2026-09-11T20:12:43Z**
 
 - Self-sign release: https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-38-a1
