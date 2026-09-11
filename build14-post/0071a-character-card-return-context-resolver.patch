@@ -1,0 +1,117 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -80,6 +80,13 @@ pub struct CharacterCardReturnPlanResult {
+     pub avatar_may_replace: bool,
+ }
+ 
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardReturnContextResult {
++    pub session_id: String,
++    pub branch_id: String,
++}
++
+ pub struct CharacterCardMaterializationOrchestrator {
+     materialization: Arc<dyn CharacterCardMaterializationRepository>,
+     cards: Arc<dyn CharacterCardReturnRepository>,
+@@ -574,6 +581,85 @@ impl CharacterCardMaterializationOrchestrator {
+         })
+     }
+ 
++    /// Resolve the exact RP CAS context for a staged, authenticated Return.
++    /// The browser supplies only the currently selected stableChatId; session
++    /// identity remains owned by the durable binding and is re-verified again
++    /// by Plan/Commit authority checks before any mutation is allowed.
++    pub async fn resolve_staged_return_context(
++        &self,
++        staged_ref: &str,
++        format: PortableCharacterCardFormat,
++        stable_chat_id: &str,
++    ) -> Result<CharacterCardReturnContextResult, DomainError> {
++        let stable_chat_id = stable_chat_id.trim();
++        if stable_chat_id.is_empty() {
++            return Err(DomainError::InvalidData(
++                "Character Card Return stableChatId must not be empty".to_string(),
++            ));
++        }
++        staged_return_transaction_id(staged_ref, format)?;
++
++        let staged_bytes = self.materialization.read_staged_import(staged_ref).await?;
++        let imported_card = match format {
++            PortableCharacterCardFormat::Json => parse_json_card(&staged_bytes)?,
++            PortableCharacterCardFormat::Png => {
++                let json = self.cards.inspect_png_card_json(&staged_bytes).await?;
++                parse_json_card(json.as_bytes())?
++            }
++        };
++        scan_portable_card(&imported_card).map_err(portable_security_error)?;
++
++        let metadata = extract_return_metadata(&imported_card).ok_or_else(|| {
++            DomainError::InvalidData(
++                "Character Card Return context requires authenticated return metadata".to_string(),
++            )
++        })?;
++        metadata.validate_shape().map_err(DomainError::InvalidData)?;
++        let secret = self.materialization.load_or_create_origin_secret().await?;
++        if !verify_origin_proof(&secret, &metadata) {
++            return Err(DomainError::Conflict(
++                "Character Card Return origin proof is not valid for this installation".to_string(),
++            ));
++        }
++
++        let binding = self
++            .materialization
++            .read_binding(&metadata.binding_id)
++            .await?
++            .ok_or_else(|| DomainError::NotFound(format!(
++                "character card binding {}",
++                metadata.binding_id
++            )))?;
++        validate_active_binding(&binding)?;
++        if binding.generation != metadata.binding_generation {
++            return Err(DomainError::Conflict(
++                "Character Card Return binding generation changed after export".to_string(),
++            ));
++        }
++
++        let export = self
++            .materialization
++            .read_export_record(&metadata.export_id)
++            .await?
++            .ok_or_else(|| DomainError::NotFound(format!(
++                "character card export record {}",
++                metadata.export_id
++            )))?;
++        if !export_record_matches_metadata(&export, &metadata) || export.transaction_id.is_some() {
++            return Err(DomainError::Conflict(
++                "Character Card Return export is not an unconsumed authenticated return"
++                    .to_string(),
++            ));
++        }
++
++        let mut matching = binding
++            .contexts
++            .iter()
++            .filter(|context| context.branch_id.0.trim() == stable_chat_id);
++        let context = matching.next().ok_or_else(|| {
++            DomainError::NotFound(
++                "Character Card Return has no binding context for the selected chat".to_string(),
++            )
++        })?;
++        if matching.next().is_some() {
++            return Err(DomainError::Conflict(
++                "Character Card Return binding has duplicate contexts for the selected chat"
++                    .to_string(),
++            ));
++        }
++
++        Ok(CharacterCardReturnContextResult {
++            session_id: context.session_id.0.clone(),
++            branch_id: context.branch_id.0.clone(),
++        })
++    }
++
+     pub async fn discard_staged_preview(&self, logical_ref: &str) -> Result<(), DomainError> {
+         self.materialization.remove_staged_import(logical_ref).await
+     }
