@@ -1,0 +1,236 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -47,6 +47,6 @@ impl PortableCharacterCardFormat {
+     }
+ }
+ 
+-#[derive(Debug, Clone)]
++#[derive(Debug, Clone, Serialize)]
+ pub struct PortableCharacterCardExport {
+     pub export_id: String,
+     pub binding_id: String,
+diff --git a/src-tauri/crates/tauritavern/src/app/composition/repositories.rs b/src-tauri/crates/tauritavern/src/app/composition/repositories.rs
+--- a/src-tauri/crates/tauritavern/src/app/composition/repositories.rs
++++ b/src-tauri/crates/tauritavern/src/app/composition/repositories.rs
+@@ -15,10 +15,10 @@ use tt_adapter_provider_http::{
+     HttpTranslateRepository, HttpTtsRepository,
+ };
+ use tt_adapter_storage_core::{
+-    DataDirectory, FileAssetRepository, FileChatRepository, FileExtensionStoreRepository,
+-    FileGroupRepository, FileLlmConnectionRepository, FilePromptCacheRepository,
+-    FileQuickReplyRepository, FileSecretRepository, FileSettingsRepository, FileThemeRepository,
+-    FileUserDirectoryRepository, FileUserRepository,
++    CharacterCardMaterializationStore, DataDirectory, FileAssetRepository, FileChatRepository,
++    FileExtensionStoreRepository, FileGroupRepository, FileLlmConnectionRepository,
++    FilePromptCacheRepository, FileQuickReplyRepository, FileSecretRepository,
++    FileSettingsRepository, FileThemeRepository, FileUserDirectoryRepository, FileUserRepository,
+     chat_directory_identity::new_shared_chat_alias_store_for_user_dir,
+ };
+ use tt_adapter_storage_userdata::FileAgentProfileRepository;
+@@ -35,5 +36,8 @@ use tt_ports::repositories::asset_repository::AssetRepository;
+ use tt_ports::repositories::avatar_repository::AvatarRepository;
+ use tt_ports::repositories::background_repository::BackgroundRepository;
++use tt_ports::repositories::character_card_materialization_repository::CharacterCardMaterializationRepository;
++use tt_ports::repositories::character_card_return_persistent_state_repository::CharacterCardReturnPersistentStateRepository;
++use tt_ports::repositories::character_card_return_repository::CharacterCardReturnRepository;
+ use tt_ports::repositories::character_repository::CharacterRepository;
+ use tt_ports::repositories::chat_completion_repository::ChatCompletionRepository;
+ use tt_ports::repositories::chat_payload_commit_repository::ChatPayloadCommitRepository;
+@@ -76,5 +80,8 @@ use tt_ports::settings::ChatBackupRuntime;
+ 
+ pub(in crate::app::composition) struct AppRepositories {
+     pub(in crate::app::composition) character_repository: Arc<dyn CharacterRepository>,
++    pub(in crate::app::composition) character_card_materialization_repository: Arc<dyn CharacterCardMaterializationRepository>,
++    pub(in crate::app::composition) character_card_return_repository: Arc<dyn CharacterCardReturnRepository>,
++    pub(in crate::app::composition) character_card_return_persistent_state_repository: Arc<dyn CharacterCardReturnPersistentStateRepository>,
+     pub(in crate::app::composition) chat_repository: Arc<dyn ChatRepository>,
+     pub(in crate::app::composition) group_chat_repository: Arc<dyn GroupChatRepository>,
+     pub(in crate::app::composition) chat_payload_commit_repository:
+@@ -130,13 +137,17 @@ pub(super) async fn build(
+         tracing::warn!(%error, "Failed to clean orphaned chat commit staging");
+     }
+-    let character_repository: Arc<dyn CharacterRepository> =
+-        Arc::new(FileCharacterRepository::with_chat_repository(
+-            data_directory.characters().to_path_buf(),
+-            data_directory.chats().to_path_buf(),
+-            data_directory.default_avatar().to_path_buf(),
+-            chat_aliases,
+-            file_chat_repository.clone(),
+-        ));
++    let file_character_repository = Arc::new(FileCharacterRepository::with_chat_repository(
++        data_directory.characters().to_path_buf(),
++        data_directory.chats().to_path_buf(),
++        data_directory.default_avatar().to_path_buf(),
++        chat_aliases,
++        file_chat_repository.clone(),
++    ));
++    let character_repository: Arc<dyn CharacterRepository> = file_character_repository.clone();
++    let character_card_return_repository: Arc<dyn CharacterCardReturnRepository> =
++        file_character_repository;
++    let character_card_materialization_repository: Arc<dyn CharacterCardMaterializationRepository> =
++        Arc::new(CharacterCardMaterializationStore::new(data_directory));
+     let chat_repository: Arc<dyn ChatRepository> = file_chat_repository.clone();
+     let chat_payload_commit_repository: Arc<dyn ChatPayloadCommitRepository> =
+         file_chat_repository.clone();
+@@ -221,5 +234,7 @@ pub(super) async fn build(
+     let workspace_repository: Arc<dyn WorkspaceRepository> = file_agent_repository.clone();
+     let checkpoint_repository: Arc<dyn CheckpointRepository> = file_agent_repository.clone();
++    let character_card_return_persistent_state_repository:
++        Arc<dyn CharacterCardReturnPersistentStateRepository> = file_agent_repository.clone();
+     let agent_workspace_lifecycle_repository: Arc<dyn AgentWorkspaceLifecycleRepository> =
+         file_agent_repository;
+ 
+@@ -266,5 +282,8 @@ pub(super) async fn build(
+ 
+     Ok(AppRepositories {
+         character_repository,
++        character_card_materialization_repository,
++        character_card_return_repository,
++        character_card_return_persistent_state_repository,
+         chat_repository,
+         group_chat_repository,
+         chat_payload_commit_repository,
+diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
+--- a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
++++ b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
+@@ -18,4 +18,7 @@ use tt_application::services::background_service::BackgroundService;
+ use tt_application::services::character_service::CharacterService;
++use tt_application::services::character_card_materialization_orchestrator::CharacterCardMaterializationOrchestrator;
++use tt_application::services::character_card_return_durable_authority::CharacterCardReturnDurableAuthorityRepository;
++use tt_application::services::character_card_return_selected_state::CharacterCardReturnSelectedStateResolver;
+ use tt_application::services::chat_completion_service::ChatCompletionService;
+ use tt_application::services::chat_history_coordinator::ChatHistoryCoordinator;
+ use tt_application::services::chat_payload_commit_service::ChatPayloadCommitService;
+@@ -124,6 +131,27 @@ pub(super) async fn build(
+         chat_completion_service.clone(),
+         llm_connection_service.clone(),
+     );
++    let selected_character_card_return_state = CharacterCardReturnSelectedStateResolver::new(
++        repositories.agent_run_repository.clone(),
++        repositories.chat_repository.clone(),
++        repositories.group_chat_repository.clone(),
++    );
++    let character_card_return_authority = Arc::new(
++        CharacterCardReturnDurableAuthorityRepository::new(
++            selected_character_card_return_state,
++            repositories
++                .character_card_return_persistent_state_repository
++                .clone(),
++        ),
++    );
++    let character_card_materialization_orchestrator = Arc::new(
++        CharacterCardMaterializationOrchestrator::new(
++            repositories.character_card_materialization_repository.clone(),
++            repositories.character_card_return_repository.clone(),
++            character_card_return_authority,
++            repositories.agent_run_repository.clone(),
++        ),
++    );
+     let acceptance_root = app_handle
+         .path()
+         .app_cache_dir()
+@@ -255,6 +277,7 @@ pub(super) async fn build(
+         agent_run_retention_automation_service: agent_services
+             .agent_run_retention_automation_service,
+         agent_runtime_service: agent_services.agent_runtime_service,
++        character_card_materialization_orchestrator,
+         runtime_acceptance_service,
+         chat_completion_service,
+         llm_connection_service,
+diff --git a/src-tauri/crates/tauritavern/src/app/state.rs b/src-tauri/crates/tauritavern/src/app/state.rs
+--- a/src-tauri/crates/tauritavern/src/app/state.rs
++++ b/src-tauri/crates/tauritavern/src/app/state.rs
+@@ -13,4 +13,5 @@ use tt_application::services::background_service::BackgroundService;
+ use tt_application::services::character_service::CharacterService;
++use tt_application::services::character_card_materialization_orchestrator::CharacterCardMaterializationOrchestrator;
+ use tt_application::services::chat_completion_service::ChatCompletionService;
+ use tt_application::services::chat_history_coordinator::ChatHistoryCoordinator;
+ use tt_application::services::chat_payload_commit_service::ChatPayloadCommitService;
+@@ -101,5 +102,6 @@ pub(crate) struct AppServices {
+     pub(crate) agent_run_retention_automation_service: Arc<AgentRunRetentionAutomationService>,
+     pub(crate) agent_runtime_service: Arc<AgentRuntimeService>,
++    pub(crate) character_card_materialization_orchestrator: Arc<CharacterCardMaterializationOrchestrator>,
+     pub(crate) runtime_acceptance_service: Arc<RuntimeAcceptanceService>,
+     pub(crate) chat_completion_service: Arc<ChatCompletionService>,
+     pub(crate) llm_connection_service: Arc<LlmConnectionService>,
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
+@@ -15,5 +15,8 @@ use tt_application::dto::character_dto::{
+     ResolveCharacterLorebookConflictDto, ResolveCharacterLorebookConflictResultDto,
+     UpdateAvatarDto, UpdateCharacterCardDataDto, UpdateCharacterDto,
+ };
++use tt_application::services::character_card_materialization_orchestrator::{
++    CharacterCardReturnPreview, PortableCharacterCardExport, PortableCharacterCardFormat,
++};
+ use tt_domain::models::skill::{SkillScope, SkillScopeRetargetRequest};
+ 
+ const SKILL_SOURCE_KIND_CHARACTER: &str = "character";
+@@ -285,5 +289,52 @@ pub async fn export_character_content(
+         .map_err(map_command_error("Failed to export character content"))
+ }
+ 
++#[tauri::command]
++pub async fn export_bound_character_card(
++    binding_id: String,
++    format: PortableCharacterCardFormat,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<PortableCharacterCardExport, CommandError> {
++    log_command("export_bound_character_card");
++    app_state
++        .services
++        .character_card_materialization_orchestrator
++        .export_bound_card(&binding_id, format)
++        .await
++        .map_err(map_command_error("Failed to export bound Character Card"))
++}
++
++#[tauri::command]
++pub async fn preview_character_card_return(
++    bytes: Vec<u8>,
++    format: PortableCharacterCardFormat,
++    user_indicated_return: bool,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<CharacterCardReturnPreview, CommandError> {
++    log_command("preview_character_card_return");
++    app_state
++        .services
++        .character_card_materialization_orchestrator
++        .preview_return(&bytes, format, user_indicated_return)
++        .await
++        .map_err(map_command_error("Failed to preview Character Card Return"))
++}
++
++#[tauri::command]
++pub async fn discard_character_card_return_preview(
++    logical_ref: String,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<(), CommandError> {
++    log_command("discard_character_card_return_preview");
++    app_state
++        .services
++        .character_card_materialization_orchestrator
++        .discard_staged_preview(&logical_ref)
++        .await
++        .map_err(map_command_error(
++            "Failed to discard staged Character Card Return preview",
++        ))
++}
++
+ #[tauri::command]
+ pub async fn update_avatar(
+     dto: UpdateAvatarDto,
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
+@@ -25,6 +25,9 @@ pub fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static {
+         super::character_commands::replace_character,
+         super::character_commands::export_character,
+         super::character_commands::export_character_content,
++        super::character_commands::export_bound_character_card,
++        super::character_commands::preview_character_card_return,
++        super::character_commands::discard_character_card_return_preview,
+         super::character_commands::update_avatar,
+         super::character_commands::get_character_chats_by_id,
+         super::character_commands::clear_character_cache,
