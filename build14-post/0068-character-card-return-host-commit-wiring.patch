@@ -1,20 +1,12 @@
 diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
 --- a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
 +++ b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
-@@ -1,4 +1,4 @@
--use std::sync::Arc;
-+use std::{collections::BTreeMap, sync::Arc};
- 
- use tauri::State;
- 
-@@ -16,8 +16,12 @@ use tt_application::dto::character_dto::{
-     UpdateAvatarDto, UpdateCharacterCardDataDto, UpdateCharacterDto,
+@@ -20,4 +20,9 @@ use tt_application::services::character_card_materialization_orchestrator::{
+     CharacterCardReturnPreview, PortableCharacterCardExport, PortableCharacterCardFormat,
  };
- use tt_application::services::character_card_materialization_orchestrator::{
--    CharacterCardReturnPreview, PortableCharacterCardExport, PortableCharacterCardFormat,
-+    CharacterCardReturnCommitResult, CharacterCardReturnPlanResult, CharacterCardReturnPreview,
-+    PortableCharacterCardExport, PortableCharacterCardFormat, ReturnFieldChoice,
- };
++use tt_application::services::character_card_materialization_orchestrator::{
++    CharacterCardReturnCommitResult, CharacterCardReturnPlanResult, ReturnFieldChoice,
++};
 +use tt_domain::models::character_card_materialization::ReturnImportPlan;
 +use tt_domain::models::rp_architecture::{BranchId, SessionId};
  use tt_domain::models::skill::{SkillScope, SkillScopeRetargetRequest};
@@ -29,7 +21,7 @@ diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_co
 +    replace_avatar: bool,
 +    session_id: String,
 +    branch_id: String,
-+    choices: BTreeMap<String, ReturnFieldChoice>,
++    choices: std::collections::BTreeMap<String, ReturnFieldChoice>,
 +}
 +
 +#[derive(Debug, serde::Deserialize)]
@@ -41,9 +33,9 @@ diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_co
 +    supplied_plan: ReturnImportPlan,
 +    session_id: String,
 +    branch_id: String,
-+    choices: BTreeMap<String, ReturnFieldChoice>,
++    choices: std::collections::BTreeMap<String, ReturnFieldChoice>,
 +}
-@@ -329,6 +353,56 @@ pub async fn preview_character_card_return(
+@@ -329,6 +354,56 @@ pub async fn preview_character_card_return(
          .map_err(map_command_error("Failed to preview Character Card Return"))
  }
  
@@ -100,7 +92,7 @@ diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_co
 diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
 --- a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
 +++ b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
-@@ -25,6 +25,8 @@ pub fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static {
+@@ -28,6 +28,8 @@ pub fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static {
          super::character_commands::export_bound_character_card,
          super::character_commands::preview_character_card_return,
 +        super::character_commands::plan_character_card_return,
