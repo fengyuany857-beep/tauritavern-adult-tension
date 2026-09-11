@@ -1,0 +1,101 @@
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
+@@ -4,8 +4,9 @@ use std::sync::Arc;
+ use tauri::State;
+ use tt_application::services::character_card_materialization_orchestrator::{
+-    CharacterCardReturnCommitResult, CharacterCardReturnPlanResult, ReturnFieldChoice,
++    CharacterCardReturnCommitResult, CharacterCardReturnContextResult,
++    CharacterCardReturnPlanResult, ReturnFieldChoice,
+ };
+ use tt_domain::models::character_card_materialization::ReturnImportPlan;
+ use tt_domain::models::rp_architecture::{BranchId, SessionId};
+@@ -334,6 +335,14 @@ pub struct PlanCharacterCardReturnRequest {
+     choices: std::collections::BTreeMap<String, ReturnFieldChoice>,
+ }
+ 
++#[derive(Debug, serde::Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct ResolveCharacterCardReturnContextRequest {
++    staged_ref: String,
++    format: PortableCharacterCardFormat,
++    stable_chat_id: String,
++}
++
+ #[derive(Debug, serde::Deserialize)]
+ #[serde(rename_all = "camelCase")]
+ pub struct CommitCharacterCardReturnRequest {
+@@ -346,6 +355,23 @@ pub struct CommitCharacterCardReturnRequest {
+     choices: std::collections::BTreeMap<String, ReturnFieldChoice>,
+ }
+ 
++#[tauri::command]
++pub async fn resolve_character_card_return_context(
++    request: ResolveCharacterCardReturnContextRequest,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<CharacterCardReturnContextResult, CommandError> {
++    log_command("resolve_character_card_return_context");
++    app_state
++        .services
++        .character_card_materialization_orchestrator
++        .resolve_staged_return_context(
++            &request.staged_ref,
++            request.format,
++            &request.stable_chat_id,
++        )
++        .await
++        .map_err(map_command_error(
++            "Failed to resolve Character Card Return context",
++        ))
++}
++
+ #[tauri::command]
+ pub async fn plan_character_card_return(
+     request: PlanCharacterCardReturnRequest,
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
+@@ -28,6 +28,7 @@ pub fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static {
+         super::character_commands::export_bound_character_card,
+         super::character_commands::preview_character_card_return,
++        super::character_commands::resolve_character_card_return_context,
+         super::character_commands::plan_character_card_return,
+         super::character_commands::commit_character_card_return,
+         super::character_commands::discard_character_card_return_preview,
+diff --git a/src/tauri/main/api/character-cards.js b/src/tauri/main/api/character-cards.js
+--- a/src/tauri/main/api/character-cards.js
++++ b/src/tauri/main/api/character-cards.js
+@@ -148,6 +148,17 @@ function createCharacterCardsApi({
+         });
+     }
+ 
++    async function resolveReturnContext({ stagedRef, format, stableChatId }) {
++        return safeInvoke('resolve_character_card_return_context', {
++            request: {
++                stagedRef: requireNonEmptyString(stagedRef, 'Character Card Return staged ref'),
++                format: requireNonEmptyString(format, 'Character Card Return format'),
++                stableChatId: requireNonEmptyString(stableChatId, 'Character Card Return stable chat id'),
++            },
++        });
++    }
++
+     async function planReturnImport({
+         stagedRef,
+         format,
+@@ -205,6 +216,7 @@ function createCharacterCardsApi({
+         isNativePickerAvailable,
+         pickFiles,
+         previewReturnImport,
++        resolveReturnContext,
+         planReturnImport,
+         commitReturnImport,
+         discardReturnPreview,
+diff --git a/src/tauri/main/kernel/invokes/tauri-commands.js b/src/tauri/main/kernel/invokes/tauri-commands.js
+--- a/src/tauri/main/kernel/invokes/tauri-commands.js
++++ b/src/tauri/main/kernel/invokes/tauri-commands.js
+@@ -122,6 +122,7 @@ export {};
+  *   | 'preview_character_card_return'
+  *   | 'prepare_data_archive_import_target_path'
+  *   | 'prepare_agent_prompt_assembly'
++ *   | 'resolve_character_card_return_context'
+  *   | 'read_secret_state'
