@@ -7,8 +7,8 @@
   "workflow_trigger_sha": "7b8cf87422380e2de178637204dc35324fcc7d63",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
   "stage": "Rust Clippy",
-  "state": "RUNNING",
+  "state": "PASS",
   "exit_code": 0,
-  "updated_at": "2026-09-11T17:41:02Z",
+  "updated_at": "2026-09-11T17:41:18Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-38-a1"
 }
