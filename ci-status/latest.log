@@ -1,3 +1,107 @@
 # Diagnostic matches
+2:> tauritavern@2.2.0 check:rust:clippy /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+3:> cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
+19:[1m[91merror[0m[1m: struct `LoreInvalidationResult` is never constructed[0m
+28:[1m[91merror[0m[1m: function `build_lore_dependency_index` is never used[0m
+34:[1m[91merror[0m[1m: function `invalidate_lore_for_canon_change` is never used[0m
+40:[1m[91merror[0m[1m: function `add_affected` is never used[0m
+46:[1m[91merror[0m[1m: enum `LoreRevalidationDecision` is never used[0m
+52:[1m[91merror[0m[1m: struct `LoreRevalidationResult` is never constructed[0m
+58:[1m[91merror[0m[1m: struct `SafeCharacterProjectionSource` is never constructed[0m
+64:[1m[91merror[0m[1m: function `project_safe_character_lore` is never used[0m
+70:[1m[91merror[0m[1m: function `trigger_owners` is never used[0m
+76:[1m[91merror[0m[1m: function `revalidate_lore_record` is never used[0m
+82:[1m[91merror[0m[1m: function `contains_runtime_only_payload` is never used[0m
+88:[1m[91merror[0m: could not compile `tt-application` (lib) due to 11 previous errors
+89:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
 
 # Tail
+
+> tauritavern@2.2.0 check:rust:clippy /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
+
+[1m[92m   Compiling[0m tt-domain v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-domain)
+[1m[92m   Compiling[0m tauritavern v2.2.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern)
+[1m[92m    Checking[0m tt-contracts v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-contracts)
+[1m[92m    Checking[0m tt-ports v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-ports)
+[1m[92m    Checking[0m tt-adapter-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-http)
+[1m[92m    Checking[0m tt-adapter-storage-core v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-core)
+[1m[92m    Checking[0m tt-adapter-archive v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-archive)
+[1m[92m    Checking[0m tt-application v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-application)
+[1m[92m    Checking[0m tt-adapter-provider-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-provider-http)
+[1m[92m    Checking[0m tt-adapter-tokenization v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-tokenization)
+[1m[92m    Checking[0m tt-adapter-sync v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-sync)
+[1m[92m    Checking[0m tt-adapter-storage-userdata v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-userdata)
+[1m[92m    Checking[0m tt-adapter-media v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-media)
+[1m[92m    Checking[0m tt-adapter-extension v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-extension)
+[1m[91merror[0m[1m: struct `LoreInvalidationResult` is never constructed[0m
+ [1m[94m--> [0mcrates/tt-application/src/services/agent_runtime_service/rp_lore_invalidation.rs:9:19
+  [1m[94m|[0m
+[1m[94m9[0m [1m[94m|[0m pub(super) struct LoreInvalidationResult {
+  [1m[94m|[0m                   [1m[91m^^^^^^^^^^^^^^^^^^^^^^[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m: `-D dead-code` implied by `-D warnings`
+  [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[expect(dead_code)]` or `#[allow(dead_code)]`
+
+[1m[91merror[0m[1m: function `build_lore_dependency_index` is never used[0m
+  [1m[94m--> [0mcrates/tt-application/src/services/agent_runtime_service/rp_lore_invalidation.rs:16:15
+   [1m[94m|[0m
+[1m[94m16[0m [1m[94m|[0m pub(super) fn build_lore_dependency_index(registry: &LoreRegistry) -> LoreDependencyIndex {
+   [1m[94m|[0m               [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[91merror[0m[1m: function `invalidate_lore_for_canon_change` is never used[0m
+  [1m[94m--> [0mcrates/tt-application/src/services/agent_runtime_service/rp_lore_invalidation.rs:46:15
+   [1m[94m|[0m
+[1m[94m46[0m [1m[94m|[0m pub(super) fn invalidate_lore_for_canon_change(
+   [1m[94m|[0m               [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[91merror[0m[1m: function `add_affected` is never used[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/agent_runtime_service/rp_lore_invalidation.rs:106:4
+    [1m[94m|[0m
+[1m[94m106[0m [1m[94m|[0m fn add_affected(
+    [1m[94m|[0m    [1m[91m^^^^^^^^^^^^[0m
+
+[1m[91merror[0m[1m: enum `LoreRevalidationDecision` is never used[0m
+ [1m[94m--> [0mcrates/tt-application/src/services/agent_runtime_service/rp_lore_revalidation.rs:9:17
+  [1m[94m|[0m
+[1m[94m9[0m [1m[94m|[0m pub(super) enum LoreRevalidationDecision {
+  [1m[94m|[0m                 [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[91merror[0m[1m: struct `LoreRevalidationResult` is never constructed[0m
+  [1m[94m--> [0mcrates/tt-application/src/services/agent_runtime_service/rp_lore_revalidation.rs:16:19
+   [1m[94m|[0m
+[1m[94m16[0m [1m[94m|[0m pub(super) struct LoreRevalidationResult {
+   [1m[94m|[0m                   [1m[91m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[91merror[0m[1m: struct `SafeCharacterProjectionSource` is never constructed[0m
+  [1m[94m--> [0mcrates/tt-application/src/services/agent_runtime_service/rp_lore_revalidation.rs:22:19
+   [1m[94m|[0m
+[1m[94m22[0m [1m[94m|[0m pub(super) struct SafeCharacterProjectionSource {
+   [1m[94m|[0m                   [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[91merror[0m[1m: function `project_safe_character_lore` is never used[0m
+  [1m[94m--> [0mcrates/tt-application/src/services/agent_runtime_service/rp_lore_revalidation.rs:33:15
+   [1m[94m|[0m
+[1m[94m33[0m [1m[94m|[0m pub(super) fn project_safe_character_lore(
+   [1m[94m|[0m               [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[91merror[0m[1m: function `trigger_owners` is never used[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/agent_runtime_service/rp_lore_revalidation.rs:109:15
+    [1m[94m|[0m
+[1m[94m109[0m [1m[94m|[0m pub(super) fn trigger_owners(records: impl Iterator<Item = LoreRecord>) -> BTreeMap<String, BTreeSet<String>> {
+    [1m[94m|[0m               [1m[91m^^^^^^^^^^^^^^[0m
+
+[1m[91merror[0m[1m: function `revalidate_lore_record` is never used[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/agent_runtime_service/rp_lore_revalidation.rs:122:15
+    [1m[94m|[0m
+[1m[94m122[0m [1m[94m|[0m pub(super) fn revalidate_lore_record(
+    [1m[94m|[0m               [1m[91m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[91merror[0m[1m: function `contains_runtime_only_payload` is never used[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/agent_runtime_service/rp_lore_revalidation.rs:176:4
+    [1m[94m|[0m
+[1m[94m176[0m [1m[94m|[0m fn contains_runtime_only_payload(content: &str) -> bool {
+    [1m[94m|[0m    [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[91merror[0m: could not compile `tt-application` (lib) due to 11 previous errors
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
