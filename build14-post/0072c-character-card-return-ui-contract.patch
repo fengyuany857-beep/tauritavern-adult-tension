@@ -1,0 +1,40 @@
+diff --git a/tests/character-card-return-ui-contract.test.mjs b/tests/character-card-return-ui-contract.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/character-card-return-ui-contract.test.mjs
+@@ -0,0 +1,33 @@
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import test from 'node:test';
++
++const source = fs.readFileSync(
++    new URL('../src/scripts/tauri/character-card-return-ui.js', import.meta.url),
++    'utf8',
++);
++
++test('Character Card Return UI keeps the dedicated Preview Plan Commit pipeline', () => {
++    for (const token of [
++        'previewReturnImport',
++        'resolveReturnContext',
++        'planReturnImport',
++        'commitReturnImport',
++        'discardReturnPreview',
++        'resolveStableChatId',
++        "KNOWN_EXACT_RETURN",
++        "KEEP_LOCAL",
++        "USE_IMPORTED",
++        'expectedFinalCardHash',
++    ]) {
++        assert.ok(source.includes(token), `missing Return UI contract token: ${token}`);
++    }
++});
++
++test('Character Card Return UI does not reuse the ordinary replacement path', () => {
++    for (const forbidden of [
++        'processDroppedFiles(',
++        'replaceCharacterFromFile(',
++        "safeInvoke('replace_character'",
++    ]) {
++        assert.equal(source.includes(forbidden), false, `Return UI reused ordinary Replace: ${forbidden}`);
++    }
++});
