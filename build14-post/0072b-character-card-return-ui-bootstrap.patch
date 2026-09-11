@@ -1,0 +1,11 @@
+diff --git a/src/script.js b/src/script.js
+--- a/src/script.js
++++ b/src/script.js
+@@ -69,6 +69,7 @@ import {
+     isNativeCharacterCardPickerAvailable,
+     pickNativeCharacterCardFiles,
+ } from './scripts/tauri/character-card-picker.js';
++import './scripts/tauri/character-card-return-ui.js';
+ import {
+     captureSettingsSaveBaseline,
+     clearSettingsSaveBaseline,
