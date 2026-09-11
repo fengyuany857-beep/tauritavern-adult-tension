@@ -1,0 +1,174 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -845,6 +845,185 @@ fn return_plan_hmac_sha256(secret: &[u8], message: &[u8]) -> [u8; 32] {
+     outer.update(inner_digest);
+     outer.finalize().into()
+ }
++
++fn constant_time_text_eq(left: &str, right: &str) -> bool {
++    let left = left.as_bytes();
++    let right = right.as_bytes();
++    if left.len() != right.len() {
++        return false;
++    }
++    let mut difference = 0u8;
++    for (left, right) in left.iter().zip(right) {
++        difference |= left ^ right;
++    }
++    difference == 0
++}
++
++fn return_transaction_id(plan_token: &str) -> Result<String, DomainError> {
++    if plan_token.len() != 64 || !plan_token.bytes().all(|byte| byte.is_ascii_hexdigit()) {
++        return Err(DomainError::InvalidData(
++            "Character Card Return plan token must be HMAC-SHA256 hex".to_string(),
++        ));
++    }
++    Ok(format!("return-{plan_token}"))
++}
++
++async fn parse_staged_card(
++    cards: &dyn CharacterCardReturnRepository,
++    format: PortableCharacterCardFormat,
++    bytes: &[u8],
++) -> Result<Value, DomainError> {
++    match format {
++        PortableCharacterCardFormat::Json => parse_json_card(bytes),
++        PortableCharacterCardFormat::Png => {
++            let json = cards.inspect_png_card_json(bytes).await?;
++            parse_json_card(json.as_bytes())
++        }
++    }
++}
++
++fn validate_binding_plan_cas(
++    binding: &CharacterCardBinding,
++    plan: &ReturnImportPlan,
++) -> Result<(), DomainError> {
++    if binding.binding_id != plan.target_binding_id {
++        return Err(DomainError::Conflict(
++            "Character Card Return binding identity changed since planning".to_string(),
++        ));
++    }
++    if binding.generation != plan.expected_binding_generation {
++        return Err(DomainError::Conflict(format!(
++            "Character Card Return binding generation CAS failed: expected {}, current {}",
++            plan.expected_binding_generation, binding.generation
++        )));
++    }
++    if binding.card_revision != plan.expected_card_revision {
++        return Err(DomainError::Conflict(format!(
++            "Character Card Return card revision CAS failed: expected {}, current {}",
++            plan.expected_card_revision, binding.card_revision
++        )));
++    }
++    if binding.profile_revision_at_last_sync != Some(plan.expected_profile_revision) {
++        return Err(DomainError::Conflict(format!(
++            "Character Card Return RP profile CAS failed: expected {}, binding records {:?}",
++            plan.expected_profile_revision, binding.profile_revision_at_last_sync
++        )));
++    }
++    Ok(())
++}
++
++fn validate_local_card_plan_hash(
++    local_raw: &Value,
++    plan: &ReturnImportPlan,
++) -> Result<(), DomainError> {
++    let local_hash = canonical_definition_hash(&portable_definition_projection(local_raw.clone()))
++        .map_err(DomainError::InvalidData)?;
++    if local_hash != plan.expected_card_hash {
++        return Err(DomainError::Conflict(format!(
++            "Character Card Return local card CAS failed: expected {}, current {}",
++            plan.expected_card_hash, local_hash
++        )));
++    }
++    Ok(())
++}
++
++/// Apply only portable definition values onto the current stored card. Starting
++/// from LOCAL deliberately preserves storage/runtime-only fields stripped by
++/// portable_definition_projection (chat/date/fav/world/internal namespace).
++/// Missing imported fields cannot delete LOCAL portable values because plan
++/// resolution already treats missing as non-deletion.
++fn merge_resolved_portable_into_local(
++    local_raw: &Value,
++    resolved_portable: &Value,
++    expected_resolved_hash: &str,
++) -> Result<Value, DomainError> {
++    scan_portable_card(resolved_portable).map_err(portable_security_error)?;
++    let mut merged = local_raw.clone();
++    overlay_return_value(&mut merged, resolved_portable);
++    let projected = portable_definition_projection(merged.clone());
++    let projected_hash = canonical_definition_hash(&projected).map_err(DomainError::InvalidData)?;
++    if projected_hash != expected_resolved_hash {
++        return Err(DomainError::Conflict(
++            "resolved Character Card cannot be merged without changing portable definition identity"
++                .to_string(),
++        ));
++    }
++    Ok(merged)
++}
++
++fn overlay_return_value(target: &mut Value, source: &Value) {
++    match (target, source) {
++        (Value::Object(target), Value::Object(source)) => {
++            for (key, source_value) in source {
++                match target.get_mut(key) {
++                    Some(target_value) => overlay_return_value(target_value, source_value),
++                    None => {
++                        target.insert(key.clone(), source_value.clone());
++                    }
++                }
++            }
++        }
++        (target, source) => *target = source.clone(),
++    }
++}
++
++async fn advance_return_journal(
++    materialization: &dyn CharacterCardMaterializationRepository,
++    journal: &mut CharacterCardTransactionJournal,
++    next_state: CharacterCardTransactionState,
++) -> Result<(), DomainError> {
++    if !valid_return_journal_transition(journal.state, next_state) {
++        return Err(DomainError::Conflict(format!(
++            "invalid Character Card Return journal transition: {:?} -> {:?}",
++            journal.state, next_state
++        )));
++    }
++    let mut next = journal.clone();
++    next.state = next_state;
++    next.updated_at = Utc::now().to_rfc3339();
++    materialization.write_transaction(&next).await?;
++    *journal = next;
++    Ok(())
++}
++
++fn valid_return_journal_transition(
++    current: CharacterCardTransactionState,
++    next: CharacterCardTransactionState,
++) -> bool {
++    use CharacterCardTransactionState as State;
++    if next == State::RollingBack {
++        return !current.is_terminal() || current == State::RollingBack;
++    }
++    matches!(
++        (current, next),
++        (State::Prepared, State::StagedInputVerified)
++            | (State::StagedInputVerified, State::CardSnapshotSaved)
++            | (State::CardSnapshotSaved, State::CardWritten)
++            | (State::CardWritten, State::BindingWritten)
++            | (State::BindingWritten, State::RpProfileWritten)
++            | (State::BindingWritten, State::IndexesInvalidated)
++            | (State::RpProfileWritten, State::IndexesInvalidated)
++            | (State::IndexesInvalidated, State::ReadbackVerified)
++            | (State::ReadbackVerified, State::Committed)
++            | (State::RollingBack, State::RollingBack)
++            | (State::RollingBack, State::RolledBack)
++    )
++}
+ 
+ #[cfg(test)]
+ mod tests {
