@@ -1,3 +1,39 @@
 # Diagnostic matches
+2:> tauritavern@2.2.0 check:rust:clippy /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+3:> cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
+15:[1m[91merror[0m[1m: this manual char comparison can be written more succinctly[0m
+21:    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#manual_pattern_char_comparison
+22:    [1m[94m= [0m[1mnote[0m: `-D clippy::manual-pattern-char-comparison` implied by `-D warnings`
+23:    [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::manual_pattern_char_comparison)]`
+25:[1m[91merror[0m: could not compile `tt-adapter-storage-core` (lib) due to 1 previous error
+26:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+27: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
+
+> tauritavern@2.2.0 check:rust:clippy /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
+
+[1m[92m   Compiling[0m tt-domain v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-domain)
+[1m[92m   Compiling[0m tauritavern v2.2.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern)
+[1m[92m    Checking[0m tt-contracts v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-contracts)
+[1m[92m    Checking[0m tt-ports v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-ports)
+[1m[92m    Checking[0m tt-adapter-storage-core v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-core)
+[1m[92m    Checking[0m tt-adapter-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-http)
+[1m[92m    Checking[0m tt-application v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-application)
+[1m[92m    Checking[0m tt-adapter-tokenization v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-tokenization)
+[1m[92m    Checking[0m tt-adapter-provider-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-provider-http)
+[1m[92m    Checking[0m tt-adapter-sync v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-sync)
+[1m[91merror[0m[1m: this manual char comparison can be written more succinctly[0m
+   [1m[94m--> [0mcrates/tt-adapter-storage-core/src/character_card_materialization_store.rs:546:20
+    [1m[94m|[0m
+[1m[94m546[0m [1m[94m|[0m             .split(|character| character == '/' || character == '\\')
+    [1m[94m|[0m                    [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mhelp: consider using an array of `char`: `['/', '\\']`[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#manual_pattern_char_comparison
+    [1m[94m= [0m[1mnote[0m: `-D clippy::manual-pattern-char-comparison` implied by `-D warnings`
+    [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::manual_pattern_char_comparison)]`
+
+[1m[91merror[0m: could not compile `tt-adapter-storage-core` (lib) due to 1 previous error
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+ ELIFECYCLE  Command failed with exit code 101.
