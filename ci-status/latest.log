@@ -1,3 +1,60 @@
 # Diagnostic matches
+19:[1m[91merror[E0277][0m[1m: the trait bound `Arc<...>: CharacterCardMaterializationRepository` is not satisfied[0m
+29:[1m[91merror[E0277][0m[1m: the trait bound `Arc<...>: CharacterCardMaterializationRepository` is not satisfied[0m
+39:[1m[91merror[E0277][0m[1m: the trait bound `Arc<...>: CharacterCardMaterializationRepository` is not satisfied[0m
+49:[1mFor more information about this error, try `rustc --explain E0277`.[0m
+50:[1m[91merror[0m: could not compile `tt-application` (lib) due to 3 previous errors
+51:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
 
 # Tail
+
+> tauritavern@2.2.0 test:rust /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> cargo test --manifest-path src-tauri/Cargo.toml --workspace --no-default-features
+
+[1m[92m   Compiling[0m tt-domain v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-domain)
+[1m[92m   Compiling[0m tauritavern v2.2.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern)
+[1m[92m   Compiling[0m tt-contracts v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-contracts)
+[1m[92m   Compiling[0m tt-ports v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-ports)
+[1m[92m   Compiling[0m tt-adapter-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-http)
+[1m[92m   Compiling[0m tt-adapter-storage-core v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-core)
+[1m[92m   Compiling[0m tt-adapter-provider-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-provider-http)
+[1m[92m   Compiling[0m tt-adapter-tokenization v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-tokenization)
+[1m[92m   Compiling[0m tt-adapter-archive v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-archive)
+[1m[92m   Compiling[0m tt-adapter-sync v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-sync)
+[1m[92m   Compiling[0m tt-adapter-storage-userdata v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-userdata)
+[1m[92m   Compiling[0m tt-adapter-media v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-media)
+[1m[92m   Compiling[0m tt-adapter-extension v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-extension)
+[1m[92m   Compiling[0m tt-application v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-application)
+[1m[91merror[E0277][0m[1m: the trait bound `Arc<...>: CharacterCardMaterializationRepository` is not satisfied[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:210:29
+    [1m[94m|[0m
+[1m[94m210[0m [1m[94m|[0m [1m[94m...[0m                   &self.materialization,
+    [1m[94m|[0m                       [1m[91m^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mthe trait `CharacterCardMaterializationRepository` is not implemented for `Arc<(dyn CharacterCardMaterializationRepository + 'static)>`[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mnote[0m: required for the cast from `&Arc<(dyn CharacterCardMaterializationRepository + 'static)>` to `&dyn CharacterCardMaterializationRepository`
+    [1m[94m= [0m[1mnote[0m: the full name for the type has been written to '/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/target/debug/deps/tt_application-d86a7a0eb0c5bcdb.long-type-15549758035421508577.txt'
+    [1m[94m= [0m[1mnote[0m: consider using `--verbose` to print the full type name to the console
+
+[1m[91merror[E0277][0m[1m: the trait bound `Arc<...>: CharacterCardMaterializationRepository` is not satisfied[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:216:29
+    [1m[94m|[0m
+[1m[94m216[0m [1m[94m|[0m [1m[94m...[0m                   &self.materialization,
+    [1m[94m|[0m                       [1m[91m^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mthe trait `CharacterCardMaterializationRepository` is not implemented for `Arc<(dyn CharacterCardMaterializationRepository + 'static)>`[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mnote[0m: required for the cast from `&Arc<(dyn CharacterCardMaterializationRepository + 'static)>` to `&dyn CharacterCardMaterializationRepository`
+    [1m[94m= [0m[1mnote[0m: the full name for the type has been written to '/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/target/debug/deps/tt_application-d86a7a0eb0c5bcdb.long-type-15549758035421508577.txt'
+    [1m[94m= [0m[1mnote[0m: consider using `--verbose` to print the full type name to the console
+
+[1m[91merror[E0277][0m[1m: the trait bound `Arc<...>: CharacterCardMaterializationRepository` is not satisfied[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:230:29
+    [1m[94m|[0m
+[1m[94m230[0m [1m[94m|[0m [1m[94m...[0m                   &self.materialization,
+    [1m[94m|[0m                       [1m[91m^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mthe trait `CharacterCardMaterializationRepository` is not implemented for `Arc<(dyn CharacterCardMaterializationRepository + 'static)>`[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mnote[0m: required for the cast from `&Arc<(dyn CharacterCardMaterializationRepository + 'static)>` to `&dyn CharacterCardMaterializationRepository`
+    [1m[94m= [0m[1mnote[0m: the full name for the type has been written to '/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/target/debug/deps/tt_application-d86a7a0eb0c5bcdb.long-type-15549758035421508577.txt'
+    [1m[94m= [0m[1mnote[0m: consider using `--verbose` to print the full type name to the console
+
+[1mFor more information about this error, try `rustc --explain E0277`.[0m
+[1m[91merror[0m: could not compile `tt-application` (lib) due to 3 previous errors
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
