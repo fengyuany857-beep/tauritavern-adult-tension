@@ -1,14 +1,14 @@
 diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
 --- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
 +++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
-@@ -123,6 +123,96 @@ impl CharacterCardMaterializationOrchestrator {
+@@ -123,6 +123,98 @@ impl CharacterCardMaterializationOrchestrator {
          }
      }
  
 +    /// Resolve interrupted Return transactions before the host exposes any
-+    /// Character Card commands. Only a persisted ReadbackVerified transaction
-+    /// with exact durable ownership proof may roll forward to Committed; all
-+    /// earlier states roll back. Ambiguous ownership fails startup closed.
++    /// Character Card commands. A transaction at or beyond the durable export
++    /// boundary may roll forward only when exact Card, binding, export and Undo
++    /// ownership are all still provable. Everything earlier rolls back.
 +    pub async fn recover_incomplete_returns(&self) -> Result<(), DomainError> {
 +        let _commit_guard = self.return_commit_lock.lock().await;
 +        let transactions = self.materialization.list_transactions().await?;
@@ -22,9 +22,10 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 +                        journal.transaction_id
 +                    )));
 +                }
-+                CharacterCardTransactionState::ReadbackVerified => {
++                CharacterCardTransactionState::IndexesInvalidated
++                | CharacterCardTransactionState::ReadbackVerified => {
 +                    if self
-+                        .readback_verified_return_is_fully_owned(&journal)
++                        .return_is_fully_owned_for_recovery(&journal)
 +                        .await?
 +                    {
 +                        advance_return_journal(
@@ -44,7 +45,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 +        Ok(())
 +    }
 +
-+    async fn readback_verified_return_is_fully_owned(
++    async fn return_is_fully_owned_for_recovery(
 +        &self,
 +        journal: &CharacterCardTransactionJournal,
 +    ) -> Result<bool, DomainError> {
@@ -73,11 +74,11 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 +        else {
 +            return Ok(false);
 +        };
-+        if undo.transaction_id != journal.transaction_id
-+            || undo.card_before_ref != card_before_ref
-+            || undo.binding_before_ref != binding_before_ref
-+            || undo.profile_before_ref != journal.before_profile_ref
-+            || undo.expected_after_card_hash != expected_card_hash
++        if undo.transaction_id.as_str() != journal.transaction_id.as_str()
++            || undo.card_before_ref.as_str() != card_before_ref
++            || undo.binding_before_ref.as_str() != binding_before_ref
++            || undo.profile_before_ref.as_deref() != journal.before_profile_ref.as_deref()
++            || undo.expected_after_card_hash.as_str() != expected_card_hash
 +            || undo.expected_after_profile_hash.is_some()
 +        {
 +            return Ok(false);
@@ -122,7 +123,7 @@ diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs b/
          CharacterCardMaterializationOrchestrator::new(
              repositories.character_card_materialization_repository.clone(),
              repositories.character_card_return_repository.clone(),
-@@ -153,7 +153,9 @@ pub(super) async fn build(
+@@ -153,7 +153,10 @@ pub(super) async fn build(
              repositories.agent_run_repository.clone(),
 -        ),
 -    );
@@ -130,7 +131,8 @@ diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs b/
 +    character_card_materialization_orchestrator
 +        .recover_incomplete_returns()
 +        .await?;
-+    let character_card_materialization_orchestrator = Arc::new(character_card_materialization_orchestrator);
++    let character_card_materialization_orchestrator =
++        Arc::new(character_card_materialization_orchestrator);
      let acceptance_root = app_handle
          .path()
          .app_cache_dir()
