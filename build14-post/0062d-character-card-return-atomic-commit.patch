@@ -1,0 +1,377 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -548,6 +548,237 @@ impl CharacterCardMaterializationOrchestrator {
+         })
+     }
++
++    pub async fn commit_staged_return(
++        &self,
++        staged_ref: &str,
++        format: PortableCharacterCardFormat,
++        replace_avatar: bool,
++        supplied_plan: &ReturnImportPlan,
++        expected_session_id: &SessionId,
++        expected_branch_id: &BranchId,
++        choices: &BTreeMap<String, ReturnFieldChoice>,
++    ) -> Result<CharacterCardReturnCommitResult, DomainError> {
++        let _commit_guard = self.return_commit_lock.lock().await;
++        supplied_plan.validate_shape().map_err(DomainError::InvalidData)?;
++
++        let secret = self.materialization.load_or_create_origin_secret().await?;
++        let expected_token = compute_return_plan_token(
++            &secret,
++            supplied_plan,
++            expected_session_id,
++            expected_branch_id,
++            format,
++            replace_avatar,
++        );
++        if !constant_time_text_eq(&expected_token, &supplied_plan.plan_token) {
++            return Err(DomainError::Conflict(
++                "Character Card Return plan token is invalid or belongs to another context"
++                    .to_string(),
++            ));
++        }
++        let transaction_id = return_transaction_id(&supplied_plan.plan_token)?;
++
++        if let Some(mut existing) = self.materialization.read_transaction(&transaction_id).await? {
++            if existing.plan_token != supplied_plan.plan_token
++                || existing.binding_id != supplied_plan.target_binding_id
++            {
++                return Err(DomainError::Conflict(
++                    "Character Card Return transaction identity collision".to_string(),
++                ));
++            }
++            match existing.state {
++                CharacterCardTransactionState::Committed => {
++                    return self
++                        .reconcile_committed_return(
++                            &transaction_id,
++                            supplied_plan,
++                            replace_avatar,
++                        )
++                        .await;
++                }
++                CharacterCardTransactionState::RolledBack => {
++                    return Err(DomainError::Conflict(
++                        "Character Card Return plan was already rolled back; create a fresh plan"
++                            .to_string(),
++                    ));
++                }
++                CharacterCardTransactionState::RollbackFailed => {
++                    return Err(DomainError::Conflict(
++                        "Character Card Return has an unresolved rollback failure".to_string(),
++                    ));
++                }
++                _ => {
++                    self.rollback_return_transaction(&mut existing).await?;
++                    return Err(DomainError::Conflict(
++                        "unfinished Character Card Return was recovered; create a fresh plan"
++                            .to_string(),
++                    ));
++                }
++            }
++        }
++
++        let planned = self
++            .plan_staged_return(
++                staged_ref,
++                format,
++                replace_avatar,
++                expected_session_id,
++                expected_branch_id,
++                choices,
++            )
++            .await?;
++        if planned.plan != *supplied_plan {
++            return Err(DomainError::Conflict(
++                "Character Card Return plan changed since confirmation".to_string(),
++            ));
++        }
++
++        let staged_bytes = self.materialization.read_staged_import(staged_ref).await?;
++        if sha256_hex(&staged_bytes) != supplied_plan.staged_import_hash {
++            return Err(DomainError::Conflict(
++                "immutable staged Character Card no longer matches the confirmed plan".to_string(),
++            ));
++        }
++        let staged_card = parse_staged_card(&*self.cards, format, &staged_bytes).await?;
++        let metadata = extract_return_metadata(&staged_card).ok_or_else(|| {
++            DomainError::InvalidData(
++                "confirmed Character Card Return no longer contains return metadata".to_string(),
++            )
++        })?;
++
++        let binding = self
++            .materialization
++            .read_binding(&supplied_plan.target_binding_id)
++            .await?
++            .ok_or_else(|| DomainError::NotFound(format!(
++                "character card binding {}",
++                supplied_plan.target_binding_id
++            )))?;
++        validate_active_binding(&binding)?;
++        validate_binding_plan_cas(&binding, supplied_plan)?;
++        self.verify_commit_authority(
++            &binding.binding_id,
++            supplied_plan.expected_binding_generation,
++            supplied_plan.expected_card_revision,
++            supplied_plan.expected_profile_revision,
++            expected_session_id,
++            expected_branch_id,
++        )
++        .await?;
++
++        let local_raw_text = self.cards.read_card_json(&binding.card_storage_identity).await?;
++        let local_raw = parse_json_card(local_raw_text.as_bytes())?;
++        validate_local_card_plan_hash(&local_raw, supplied_plan)?;
++        let resolved_local = merge_resolved_portable_into_local(
++            &local_raw,
++            &planned.resolved_definition,
++            &supplied_plan.resolved_choices_hash,
++        )?;
++        let resolved_json = serde_json::to_string(&resolved_local).map_err(|error| {
++            DomainError::InvalidData(format!(
++                "failed to serialize resolved Character Card Return: {error}"
++            ))
++        })?;
++
++        let mut export = self
++            .materialization
++            .read_export_record(&metadata.export_id)
++            .await?
++            .ok_or_else(|| DomainError::NotFound(format!(
++                "character card export record {}",
++                metadata.export_id
++            )))?;
++        if export.transaction_id.is_some() {
++            return Err(DomainError::Conflict(
++                "Character Card Return export was already consumed".to_string(),
++            ));
++        }
++
++        let now = Utc::now().to_rfc3339();
++        let mut journal = CharacterCardTransactionJournal {
++            schema_version: CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
++            transaction_id: transaction_id.clone(),
++            plan_token: supplied_plan.plan_token.clone(),
++            binding_id: binding.binding_id.clone(),
++            export_id: Some(export.export_id.clone()),
++            expected_after_card_hash: Some(supplied_plan.resolved_choices_hash.clone()),
++            state: CharacterCardTransactionState::Prepared,
++            before_card_ref: None,
++            before_binding_ref: None,
++            before_profile_ref: None,
++            staged_import_ref: Some(staged_ref.to_string()),
++            created_at: now.clone(),
++            updated_at: now,
++        };
++        self.materialization.write_transaction(&journal).await?;
++
++        let result: Result<CharacterCardReturnCommitResult, DomainError> = async {
++            advance_return_journal(
++                &*self.materialization,
++                &mut journal,
++                CharacterCardTransactionState::StagedInputVerified,
++            )
++            .await?;
++
++            let before_png = self.cards.read_card_png_bytes(&binding.card_storage_identity).await?;
++            let before_png_hash = sha256_hex(&before_png);
++            let before_png_json = self.cards.inspect_png_card_json(&before_png).await?;
++            validate_local_card_plan_hash(
++                &parse_json_card(before_png_json.as_bytes())?,
++                supplied_plan,
++            )?;
++            let before_card_ref = self.materialization.write_png_snapshot(&before_png).await?;
++            let before_binding_bytes = serde_json::to_vec(&binding).map_err(|error| {
++                DomainError::InvalidData(format!(
++                    "failed to snapshot Character Card binding: {error}"
++                ))
++            })?;
++            let before_binding_ref = self
++                .materialization
++                .write_snapshot(&before_binding_bytes)
++                .await?;
++            journal.before_card_ref = Some(before_card_ref.clone());
++            journal.before_binding_ref = Some(before_binding_ref.clone());
++            advance_return_journal(
++                &*self.materialization,
++                &mut journal,
++                CharacterCardTransactionState::CardSnapshotSaved,
++            )
++            .await?;
++
++            // Last pre-write CAS. The exact PNG check also catches avatar-only
++            // changes that are intentionally absent from canonical card hashes.
++            let live_png = self.cards.read_card_png_bytes(&binding.card_storage_identity).await?;
++            if sha256_hex(&live_png) != before_png_hash {
++                return Err(DomainError::Conflict(
++                    "Character Card changed after rollback snapshot was captured".to_string(),
++                ));
++            }
++            let live_binding = self
++                .materialization
++                .read_binding(&binding.binding_id)
++                .await?
++                .ok_or_else(|| DomainError::NotFound(format!(
++                    "character card binding {}",
++                    binding.binding_id
++                )))?;
++            validate_binding_plan_cas(&live_binding, supplied_plan)?;
++            self.verify_commit_authority(
++                &binding.binding_id,
++                supplied_plan.expected_binding_generation,
++                supplied_plan.expected_card_revision,
++                supplied_plan.expected_profile_revision,
++                expected_session_id,
++                expected_branch_id,
++            )
++            .await?;
++
++            let avatar_png = if format == PortableCharacterCardFormat::Png && replace_avatar {
++                Some(staged_bytes.as_slice())
++            } else {
++                None
++            };
++            self.cards
++                .write_return_definition(
++                    &binding.card_storage_identity,
++                    &resolved_json,
++                    avatar_png,
++                )
++                .await?;
++            advance_return_journal(
++                &*self.materialization,
++                &mut journal,
++                CharacterCardTransactionState::CardWritten,
++            )
++            .await?;
++
++            let next_card_revision = binding.card_revision.checked_add(1).ok_or_else(|| {
++                DomainError::InvalidData("Character Card revision overflow".to_string())
++            })?;
++            let mut next_binding = binding.clone();
++            next_binding.card_revision = next_card_revision;
++            next_binding.updated_at = Utc::now().to_rfc3339();
++            if let Some(context) = next_binding.contexts.iter_mut().find(|context| {
++                &context.session_id == expected_session_id
++                    && &context.branch_id == expected_branch_id
++            }) {
++                context.last_seen_profile_revision = Some(supplied_plan.expected_profile_revision);
++            }
++            self.materialization.write_binding(&next_binding).await?;
++            advance_return_journal(
++                &*self.materialization,
++                &mut journal,
++                CharacterCardTransactionState::BindingWritten,
++            )
++            .await?;
++
++            export.transaction_id = Some(transaction_id.clone());
++            self.materialization.write_export_record(&export).await?;
++            advance_return_journal(
++                &*self.materialization,
++                &mut journal,
++                CharacterCardTransactionState::IndexesInvalidated,
++            )
++            .await?;
++
++            let readback_text = self.cards.read_card_json(&binding.card_storage_identity).await?;
++            let readback = parse_json_card(readback_text.as_bytes())?;
++            let readback_hash = canonical_definition_hash(&portable_definition_projection(readback))
++                .map_err(DomainError::InvalidData)?;
++            if readback_hash != supplied_plan.resolved_choices_hash {
++                return Err(DomainError::Conflict(
++                    "Character Card Return readback hash mismatch".to_string(),
++                ));
++            }
++            let readback_binding = self
++                .materialization
++                .read_binding(&binding.binding_id)
++                .await?
++                .ok_or_else(|| DomainError::NotFound(format!(
++                    "character card binding {}",
++                    binding.binding_id
++                )))?;
++            if readback_binding.generation != supplied_plan.expected_binding_generation
++                || readback_binding.card_revision != next_card_revision
++                || readback_binding.profile_revision_at_last_sync
++                    != Some(supplied_plan.expected_profile_revision)
++            {
++                return Err(DomainError::Conflict(
++                    "Character Card Return binding readback mismatch".to_string(),
++                ));
++            }
++            let readback_export = self
++                .materialization
++                .read_export_record(&export.export_id)
++                .await?
++                .ok_or_else(|| DomainError::NotFound(format!(
++                    "character card export record {}",
++                    export.export_id
++                )))?;
++            if readback_export.transaction_id.as_deref() != Some(transaction_id.as_str()) {
++                return Err(DomainError::Conflict(
++                    "Character Card Return export replay marker readback mismatch".to_string(),
++                ));
++            }
++            self.verify_commit_authority(
++                &binding.binding_id,
++                supplied_plan.expected_binding_generation,
++                next_card_revision,
++                supplied_plan.expected_profile_revision,
++                expected_session_id,
++                expected_branch_id,
++            )
++            .await?;
++
++            self.materialization
++                .write_undo_record(&UndoRecord {
++                    transaction_id: transaction_id.clone(),
++                    card_before_ref: before_card_ref,
++                    binding_before_ref: before_binding_ref,
++                    profile_before_ref: None,
++                    expected_after_card_hash: readback_hash.clone(),
++                    expected_after_profile_hash: None,
++                    created_at: Utc::now().to_rfc3339(),
++                })
++                .await?;
++            advance_return_journal(
++                &*self.materialization,
++                &mut journal,
++                CharacterCardTransactionState::ReadbackVerified,
++            )
++            .await?;
++            advance_return_journal(
++                &*self.materialization,
++                &mut journal,
++                CharacterCardTransactionState::Committed,
++            )
++            .await?;
++
++            Ok(CharacterCardReturnCommitResult {
++                transaction_id: transaction_id.clone(),
++                binding_id: binding.binding_id.clone(),
++                card_revision: next_card_revision,
++                binding_generation: supplied_plan.expected_binding_generation,
++                card_hash: readback_hash,
++                avatar_replaced: replace_avatar,
++                idempotent_replay: false,
++            })
++        }
++        .await;
++
++        match result {
++            Ok(result) => Ok(result),
++            Err(commit_error) => match self.rollback_return_transaction(&mut journal).await {
++                Ok(()) => Err(commit_error),
++                Err(rollback_error) => Err(DomainError::InternalError(format!(
++                    "Character Card Return failed ({commit_error}); rollback also failed ({rollback_error})"
++                ))),
++            },
++        }
++    }
+ 
+     pub async fn discard_staged_preview(&self, logical_ref: &str) -> Result<(), DomainError> {
