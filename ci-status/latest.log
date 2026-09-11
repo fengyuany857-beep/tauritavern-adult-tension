@@ -1,3 +1,79 @@
 # Diagnostic matches
+5:src/scripts/tauri/character-card-return-ui.js(25,20): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'TauriTavernCharacterCardsApi'.
+7:src/scripts/tauri/character-card-return-ui.js(32,23): error TS7006: Parameter 'file' implicitly has an 'any' type.
+8:src/scripts/tauri/character-card-return-ui.js(45,25): error TS7006: Parameter 'file' implicitly has an 'any' type.
+9:src/scripts/tauri/character-card-return-ui.js(65,24): error TS7006: Parameter 'parent' implicitly has an 'any' type.
+10:src/scripts/tauri/character-card-return-ui.js(65,32): error TS7006: Parameter 'labelText' implicitly has an 'any' type.
+11:src/scripts/tauri/character-card-return-ui.js(65,43): error TS7006: Parameter 'value' implicitly has an 'any' type.
+12:src/scripts/tauri/character-card-return-ui.js(79,20): error TS7006: Parameter 'value' implicitly has an 'any' type.
+13:src/scripts/tauri/character-card-return-ui.js(85,25): error TS7006: Parameter 'preview' implicitly has an 'any' type.
+14:src/scripts/tauri/character-card-return-ui.js(85,34): error TS7006: Parameter 'format' implicitly has an 'any' type.
+15:src/scripts/tauri/character-card-return-ui.js(108,24): error TS7006: Parameter 'decision' implicitly has an 'any' type.
+16:src/scripts/tauri/character-card-return-ui.js(108,34): error TS7006: Parameter 'index' implicitly has an 'any' type.
+17:src/scripts/tauri/character-card-return-ui.js(171,29): error TS7006: Parameter 'root' implicitly has an 'any' type.
+18:src/scripts/tauri/character-card-return-ui.js(171,35): error TS7006: Parameter 'preview' implicitly has an 'any' type.
+19:src/scripts/tauri/character-card-return-ui.js(174,24): error TS7006: Parameter 'decision' implicitly has an 'any' type.
+20:src/scripts/tauri/character-card-return-ui.js(174,34): error TS7006: Parameter 'index' implicitly has an 'any' type.
+21:src/scripts/tauri/character-card-return-ui.js(180,9): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+23:src/scripts/tauri/character-card-return-ui.js(189,30): error TS7006: Parameter 'preview' implicitly has an 'any' type.
+24:src/scripts/tauri/character-card-return-ui.js(189,39): error TS7006: Parameter 'format' implicitly has an 'any' type.
+25:src/scripts/tauri/character-card-return-ui.js(207,28): error TS2339: Property 'warning' does not exist on type 'typeof toastr'.
+26:src/scripts/tauri/character-card-return-ui.js(212,28): error TS7006: Parameter 'planResult' implicitly has an 'any' type.
+27:src/scripts/tauri/character-card-return-ui.js(246,31): error TS18048: 'api' is possibly 'undefined'.
+28:src/scripts/tauri/character-card-return-ui.js(246,35): error TS2339: Property 'previewReturnImport' does not exist on type 'TauriTavernCharacterCardsApi'.
+29:src/scripts/tauri/character-card-return-ui.js(254,29): error TS18048: 'api' is possibly 'undefined'.
+30:src/scripts/tauri/character-card-return-ui.js(254,33): error TS2339: Property 'resolveReturnContext' does not exist on type 'TauriTavernCharacterCardsApi'.
+31:src/scripts/tauri/character-card-return-ui.js(260,34): error TS18048: 'api' is possibly 'undefined'.
+32:src/scripts/tauri/character-card-return-ui.js(260,38): error TS2339: Property 'planReturnImport' does not exist on type 'TauriTavernCharacterCardsApi'.
+33:src/scripts/tauri/character-card-return-ui.js(270,30): error TS18048: 'api' is possibly 'undefined'.
+34:src/scripts/tauri/character-card-return-ui.js(270,34): error TS2339: Property 'commitReturnImport' does not exist on type 'TauriTavernCharacterCardsApi'.
+35:src/scripts/tauri/character-card-return-ui.js(280,24): error TS2339: Property 'success' does not exist on type 'typeof toastr'.
+36:src/scripts/tauri/character-card-return-ui.js(287,23): error TS18048: 'api' is possibly 'undefined'.
+37:src/scripts/tauri/character-card-return-ui.js(287,27): error TS2339: Property 'discardReturnPreview' does not exist on type 'TauriTavernCharacterCardsApi'.
+38:src/scripts/tauri/character-card-return-ui.js(290,48): error TS2339: Property 'warning' does not exist on type 'typeof toastr'.
+39:src/scripts/tauri/character-card-return-ui.js(327,28): error TS2339: Property 'error' does not exist on type 'typeof toastr'.
+40:src/tauri/main/api/agent-chat-identity.js(3,43): error TS7006: Parameter 'chatRef' implicitly has an 'any' type.
+41: ELIFECYCLE  Command failed with exit code 2.
 
 # Tail
+
+> tauritavern@2.2.0 check:types /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> tsc -p tsconfig.host.json
+
+src/scripts/tauri/character-card-return-ui.js(25,20): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'TauriTavernCharacterCardsApi'.
+  No index signature with a parameter of type 'string' was found on type 'TauriTavernCharacterCardsApi'.
+src/scripts/tauri/character-card-return-ui.js(32,23): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(45,25): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(65,24): error TS7006: Parameter 'parent' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(65,32): error TS7006: Parameter 'labelText' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(65,43): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(79,20): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(85,25): error TS7006: Parameter 'preview' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(85,34): error TS7006: Parameter 'format' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(108,24): error TS7006: Parameter 'decision' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(108,34): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(171,29): error TS7006: Parameter 'root' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(171,35): error TS7006: Parameter 'preview' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(174,24): error TS7006: Parameter 'decision' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(174,34): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(180,9): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+src/scripts/tauri/character-card-return-ui.js(189,30): error TS7006: Parameter 'preview' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(189,39): error TS7006: Parameter 'format' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(207,28): error TS2339: Property 'warning' does not exist on type 'typeof toastr'.
+src/scripts/tauri/character-card-return-ui.js(212,28): error TS7006: Parameter 'planResult' implicitly has an 'any' type.
+src/scripts/tauri/character-card-return-ui.js(246,31): error TS18048: 'api' is possibly 'undefined'.
+src/scripts/tauri/character-card-return-ui.js(246,35): error TS2339: Property 'previewReturnImport' does not exist on type 'TauriTavernCharacterCardsApi'.
+src/scripts/tauri/character-card-return-ui.js(254,29): error TS18048: 'api' is possibly 'undefined'.
+src/scripts/tauri/character-card-return-ui.js(254,33): error TS2339: Property 'resolveReturnContext' does not exist on type 'TauriTavernCharacterCardsApi'.
+src/scripts/tauri/character-card-return-ui.js(260,34): error TS18048: 'api' is possibly 'undefined'.
+src/scripts/tauri/character-card-return-ui.js(260,38): error TS2339: Property 'planReturnImport' does not exist on type 'TauriTavernCharacterCardsApi'.
+src/scripts/tauri/character-card-return-ui.js(270,30): error TS18048: 'api' is possibly 'undefined'.
+src/scripts/tauri/character-card-return-ui.js(270,34): error TS2339: Property 'commitReturnImport' does not exist on type 'TauriTavernCharacterCardsApi'.
+src/scripts/tauri/character-card-return-ui.js(280,24): error TS2339: Property 'success' does not exist on type 'typeof toastr'.
+src/scripts/tauri/character-card-return-ui.js(287,23): error TS18048: 'api' is possibly 'undefined'.
+src/scripts/tauri/character-card-return-ui.js(287,27): error TS2339: Property 'discardReturnPreview' does not exist on type 'TauriTavernCharacterCardsApi'.
+src/scripts/tauri/character-card-return-ui.js(290,48): error TS2339: Property 'warning' does not exist on type 'typeof toastr'.
+src/scripts/tauri/character-card-return-ui.js(327,28): error TS2339: Property 'error' does not exist on type 'typeof toastr'.
+src/tauri/main/api/agent-chat-identity.js(3,43): error TS7006: Parameter 'chatRef' implicitly has an 'any' type.
+ ELIFECYCLE  Command failed with exit code 2.
