@@ -1,0 +1,42 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -1,7 +1,7 @@
+-use std::collections::BTreeSet;
++use std::collections::{BTreeMap, BTreeSet};
+ use std::fmt::Write as _;
+ use std::sync::Arc;
+ 
+ use chrono::Utc;
+ use serde::{Deserialize, Serialize};
+ use serde_json::Value;
+@@ -8,8 +8,8 @@ use serde_json::Value;
+ use sha2::{Digest, Sha256};
+ use tt_domain::errors::DomainError;
+ use tt_domain::models::character_card_materialization::{
+     BindingScopeKind, BindingStatus, CharacterCardBinding, CharacterCardBindingContext,
+-    ExportRecord, MergeFieldDecision, PortableReturnMetadata, ReturnRecognitionState,
+-    StagedCharacterCardImport, CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
++    ExportRecord, MergeFieldDecision, PortableReturnMetadata, ReturnImportPlan,
++    ReturnRecognitionState, StagedCharacterCardImport, CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
+ };
+@@ -68,3 +68,18 @@ pub struct CharacterCardReturnPreview {
+     pub warnings: Vec<String>,
+ }
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
++pub enum ReturnFieldChoice {
++    KeepLocal,
++    UseImported,
++}
++
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardReturnPlanResult {
++    pub plan: ReturnImportPlan,
++    pub resolved_definition: Value,
++    pub avatar_may_replace: bool,
++}
+ 
+ pub struct CharacterCardMaterializationOrchestrator {
