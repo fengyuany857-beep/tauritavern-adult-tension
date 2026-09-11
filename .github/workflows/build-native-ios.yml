@@ -143,6 +143,15 @@ jobs:
           done
           git diff --check
 
+      - name: Diagnose RP durable state path
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs"
+          echo "--- RP state persistence functions ---"
+          grep -n -B 12 -A 24 -E 'fn (load_state|save_state)|WorkspacePath::parse|persist/' "$target" || true
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
