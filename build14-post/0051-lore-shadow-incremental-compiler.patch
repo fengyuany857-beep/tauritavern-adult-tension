@@ -20,7 +20,7 @@ new file mode 100644
 +    LoreAssetStatus, LoreRecord, LoreTargetIntent,
 +};
 +
-+#[derive(Debug, Clone, PartialEq, Eq)]
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 +pub(super) enum WorldInfoPatchKind {
 +    NoOp,
 +    Create,
