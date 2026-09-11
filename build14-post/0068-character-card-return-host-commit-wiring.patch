@@ -1,0 +1,109 @@
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
+@@ -1,4 +1,4 @@
+-use std::sync::Arc;
++use std::{collections::BTreeMap, sync::Arc};
+ 
+ use tauri::State;
+ 
+@@ -16,8 +16,12 @@ use tt_application::dto::character_dto::{
+     UpdateAvatarDto, UpdateCharacterCardDataDto, UpdateCharacterDto,
+ };
+ use tt_application::services::character_card_materialization_orchestrator::{
+-    CharacterCardReturnPreview, PortableCharacterCardExport, PortableCharacterCardFormat,
++    CharacterCardReturnCommitResult, CharacterCardReturnPlanResult, CharacterCardReturnPreview,
++    PortableCharacterCardExport, PortableCharacterCardFormat, ReturnFieldChoice,
+ };
++use tt_domain::models::character_card_materialization::ReturnImportPlan;
++use tt_domain::models::rp_architecture::{BranchId, SessionId};
+ use tt_domain::models::skill::{SkillScope, SkillScopeRetargetRequest};
+ 
+ const SKILL_SOURCE_KIND_CHARACTER: &str = "character";
++
++#[derive(Debug, serde::Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct PlanCharacterCardReturnRequest {
++    staged_ref: String,
++    format: PortableCharacterCardFormat,
++    replace_avatar: bool,
++    session_id: String,
++    branch_id: String,
++    choices: BTreeMap<String, ReturnFieldChoice>,
++}
++
++#[derive(Debug, serde::Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CommitCharacterCardReturnRequest {
++    staged_ref: String,
++    format: PortableCharacterCardFormat,
++    replace_avatar: bool,
++    supplied_plan: ReturnImportPlan,
++    session_id: String,
++    branch_id: String,
++    choices: BTreeMap<String, ReturnFieldChoice>,
++}
+@@ -329,6 +353,56 @@ pub async fn preview_character_card_return(
+         .map_err(map_command_error("Failed to preview Character Card Return"))
+ }
+ 
++#[tauri::command]
++pub async fn plan_character_card_return(
++    request: PlanCharacterCardReturnRequest,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<CharacterCardReturnPlanResult, CommandError> {
++    log_command("plan_character_card_return");
++    let session_id = SessionId(request.session_id);
++    let branch_id = BranchId(request.branch_id);
++    app_state
++        .services
++        .character_card_materialization_orchestrator
++        .plan_staged_return(
++            &request.staged_ref,
++            request.format,
++            request.replace_avatar,
++            &session_id,
++            &branch_id,
++            &request.choices,
++        )
++        .await
++        .map_err(map_command_error("Failed to plan Character Card Return"))
++}
++
++#[tauri::command]
++pub async fn commit_character_card_return(
++    request: CommitCharacterCardReturnRequest,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<CharacterCardReturnCommitResult, CommandError> {
++    log_command("commit_character_card_return");
++    let session_id = SessionId(request.session_id);
++    let branch_id = BranchId(request.branch_id);
++    app_state
++        .services
++        .character_card_materialization_orchestrator
++        .commit_staged_return(
++            &request.staged_ref,
++            request.format,
++            request.replace_avatar,
++            &request.supplied_plan,
++            &session_id,
++            &branch_id,
++            &request.choices,
++        )
++        .await
++        .map_err(map_command_error("Failed to commit Character Card Return"))
++}
++
+ #[tauri::command]
+ pub async fn discard_character_card_return_preview(
+     logical_ref: String,
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
+@@ -25,6 +25,8 @@ pub fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static {
+         super::character_commands::export_bound_character_card,
+         super::character_commands::preview_character_card_return,
++        super::character_commands::plan_character_card_return,
++        super::character_commands::commit_character_card_return,
+         super::character_commands::discard_character_card_return_preview,
+         super::character_commands::update_avatar,
