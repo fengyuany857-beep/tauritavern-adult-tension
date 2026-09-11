@@ -1,18 +1,3 @@
 # Diagnostic matches
-2:adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip: OK
-5:adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip: OK
-12:bcd0b1f79366781bb925fc9b5e2f6b566f6b10950bd2cdf5b605f1220cc3ab09  build-info.json
 
 # Tail
-adult-tension-cbfdc623.zip: OK
-adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip: OK
-adult-tension-tauritavern-adapter-build14.zip: OK
-adult-tension-cbfdc623.zip: OK
-adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip: OK
-adult-tension-tauritavern-adapter-build14.zip: OK
-Embedded Adult Tension Runtime Skills into iOS resource path TauriTavern.app/assets/AdultTensionRuntimeSkills
-Repacked IPA: /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/TauriTavern-unsigned.ipa
-Repacked app archive: /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/TauriTavern.app.zip
-ae4a8a7752a6aec39607629558fdb23067f5469b2e15845165932f4917bc9e57  TauriTavern-unsigned.ipa
-257e7d896cf2c706d03617932563f67b56a062cb189ad73ea9c39c6337f30e13  TauriTavern.app.zip
-bcd0b1f79366781bb925fc9b5e2f6b566f6b10950bd2cdf5b605f1220cc3ab09  build-info.json
