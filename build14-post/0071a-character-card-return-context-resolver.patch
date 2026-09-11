@@ -15,8 +15,11 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
  pub struct CharacterCardMaterializationOrchestrator {
      materialization: Arc<dyn CharacterCardMaterializationRepository>,
      cards: Arc<dyn CharacterCardReturnRepository>,
-@@ -700,6 +707,85 @@ impl CharacterCardMaterializationOrchestrator {
--    pub async fn discard_staged_preview(&self, logical_ref: &str) -> Result<(), DomainError> {
+@@ -920,6 +927,87 @@ fn extract_return_metadata(card: &Value) -> Option<PortableReturnMetadata> {
+     serde_json::from_value(metadata).ok()
+ }
+ 
++impl CharacterCardMaterializationOrchestrator {
 +    /// Resolve the exact RP CAS context for a staged, authenticated Return.
 +    /// The browser supplies only the currently selected stableChatId; session
 +    /// identity remains owned by the durable binding and is re-verified again
@@ -109,5 +112,8 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 +            branch_id: context.branch_id.0.clone(),
 +        })
 +    }
++}
 +
-+    pub async fn discard_staged_preview(&self, logical_ref: &str) -> Result<(), DomainError> {
+ fn export_record_matches_metadata(
+     record: &ExportRecord,
+     metadata: &PortableReturnMetadata,
