@@ -1,0 +1,16 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
+@@ -48,9 +48,15 @@ mod rp_asset_rebuild;
++// These lore stages are intentionally compiled and test-covered before runtime activation.
++// Keep the lint allowance scoped to the shadow modules instead of widening visibility or
++// wiring them into production behavior merely to satisfy `dead_code`.
++#[allow(dead_code)]
+ mod rp_lore_invalidation;
++#[allow(dead_code)]
+ mod rp_lore_revalidation;
++#[allow(dead_code)]
+ mod rp_lore_compiler;
+ mod scheduler;
+ mod skill_scope;
+ mod timeline_projection;
