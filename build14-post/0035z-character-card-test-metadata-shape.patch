@@ -1,18 +1,6 @@
 diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
 --- a/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
 +++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
-@@ -353,10 +353,10 @@ mod tests {
-     fn metadata() -> PortableReturnMetadata {
-         PortableReturnMetadata {
-             binding_id: "binding-abc".to_string(),
-             export_id: "export-abc".to_string(),
-             binding_generation: 3,
-             base_card_revision: 7,
-             base_card_hash: "abc123".to_string(),
--            origin_proof: String::new(),
-+            origin_proof: "b".repeat(64),
-         }
-     }
 @@ -390,7 +390,7 @@ mod tests {
      fn return_metadata_does_not_change_base_hash() {
          let clean = json!({"data":{"name":"Lin","extensions":{}}});
