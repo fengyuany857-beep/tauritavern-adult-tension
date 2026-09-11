@@ -93,9 +93,9 @@ diff --git a/src/tauri/main/api/character-cards.js b/src/tauri/main/api/characte
 diff --git a/src/tauri/main/kernel/invokes/tauri-commands.js b/src/tauri/main/kernel/invokes/tauri-commands.js
 --- a/src/tauri/main/kernel/invokes/tauri-commands.js
 +++ b/src/tauri/main/kernel/invokes/tauri-commands.js
-@@ -122,6 +122,7 @@ export {};
-  *   | 'preview_character_card_return'
-  *   | 'prepare_data_archive_import_target_path'
-  *   | 'prepare_agent_prompt_assembly'
+@@ -109,6 +109,7 @@ export {};
+  *   | 'normalize_world_info_name'
+  *   | 'plan_agent_run_prune'
+  *   | 'plan_character_card_return'
 + *   | 'resolve_character_card_return_context'
   *   | 'read_secret_state'
