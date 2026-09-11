@@ -1,0 +1,302 @@
+diff --git a/src-tauri/crates/tt-application/src/services/mod.rs b/src-tauri/crates/tt-application/src/services/mod.rs
+--- a/src-tauri/crates/tt-application/src/services/mod.rs
++++ b/src-tauri/crates/tt-application/src/services/mod.rs
+@@ -17,6 +17,7 @@ pub mod background_service;
+ pub mod bundled_template_service;
+ pub mod character_card_materialization_service;
+ pub mod character_card_materialization_orchestrator;
++pub mod character_card_return_durable_authority;
+ pub mod character_card_return_selected_state;
+ #[cfg(test)]
+ mod character_card_materialization_return_tests;
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_return_durable_authority.rs b/src-tauri/crates/tt-application/src/services/character_card_return_durable_authority.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-application/src/services/character_card_return_durable_authority.rs
+@@ -0,0 +1,286 @@
++use std::{collections::BTreeMap, sync::Arc};
++
++use async_trait::async_trait;
++use serde::Deserialize;
++use tt_domain::errors::DomainError;
++use tt_domain::models::agent::WorkspacePath;
++use tt_domain::models::character_card_materialization::{
++    CharacterCardBindingContext, CharacterCardBindingTarget,
++};
++use tt_domain::models::rp_architecture::SessionIdentity;
++use tt_ports::repositories::character_card_return_authority_repository::{
++    CharacterCardReturnAuthorityRepository, CharacterCardReturnAuthoritySnapshot,
++};
++use tt_ports::repositories::character_card_return_persistent_state_repository::CharacterCardReturnPersistentStateRepository;
++
++use super::character_card_return_selected_state::CharacterCardReturnSelectedStateResolver;
++
++const RP_STATE_PATH: &str = "persist/rp/state.json";
++const SUPPORTED_RP_STATE_SCHEMA_VERSION: u32 = 1;
++
++#[derive(Debug, Deserialize)]
++#[serde(rename_all = "camelCase")]
++struct DurableRpAuthorityState {
++    schema_version: u32,
++    session: Option<SessionIdentity>,
++    #[serde(default)]
++    cast_registry: BTreeMap<String, DurableRpCharacterAuthority>,
++}
++
++#[derive(Debug, Deserialize)]
++#[serde(rename_all = "camelCase")]
++struct DurableRpCharacterAuthority {
++    character_id: String,
++    profile_revision: u64,
++}
++
++/// Read-only RP authority resolver for Character Card Return Commit.
++///
++/// The selected chat's committed persistStateId chooses the durable state. The
++/// Card, binding cache, export metadata, and run ordering never choose an RP
++/// revision. This adapter only projects identity + profileRevision and cannot
++/// mutate RP runtime state.
++pub struct CharacterCardReturnDurableAuthorityRepository {
++    selected: CharacterCardReturnSelectedStateResolver,
++    persistent: Arc<dyn CharacterCardReturnPersistentStateRepository>,
++}
++
++impl CharacterCardReturnDurableAuthorityRepository {
++    pub fn new(
++        selected: CharacterCardReturnSelectedStateResolver,
++        persistent: Arc<dyn CharacterCardReturnPersistentStateRepository>,
++    ) -> Self {
++        Self {
++            selected,
++            persistent,
++        }
++    }
++}
++
++#[async_trait]
++impl CharacterCardReturnAuthorityRepository for CharacterCardReturnDurableAuthorityRepository {
++    async fn resolve_authority(
++        &self,
++        target: &CharacterCardBindingTarget,
++        context: &CharacterCardBindingContext,
++    ) -> Result<CharacterCardReturnAuthoritySnapshot, DomainError> {
++        let selected = self.selected.resolve(context).await?;
++        let path = WorkspacePath::parse(RP_STATE_PATH)?;
++        let durable = self
++            .persistent
++            .read_persistent_text(&selected.workspace_id, &selected.state_id, &path)
++            .await?;
++
++        if durable.workspace_id != selected.workspace_id
++            || durable.state_id != selected.state_id
++            || durable.stable_chat_id != selected.stable_chat_id
++            || durable.created_from_run_id != selected.producing_run.id
++        {
++            return Err(DomainError::Conflict(
++                "character_card_return.durable_state_selected_identity_mismatch".to_string(),
++            ));
++        }
++
++        project_authority(target, context, &durable.text)
++    }
++}
++
++fn project_authority(
++    target: &CharacterCardBindingTarget,
++    context: &CharacterCardBindingContext,
++    text: &str,
++) -> Result<CharacterCardReturnAuthoritySnapshot, DomainError> {
++    let state: DurableRpAuthorityState = serde_json::from_str(text).map_err(|error| {
++        DomainError::InvalidData(format!(
++            "character_card_return.durable_rp_state_invalid_json: {error}"
++        ))
++    })?;
++    if state.schema_version != SUPPORTED_RP_STATE_SCHEMA_VERSION {
++        return Err(DomainError::InvalidData(format!(
++            "character_card_return.unsupported_rp_state_schema: {}",
++            state.schema_version
++        )));
++    }
++
++    let session = state.session.ok_or_else(|| {
++        DomainError::NotFound("character_card_return.durable_rp_session_missing".to_string())
++    })?;
++    if session.world_id != target.world_id {
++        return Err(DomainError::Conflict(
++            "character_card_return.durable_rp_world_mismatch".to_string(),
++        ));
++    }
++    if session.session_id != context.session_id {
++        return Err(DomainError::Conflict(
++            "character_card_return.durable_rp_session_mismatch".to_string(),
++        ));
++    }
++    if session.active_branch_id != context.branch_id {
++        return Err(DomainError::Conflict(
++            "character_card_return.durable_rp_branch_mismatch".to_string(),
++        ));
++    }
++
++    let character_id = target.character_id.0.as_str();
++    let character = state.cast_registry.get(character_id).ok_or_else(|| {
++        DomainError::NotFound(format!(
++            "character_card_return.durable_rp_character_missing: {character_id}"
++        ))
++    })?;
++    if character.character_id != character_id {
++        return Err(DomainError::Conflict(
++            "character_card_return.durable_rp_character_identity_mismatch".to_string(),
++        ));
++    }
++
++    Ok(CharacterCardReturnAuthoritySnapshot {
++        world_id: session.world_id,
++        character_id: target.character_id.clone(),
++        session_id: session.session_id,
++        branch_id: session.active_branch_id,
++        profile_revision: character.profile_revision,
++    })
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use tt_domain::models::character_card_materialization::BindingScopeKind;
++    use tt_domain::models::rp_architecture::{BranchId, CharacterId, SessionId, WorldId};
++
++    fn target() -> CharacterCardBindingTarget {
++        CharacterCardBindingTarget {
++            scope_kind: BindingScopeKind::WorldCharacter,
++            world_id: WorldId("world-a".to_string()),
++            character_id: CharacterId("character-a".to_string()),
++            source_session_id: None,
++        }
++    }
++
++    fn context() -> CharacterCardBindingContext {
++        CharacterCardBindingContext {
++            session_id: SessionId("session-a".to_string()),
++            branch_id: BranchId("branch-a".to_string()),
++            last_seen_profile_revision: Some(7),
++        }
++    }
++
++    fn state_json(world: &str, session: &str, branch: &str, character: Option<(&str, &str, u64)>) -> String {
++        let mut cast = serde_json::Map::new();
++        if let Some((key, entity_id, revision)) = character {
++            cast.insert(
++                key.to_string(),
++                serde_json::json!({
++                    "characterId": entity_id,
++                    "profileRevision": revision,
++                    "ignoredRuntimeField": true
++                }),
++            );
++        }
++        serde_json::json!({
++            "schemaVersion": 1,
++            "session": {
++                "schemaVersion": 1,
++                "sessionId": session,
++                "worldId": world,
++                "boundCanonRevision": 1,
++                "boundCanonFingerprint": "fingerprint",
++                "sessionStatus": "active",
++                "activeBranchId": branch
++            },
++            "castRegistry": cast,
++            "ignoredTopLevelRuntimeField": true
++        })
++        .to_string()
++    }
++
++    #[test]
++    fn projects_exact_authority_and_allows_zero_profile_revision() {
++        let snapshot = project_authority(
++            &target(),
++            &context(),
++            &state_json(
++                "world-a",
++                "session-a",
++                "branch-a",
++                Some(("character-a", "character-a", 0)),
++            ),
++        )
++        .unwrap();
++        assert_eq!(snapshot.world_id.0, "world-a");
++        assert_eq!(snapshot.session_id.0, "session-a");
++        assert_eq!(snapshot.branch_id.0, "branch-a");
++        assert_eq!(snapshot.character_id.0, "character-a");
++        assert_eq!(snapshot.profile_revision, 0);
++    }
++
++    #[test]
++    fn rejects_world_session_and_branch_mismatch() {
++        assert!(project_authority(
++            &target(),
++            &context(),
++            &state_json(
++                "world-b",
++                "session-a",
++                "branch-a",
++                Some(("character-a", "character-a", 7)),
++            ),
++        )
++        .is_err());
++        assert!(project_authority(
++            &target(),
++            &context(),
++            &state_json(
++                "world-a",
++                "session-b",
++                "branch-a",
++                Some(("character-a", "character-a", 7)),
++            ),
++        )
++        .is_err());
++        assert!(project_authority(
++            &target(),
++            &context(),
++            &state_json(
++                "world-a",
++                "session-a",
++                "branch-b",
++                Some(("character-a", "character-a", 7)),
++            ),
++        )
++        .is_err());
++    }
++
++    #[test]
++    fn rejects_missing_or_mismatched_character_identity() {
++        assert!(project_authority(
++            &target(),
++            &context(),
++            &state_json("world-a", "session-a", "branch-a", None),
++        )
++        .is_err());
++        assert!(project_authority(
++            &target(),
++            &context(),
++            &state_json(
++                "world-a",
++                "session-a",
++                "branch-a",
++                Some(("character-a", "character-b", 7)),
++            ),
++        )
++        .is_err());
++    }
++
++    #[test]
++    fn rejects_unsupported_rp_state_schema() {
++        let text = state_json(
++            "world-a",
++            "session-a",
++            "branch-a",
++            Some(("character-a", "character-a", 7)),
++        )
++        .replacen("\"schemaVersion\":1", "\"schemaVersion\":2", 1);
++        assert!(project_authority(&target(), &context(), &text).is_err());
++    }
++}
