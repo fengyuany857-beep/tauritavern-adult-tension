@@ -152,3 +152,4 @@
    [1m[94m= [0m[1mnote[0m: `WorldInfoPatchEntry` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
    [1m[94m= [0m[1mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
 
+[1m[33mwarning[0m: `tt-application` (lib test) generated 1 warning
