@@ -8,6 +8,7 @@
 33:    [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::too_many_arguments)]`
 35:[1m[91merror[0m: could not compile `tt-application` (lib) due to 1 previous error
 36:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+37: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
 
@@ -46,3 +47,4 @@
 
 [1m[91merror[0m: could not compile `tt-application` (lib) due to 1 previous error
 [1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+ ELIFECYCLE  Command failed with exit code 101.
