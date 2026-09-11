@@ -1,10 +1,7 @@
 diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
 --- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
 +++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
-@@ -123,6 +123,98 @@ impl CharacterCardMaterializationOrchestrator {
-         }
-     }
- 
+@@ -123,3 +123,95 @@ impl CharacterCardMaterializationOrchestrator {
 +    /// Resolve interrupted Return transactions before the host exposes any
 +    /// Character Card commands. A transaction at or beyond the durable export
 +    /// boundary may roll forward only when exact Card, binding, export and Undo
@@ -114,25 +111,13 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
 --- a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
 +++ b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
-@@ -145,7 +145,7 @@ pub(super) async fn build(
+@@ -158,6 +158,9 @@ pub(super) async fn build(
              repositories.agent_run_repository.clone(),
          ),
      );
--    let character_card_materialization_orchestrator = Arc::new(
-+    let character_card_materialization_orchestrator =
-         CharacterCardMaterializationOrchestrator::new(
-             repositories.character_card_materialization_repository.clone(),
-             repositories.character_card_return_repository.clone(),
-@@ -153,7 +153,10 @@ pub(super) async fn build(
-             repositories.agent_run_repository.clone(),
--        ),
--    );
-+        );
 +    character_card_materialization_orchestrator
 +        .recover_incomplete_returns()
 +        .await?;
-+    let character_card_materialization_orchestrator =
-+        Arc::new(character_card_materialization_orchestrator);
      let acceptance_root = app_handle
          .path()
          .app_cache_dir()
