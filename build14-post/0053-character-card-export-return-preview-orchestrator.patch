@@ -1,9 +1,16 @@
 diff --git a/src-tauri/crates/tt-application/src/services/mod.rs b/src-tauri/crates/tt-application/src/services/mod.rs
 --- a/src-tauri/crates/tt-application/src/services/mod.rs
 +++ b/src-tauri/crates/tt-application/src/services/mod.rs
-@@ -19,1 +19,2 @@
+@@ -17,8 +17,9 @@
+ pub mod background_service;
+ pub mod bundled_template_service;
  pub mod character_card_materialization_service;
 +pub mod character_card_materialization_orchestrator;
+ #[cfg(test)]
+ mod character_card_materialization_return_tests;
+ #[cfg(test)]
+ mod character_card_materialization_draft_tests;
+ pub mod character_service;
 diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
 new file mode 100644
 --- /dev/null
