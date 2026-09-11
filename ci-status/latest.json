@@ -7,8 +7,8 @@
   "workflow_trigger_sha": "1866852dcfc4a64a09e3d550096de5538ca9c69e",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
   "stage": "Final IPA secret/private-file absence",
-  "state": "RUNNING",
+  "state": "PASS",
   "exit_code": 0,
-  "updated_at": "2026-09-11T20:02:38Z",
+  "updated_at": "2026-09-11T20:02:41Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-38-a1"
 }
