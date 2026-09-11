@@ -1,0 +1,574 @@
+diff --git a/src-tauri/crates/tt-application/src/services/mod.rs b/src-tauri/crates/tt-application/src/services/mod.rs
+--- a/src-tauri/crates/tt-application/src/services/mod.rs
++++ b/src-tauri/crates/tt-application/src/services/mod.rs
+@@ -17,6 +17,7 @@ pub mod background_service;
+ pub mod bundled_template_service;
+ pub mod character_card_materialization_service;
++pub mod character_card_materialization_orchestrator;
+ pub mod character_service;
+ pub mod chat_completion_service;
+ mod chat_file_validation;
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -0,0 +1,470 @@
++use std::collections::BTreeSet;
++use std::fmt::Write as _;
++use std::sync::Arc;
++
++use chrono::Utc;
++use serde::{Deserialize, Serialize};
++use serde_json::Value;
++use sha2::{Digest, Sha256};
++use tt_domain::errors::DomainError;
++use tt_domain::models::character_card_materialization::{
++    BindingStatus, CharacterCardBinding, ExportRecord, MergeFieldDecision,
++    PortableReturnMetadata, ReturnRecognitionState, StagedCharacterCardImport,
++    CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
++};
++use tt_ports::repositories::character_card_materialization_repository::CharacterCardMaterializationRepository;
++use tt_ports::repositories::character_card_return_repository::CharacterCardReturnRepository;
++use uuid::Uuid;
++
++use super::character_card_materialization_service::{
++    ExportAnnotations, PortableSecurityViolation, ReturnRecognitionContext,
++    attach_portable_return_metadata, canonical_definition_bytes, canonical_definition_hash,
++    classify_three_way_field, compute_origin_proof, content_identity_mismatch_suspected,
++    portable_definition_projection, recognize_return_card, scan_portable_card,
++    verify_origin_proof,
++};
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "lowercase")]
++pub enum PortableCharacterCardFormat {
++    Json,
++    Png,
++}
++
++impl PortableCharacterCardFormat {
++    fn as_str(self) -> &'static str {
++        match self {
++            Self::Json => "json",
++            Self::Png => "png",
++        }
++    }
++}
++
++#[derive(Debug, Clone)]
++pub struct PortableCharacterCardExport {
++    pub export_id: String,
++    pub binding_id: String,
++    pub format: PortableCharacterCardFormat,
++    pub base_card_hash: String,
++    pub metadata: PortableReturnMetadata,
++    pub bytes: Vec<u8>,
++}
++
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardReturnPreview {
++    pub transaction_id: String,
++    pub staged_import: StagedCharacterCardImport,
++    pub recognition_state: ReturnRecognitionState,
++    pub metadata: Option<PortableReturnMetadata>,
++    pub decisions: Vec<MergeFieldDecision>,
++    pub imported_card_hash: Option<String>,
++    pub local_card_hash: Option<String>,
++    pub base_snapshot_available: bool,
++    pub avatar_may_replace: bool,
++    pub requires_user_confirmation: bool,
++    pub warnings: Vec<String>,
++}
++
++pub struct CharacterCardMaterializationOrchestrator {
++    materialization: Arc<dyn CharacterCardMaterializationRepository>,
++    cards: Arc<dyn CharacterCardReturnRepository>,
++}
++
++impl CharacterCardMaterializationOrchestrator {
++    pub fn new(
++        materialization: Arc<dyn CharacterCardMaterializationRepository>,
++        cards: Arc<dyn CharacterCardReturnRepository>,
++    ) -> Self {
++        Self {
++            materialization,
++            cards,
++        }
++    }
++
++    /// Export a currently-bound Character Card without mutating Character Library,
++    /// RP state, chats, memories, relations, World Canon, or Agent workspace state.
++    ///
++    /// BASE is the sanitized portable definition before Return Metadata is attached.
++    /// The export record is persisted only after the final JSON/PNG payload has been
++    /// successfully produced.
++    pub async fn export_bound_card(
++        &self,
++        binding_id: &str,
++        format: PortableCharacterCardFormat,
++    ) -> Result<PortableCharacterCardExport, DomainError> {
++        let binding = self
++            .materialization
++            .read_binding(binding_id)
++            .await?
++            .ok_or_else(|| DomainError::NotFound(format!("character card binding {binding_id}")))?;
++        validate_active_binding(&binding)?;
++
++        let base_profile_revision = binding.profile_revision_at_last_sync.ok_or_else(|| {
++            DomainError::InvalidData(
++                "bound card has no synchronized RP profile revision; refresh the binding before export"
++                    .to_string(),
++            )
++        })?;
++
++        let raw_json = self
++            .cards
++            .read_card_json(&binding.card_storage_identity)
++            .await?;
++        let raw_card = parse_json_card(raw_json.as_bytes())?;
++        let mut portable_card = portable_definition_projection(raw_card);
++        scan_portable_card(&portable_card).map_err(portable_security_error)?;
++
++        let canonical_base = canonical_definition_bytes(&portable_card)
++            .map_err(DomainError::InvalidData)?;
++        let base_card_hash = canonical_definition_hash(&portable_card)
++            .map_err(DomainError::InvalidData)?;
++        let snapshot_ref = self
++            .materialization
++            .write_snapshot(&canonical_base)
++            .await?;
++
++        let export_id = Uuid::new_v4().to_string();
++        let secret = self.materialization.load_or_create_origin_secret().await?;
++        let mut metadata = PortableReturnMetadata {
++            binding_id: binding.binding_id.clone(),
++            export_id: export_id.clone(),
++            binding_generation: binding.generation,
++            base_card_revision: binding.card_revision,
++            base_card_hash: base_card_hash.clone(),
++            origin_proof: "0".repeat(64),
++        };
++        metadata.origin_proof = compute_origin_proof(&secret, &metadata);
++
++        attach_portable_return_metadata(
++            &mut portable_card,
++            &metadata,
++            &ExportAnnotations::default(),
++        )
++        .map_err(DomainError::InvalidData)?;
++        scan_portable_card(&portable_card).map_err(portable_security_error)?;
++
++        let portable_json = serde_json::to_string_pretty(&portable_card)
++            .map_err(|error| DomainError::InvalidData(format!("failed to serialize portable character card: {error}")))?;
++        let bytes = match format {
++            PortableCharacterCardFormat::Json => portable_json.as_bytes().to_vec(),
++            PortableCharacterCardFormat::Png => {
++                self.cards
++                    .export_card_png_bytes(&binding.card_storage_identity, &portable_json)
++                    .await?
++            }
++        };
++
++        let exported_at = Utc::now().to_rfc3339();
++        let record = ExportRecord {
++            schema_version: CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
++            export_id: export_id.clone(),
++            binding_id: binding.binding_id.clone(),
++            binding_generation: binding.generation,
++            base_card_revision: binding.card_revision,
++            base_card_hash: base_card_hash.clone(),
++            base_profile_revision,
++            snapshot_ref,
++            exported_at,
++            format: format.as_str().to_string(),
++            transaction_id: None,
++        };
++        self.materialization.write_export_record(&record).await?;
++
++        Ok(PortableCharacterCardExport {
++            export_id,
++            binding_id: binding.binding_id,
++            format,
++            base_card_hash,
++            metadata,
++            bytes,
++        })
++    }
++
++    /// Immutable Stage + recognition + three-way Preview. This method never
++    /// commits a Return and never mutates RP/World authority. Commit remains
++    /// intentionally unavailable until authoritative RP revision and active
++    /// Agent-run guards are wired into the application boundary.
++    pub async fn preview_return(
++        &self,
++        bytes: &[u8],
++        format: PortableCharacterCardFormat,
++        user_indicated_return: bool,
++    ) -> Result<CharacterCardReturnPreview, DomainError> {
++        let transaction_id = Uuid::new_v4().to_string();
++        let staged_import = self
++            .materialization
++            .stage_import(&transaction_id, format.as_str(), bytes)
++            .await?;
++        let staged_bytes = self
++            .materialization
++            .read_staged_import(&staged_import.logical_ref)
++            .await?;
++        verify_staged_readback(&staged_import, &staged_bytes)?;
++
++        let imported_card = match format {
++            PortableCharacterCardFormat::Json => parse_json_card(&staged_bytes),
++            PortableCharacterCardFormat::Png => {
++                match self.cards.inspect_png_card_json(&staged_bytes).await {
++                    Ok(json) => parse_json_card(json.as_bytes()),
++                    Err(_) => Err(DomainError::InvalidData(
++                        "staged PNG does not contain a readable Character Card".to_string(),
++                    )),
++                }
++            }
++        };
++        let imported_card = match imported_card {
++            Ok(card) => card,
++            Err(error) => {
++                return Ok(CharacterCardReturnPreview {
++                    transaction_id,
++                    staged_import,
++                    recognition_state: ReturnRecognitionState::InvalidCard,
++                    metadata: None,
++                    decisions: Vec::new(),
++                    imported_card_hash: None,
++                    local_card_hash: None,
++                    base_snapshot_available: false,
++                    avatar_may_replace: format == PortableCharacterCardFormat::Png,
++                    requires_user_confirmation: true,
++                    warnings: vec![error.to_string()],
++                });
++            }
++        };
++
++        let secret = self.materialization.load_or_create_origin_secret().await?;
++        let metadata = extract_return_metadata(&imported_card);
++        let trusted_locator = metadata.as_ref().filter(|metadata| {
++            metadata.validate_shape().is_ok() && verify_origin_proof(&secret, metadata)
++        });
++
++        let mut binding: Option<CharacterCardBinding> = None;
++        let mut export_record: Option<ExportRecord> = None;
++        let mut local_card: Option<Value> = None;
++        let mut base_card: Option<Value> = None;
++        let mut base_snapshot_available = false;
++        let mut warnings = Vec::new();
++
++        if let Some(locator) = trusted_locator {
++            binding = self.materialization.read_binding(&locator.binding_id).await?;
++            export_record = self
++                .materialization
++                .read_export_record(&locator.export_id)
++                .await?;
++
++            if let Some(current_binding) = binding.as_ref() {
++                match self
++                    .cards
++                    .read_card_json(&current_binding.card_storage_identity)
++                    .await
++                {
++                    Ok(json) => local_card = Some(parse_json_card(json.as_bytes())?),
++                    Err(DomainError::NotFound(_)) => {}
++                    Err(error) => return Err(error),
++                }
++            }
++
++            if let Some(record) = export_record.as_ref() {
++                if export_record_matches_metadata(record, locator) {
++                    match self.materialization.read_snapshot(&record.snapshot_ref).await {
++                        Ok(bytes) => {
++                            base_card = Some(parse_json_card(&bytes)?);
++                            base_snapshot_available = true;
++                        }
++                        Err(DomainError::NotFound(_)) => {}
++                        Err(error) => return Err(error),
++                    }
++                } else {
++                    warnings.push(
++                        "local export record does not match the authenticated return tuple"
++                            .to_string(),
++                    );
++                }
++            }
++        }
++
++        let context = ReturnRecognitionContext {
++            user_indicated_return,
++            binding_exists: binding.is_some(),
++            local_binding_generation: binding.as_ref().map(|binding| binding.generation),
++            target_exists: binding
++                .as_ref()
++                .is_some_and(|binding| binding.status != BindingStatus::TargetMissing),
++            card_exists: local_card.is_some(),
++            base_snapshot_exists: base_snapshot_available,
++            export_already_committed: export_record
++                .as_ref()
++                .is_some_and(|record| record.transaction_id.is_some()),
++        };
++        let mut recognition_state = recognize_return_card(&imported_card, &secret, &context);
++
++        if let Err(violation) = scan_portable_card(&imported_card) {
++            recognition_state = match violation {
++                PortableSecurityViolation::ProtectedNamespace(_) => {
++                    ReturnRecognitionState::ProtectedNamespaceViolation
++                }
++                _ => ReturnRecognitionState::InvalidCard,
++            };
++            warnings.push(format!("portable security scan rejected import: {violation:?}"));
++        }
++
++        let imported_portable = portable_definition_projection(imported_card);
++        let imported_card_hash = canonical_definition_hash(&imported_portable).ok();
++        let local_portable = local_card.map(portable_definition_projection);
++        let local_card_hash = local_portable
++            .as_ref()
++            .and_then(|card| canonical_definition_hash(card).ok());
++
++        let decisions = match (base_card.as_ref(), local_portable.as_ref()) {
++            (Some(base), Some(local)) => {
++                let base_portable = portable_definition_projection(base.clone());
++                if content_identity_mismatch_suspected(
++                    &base_portable,
++                    &imported_portable,
++                    format == PortableCharacterCardFormat::Png,
++                ) {
++                    warnings.push(
++                        "return content identity mismatch is suspected; copied metadata must not bypass user review"
++                            .to_string(),
++                    );
++                }
++                top_level_three_way_decisions(&base_portable, local, &imported_portable)
++            }
++            _ => Vec::new(),
++        };
++
++        if format == PortableCharacterCardFormat::Png {
++            warnings.push(
++                "PNG Return may replace avatar pixels; avatar replacement requires explicit confirmation"
++                    .to_string(),
++            );
++        }
++        if recognition_state == ReturnRecognitionState::KnownReturnBaseMissing {
++            warnings.push(
++                "BASE snapshot is unavailable; automatic three-way resolution is disabled".to_string(),
++            );
++        }
++
++        Ok(CharacterCardReturnPreview {
++            transaction_id,
++            staged_import,
++            recognition_state,
++            metadata,
++            decisions,
++            imported_card_hash,
++            local_card_hash,
++            base_snapshot_available,
++            avatar_may_replace: format == PortableCharacterCardFormat::Png,
++            // Return replacement is never an auto-commit path, even if every
++            // field is conflict-free and the origin proof is valid.
++            requires_user_confirmation: true,
++            warnings,
++        })
++    }
++
++    pub async fn discard_staged_preview(&self, logical_ref: &str) -> Result<(), DomainError> {
++        self.materialization.remove_staged_import(logical_ref).await
++    }
++}
++
++fn validate_active_binding(binding: &CharacterCardBinding) -> Result<(), DomainError> {
++    binding.validate().map_err(DomainError::InvalidData)?;
++    if binding.status != BindingStatus::Active {
++        return Err(DomainError::Conflict(format!(
++            "character card binding {} is not active",
++            binding.binding_id
++        )));
++    }
++    Ok(())
++}
++
++fn parse_json_card(bytes: &[u8]) -> Result<Value, DomainError> {
++    let card: Value = serde_json::from_slice(bytes)
++        .map_err(|error| DomainError::InvalidData(format!("invalid Character Card JSON: {error}")))?;
++    if !card.is_object() {
++        return Err(DomainError::InvalidData(
++            "Character Card root must be a JSON object".to_string(),
++        ));
++    }
++    Ok(card)
++}
++
++fn portable_security_error(violation: PortableSecurityViolation) -> DomainError {
++    DomainError::InvalidData(format!(
++        "portable Character Card security violation: {violation:?}"
++    ))
++}
++
++fn verify_staged_readback(
++    staged: &StagedCharacterCardImport,
++    bytes: &[u8],
++) -> Result<(), DomainError> {
++    if staged.byte_len != bytes.len() as u64 {
++        return Err(DomainError::Conflict(
++            "staged Character Card byte length changed after immutable staging".to_string(),
++        ));
++    }
++    let actual_hash = sha256_hex(bytes);
++    if staged.sha256 != actual_hash {
++        return Err(DomainError::Conflict(
++            "staged Character Card hash changed after immutable staging".to_string(),
++        ));
++    }
++    Ok(())
++}
++
++fn sha256_hex(bytes: &[u8]) -> String {
++    let digest = Sha256::digest(bytes);
++    let mut output = String::with_capacity(64);
++    for byte in digest {
++        let _ = write!(&mut output, "{byte:02x}");
++    }
++    output
++}
++
++fn extract_return_metadata(card: &Value) -> Option<PortableReturnMetadata> {
++    let metadata = card
++        .get("data")?
++        .get("extensions")?
++        .get("tauritavern")?
++        .get("characterCardLink")?
++        .get("returnMetadata")?
++        .clone();
++    serde_json::from_value(metadata).ok()
++}
++
++fn export_record_matches_metadata(
++    record: &ExportRecord,
++    metadata: &PortableReturnMetadata,
++) -> bool {
++    record.schema_version == CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION
++        && record.export_id == metadata.export_id
++        && record.binding_id == metadata.binding_id
++        && record.binding_generation == metadata.binding_generation
++        && record.base_card_revision == metadata.base_card_revision
++        && record.base_card_hash == metadata.base_card_hash
++}
++
++fn top_level_three_way_decisions(
++    base: &Value,
++    local: &Value,
++    imported: &Value,
++) -> Vec<MergeFieldDecision> {
++    let mut decisions = Vec::new();
++    let mut root_keys = BTreeSet::new();
++    for card in [base, local, imported] {
++        if let Some(object) = card.as_object() {
++            root_keys.extend(object.keys().filter(|key| key.as_str() != "data").cloned());
++        }
++    }
++    for key in root_keys {
++        decisions.push(classify_three_way_field(
++            key.clone(),
++            base.get(&key),
++            local.get(&key),
++            imported.get(&key),
++        ));
++    }
++
++    let mut data_keys = BTreeSet::new();
++    for card in [base, local, imported] {
++        if let Some(data) = card.get("data").and_then(Value::as_object) {
++            data_keys.extend(data.keys().cloned());
++        }
++    }
++    for key in data_keys {
++        decisions.push(classify_three_way_field(
++            format!("data.{key}"),
++            base.get("data").and_then(|data| data.get(&key)),
++            local.get("data").and_then(|data| data.get(&key)),
++            imported.get("data").and_then(|data| data.get(&key)),
++        ));
++    }
++    decisions
++}
++
++#[cfg(test)]
++mod tests {
++    use serde_json::json;
++    use tt_domain::models::character_card_materialization::MergeFieldState;
++
++    use super::*;
++
++    #[test]
++    fn missing_imported_field_is_not_treated_as_deletion() {
++        let base = json!({"spec":"chara_card_v2","data":{"name":"A"}});
++        let local = base.clone();
++        let imported = json!({"spec":"chara_card_v2","data":{}});
++        let decisions = top_level_three_way_decisions(&base, &local, &imported);
++        let name = decisions
++            .iter()
++            .find(|decision| decision.field_path == "data.name")
++            .expect("name decision");
++        assert_eq!(name.state, MergeFieldState::FieldMissingImported);
++        assert!(name.requires_user_confirmation);
++    }
++
++    #[test]
++    fn return_metadata_extractor_reads_only_opaque_locator_tuple() {
++        let card = json!({
++            "data": {
++                "extensions": {
++                    "tauritavern": {
++                        "characterCardLink": {
++                            "returnMetadata": {
++                                "bindingId": "binding-opaque",
++                                "exportId": "export-opaque",
++                                "bindingGeneration": 2,
++                                "baseCardRevision": 4,
++                                "baseCardHash": "a".repeat(64),
++                                "originProof": "b".repeat(64)
++                            }
++                        }
++                    }
++                }
++            }
++        });
++        let metadata = extract_return_metadata(&card).expect("metadata");
++        assert_eq!(metadata.binding_id, "binding-opaque");
++        assert_eq!(metadata.export_id, "export-opaque");
++    }
++
++    #[test]
++    fn export_record_tuple_must_match_all_authenticated_base_fields() {
++        let metadata = PortableReturnMetadata {
++            binding_id: "binding-a".to_string(),
++            export_id: "export-a".to_string(),
++            binding_generation: 3,
++            base_card_revision: 7,
++            base_card_hash: "a".repeat(64),
++            origin_proof: "b".repeat(64),
++        };
++        let mut record = ExportRecord {
++            schema_version: CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
++            export_id: metadata.export_id.clone(),
++            binding_id: metadata.binding_id.clone(),
++            binding_generation: metadata.binding_generation,
++            base_card_revision: metadata.base_card_revision,
++            base_card_hash: metadata.base_card_hash.clone(),
++            base_profile_revision: 9,
++            snapshot_ref: "snapshots/a.json".to_string(),
++            exported_at: "2026-09-11T00:00:00Z".to_string(),
++            format: "json".to_string(),
++            transaction_id: None,
++        };
++        assert!(export_record_matches_metadata(&record, &metadata));
++        record.base_card_revision += 1;
++        assert!(!export_record_matches_metadata(&record, &metadata));
++    }
++}
