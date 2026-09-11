@@ -1,0 +1,149 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -129,7 +129,6 @@ impl CharacterCardMaterializationOrchestrator {
+     /// ownership are all still provable. Everything earlier rolls back.
+     pub async fn recover_incomplete_returns(&self) -> Result<(), DomainError> {
+-        let _commit_guard = self.return_commit_lock.lock().await;
+         let transactions = self.materialization.list_transactions().await?;
+         for mut journal in transactions {
+             match journal.state {
+@@ -141,17 +140,30 @@ impl CharacterCardMaterializationOrchestrator {
+                         journal.transaction_id
+                     )));
+                 }
+-                CharacterCardTransactionState::IndexesInvalidated
+-                | CharacterCardTransactionState::ReadbackVerified => {
++                CharacterCardTransactionState::IndexesInvalidated => {
+                     if self
+                         .return_is_fully_owned_for_recovery(&journal)
+                         .await?
+                     {
+                         advance_return_journal(
+-                            &*self.materialization,
++                            &self.materialization,
++                            &mut journal,
++                            CharacterCardTransactionState::ReadbackVerified,
++                        )
++                        .await?;
++                        advance_return_journal(
++                            &self.materialization,
+                             &mut journal,
+                             CharacterCardTransactionState::Committed,
+                         )
+                         .await?;
+                         continue;
+                     }
+                 }
++                CharacterCardTransactionState::ReadbackVerified => {
++                    if self
++                        .return_is_fully_owned_for_recovery(&journal)
++                        .await?
++                    {
++                        advance_return_journal(
++                            &self.materialization,
++                            &mut journal,
++                            CharacterCardTransactionState::Committed,
++                        )
++                        .await?;
++                        continue;
++                    }
++                }
+                 _ => {}
+             }
+ 
+@@ -164,31 +176,32 @@ impl CharacterCardMaterializationOrchestrator {
+         &self,
+         journal: &CharacterCardTransactionJournal,
+     ) -> Result<bool, DomainError> {
+-        let (
+-            Some(card_before_ref),
+-            Some(binding_before_ref),
+-            Some(expected_card_hash),
+-            Some(expected_png_hash),
+-            Some(expected_binding_hash),
+-            Some(export_id),
+-        ) = (
+-            journal.before_card_ref.as_deref(),
+-            journal.before_binding_ref.as_deref(),
+-            journal.expected_after_card_hash.as_deref(),
+-            journal.expected_after_png_hash.as_deref(),
+-            journal.expected_after_binding_hash.as_deref(),
+-            journal.export_id.as_deref(),
+-        ) else {
+-            return Ok(false);
+-        };
++        let Some(card_before_ref) = journal.before_card_ref.clone() else {
++            return Ok(false);
++        };
++        let Some(binding_before_ref) = journal.before_binding_ref.clone() else {
++            return Ok(false);
++        };
++        let Some(expected_card_hash) = journal.expected_after_card_hash.clone() else {
++            return Ok(false);
++        };
++        let Some(expected_png_hash) = journal.expected_after_png_hash.clone() else {
++            return Ok(false);
++        };
++        let Some(expected_binding_hash) = journal.expected_after_binding_hash.clone() else {
++            return Ok(false);
++        };
++        let Some(export_id) = journal.export_id.clone() else {
++            return Ok(false);
++        };
++        let transaction_id = journal.transaction_id.clone();
++        let binding_id = journal.binding_id.clone();
++        let before_profile_ref = journal.before_profile_ref.clone();
+ 
+         let Some(undo) = self
+             .materialization
+-            .read_undo_record(&journal.transaction_id)
++            .read_undo_record(&transaction_id)
+             .await?
+         else {
+             return Ok(false);
+         };
+-        if undo.transaction_id.as_str() != journal.transaction_id.as_str()
+-            || undo.card_before_ref.as_str() != card_before_ref
+-            || undo.binding_before_ref.as_str() != binding_before_ref
+-            || undo.profile_before_ref.as_deref() != journal.before_profile_ref.as_deref()
+-            || undo.expected_after_card_hash.as_str() != expected_card_hash
++        if undo.transaction_id.as_str() != transaction_id.as_str()
++            || undo.card_before_ref.as_str() != card_before_ref.as_str()
++            || undo.binding_before_ref.as_str() != binding_before_ref.as_str()
++            || undo.profile_before_ref.as_deref() != before_profile_ref.as_deref()
++            || undo.expected_after_card_hash.as_str() != expected_card_hash.as_str()
+             || undo.expected_after_profile_hash.is_some()
+         {
+             return Ok(false);
+         }
+ 
+-        let Some(binding) = self.materialization.read_binding(&journal.binding_id).await? else {
++        let Some(binding) = self.materialization.read_binding(&binding_id).await? else {
+             return Ok(false);
+         };
+-        if binding_state_hash(&binding)? != expected_binding_hash {
++        if binding_state_hash(&binding)? != expected_binding_hash.as_str() {
+             return Ok(false);
+         }
+         let png = self.cards.read_card_png_bytes(&binding.card_storage_identity).await?;
+-        if sha256_hex(&png) != expected_png_hash {
++        if sha256_hex(&png) != expected_png_hash.as_str() {
+             return Ok(false);
+         }
+         let card_text = self.cards.read_card_json(&binding.card_storage_identity).await?;
+         let card = parse_json_card(card_text.as_bytes())?;
+         let card_hash = canonical_definition_hash(&portable_definition_projection(card))
+             .map_err(DomainError::InvalidData)?;
+-        if card_hash != expected_card_hash {
++        if card_hash != expected_card_hash.as_str() {
+             return Ok(false);
+         }
+ 
+-        let Some(export) = self.materialization.read_export_record(export_id).await? else {
++        let Some(export) = self.materialization.read_export_record(&export_id).await? else {
+             return Ok(false);
+         };
+-        Ok(export.transaction_id.as_deref() == Some(journal.transaction_id.as_str()))
++        Ok(export.transaction_id.as_deref() == Some(transaction_id.as_str()))
+     }
