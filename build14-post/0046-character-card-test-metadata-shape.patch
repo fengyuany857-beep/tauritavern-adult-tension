@@ -8,9 +8,21 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 -            origin_proof: String::new(),
 +            origin_proof: "b".repeat(64),
          }
-@@ -815 +815 @@
+@@ -811,7 +811,7 @@ mod tests {
+     fn return_metadata_does_not_change_base_hash() {
+         let clean = json!({"data":{"name":"Lin","extensions":{}}});
+         let mut exported = clean.clone();
+         let mut link = metadata();
 -        link.origin_proof = "proof".to_string();
 +        link.origin_proof = "b".repeat(64);
-@@ -882 +882 @@
+         attach_portable_return_metadata(&mut exported, &link, &ExportAnnotations::default()).unwrap();
+         assert_eq!(
+@@ -878,7 +878,7 @@ mod tests {
+     fn scanner_allows_only_portable_tauritavern_namespace() {
+         let mut card = json!({"data":{"name":"Lin","extensions":{}}});
+         let mut link = metadata();
 -        link.origin_proof = "proof".to_string();
 +        link.origin_proof = "b".repeat(64);
+         attach_portable_return_metadata(&mut card, &link, &ExportAnnotations::default()).unwrap();
+         assert!(scan_portable_card(&card).is_ok());
+     }
