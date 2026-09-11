@@ -94,7 +94,11 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 +                .ok_or_else(|| DomainError::NotFound(format!(
 +                    "character card export record {export_id}"
 +                )))?;
-+            if export.transaction_id.as_deref().is_some_and(|owner| owner != journal.transaction_id) {
++            if export
++                .transaction_id
++                .as_deref()
++                .is_some_and(|owner| owner != journal.transaction_id.as_str())
++            {
 +                return Err(DomainError::Conflict(
 +                    "Character Card export was consumed by another transaction during rollback"
 +                        .to_string(),
