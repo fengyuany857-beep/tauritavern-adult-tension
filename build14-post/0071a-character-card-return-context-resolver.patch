@@ -15,10 +15,8 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
  pub struct CharacterCardMaterializationOrchestrator {
      materialization: Arc<dyn CharacterCardMaterializationRepository>,
      cards: Arc<dyn CharacterCardReturnRepository>,
-@@ -640,6 +647,85 @@ impl CharacterCardMaterializationOrchestrator {
-         })
-     }
- 
+@@ -700,6 +707,85 @@ impl CharacterCardMaterializationOrchestrator {
+-    pub async fn discard_staged_preview(&self, logical_ref: &str) -> Result<(), DomainError> {
 +    /// Resolve the exact RP CAS context for a staged, authenticated Return.
 +    /// The browser supplies only the currently selected stableChatId; session
 +    /// identity remains owned by the durable binding and is re-verified again
@@ -112,6 +110,4 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 +        })
 +    }
 +
-     pub async fn discard_staged_preview(&self, logical_ref: &str) -> Result<(), DomainError> {
-         self.materialization.remove_staged_import(logical_ref).await
-     }
++    pub async fn discard_staged_preview(&self, logical_ref: &str) -> Result<(), DomainError> {
