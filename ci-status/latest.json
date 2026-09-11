@@ -6,9 +6,9 @@
   "control_repo_source_sha": "74e04c46c61578b194ae1970751aae7c2ba7be44",
   "workflow_trigger_sha": "74e04c46c61578b194ae1970751aae7c2ba7be44",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
-  "stage": "Rust tests",
-  "state": "PASS",
+  "stage": "Rust Clippy",
+  "state": "RUNNING",
   "exit_code": 0,
-  "updated_at": "2026-09-11T08:08:42Z",
+  "updated_at": "2026-09-11T08:08:44Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-38-a1"
 }
