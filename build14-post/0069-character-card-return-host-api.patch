@@ -1,0 +1,113 @@
+diff --git a/src/tauri/main/api/character-cards.js b/src/tauri/main/api/character-cards.js
+--- a/src/tauri/main/api/character-cards.js
++++ b/src/tauri/main/api/character-cards.js
+@@ -128,10 +128,82 @@ function createCharacterCardsApi({
+         return pickDesktopFiles(options);
+     }
+ 
++    async function returnBytes(file) {
++        if (!file || typeof file.arrayBuffer !== 'function') {
++            throw new Error('Character Card Return requires a readable File');
++        }
++        const bytes = new Uint8Array(await file.arrayBuffer());
++        return Array.from(bytes);
++    }
++
++    function returnFormat(file) {
++        return characterCardExtension(requireNonEmptyString(file?.name, 'character card file name'));
++    }
++
++    async function previewReturnImport(file, { userIndicatedReturn = true } = {}) {
++        return safeInvoke('preview_character_card_return', {
++            bytes: await returnBytes(file),
++            format: returnFormat(file),
++            user_indicated_return: Boolean(userIndicatedReturn),
++        });
++    }
++
++    async function planReturnImport({
++        stagedRef,
++        format,
++        replaceAvatar,
++        sessionId,
++        branchId,
++        choices = {},
++    }) {
++        return safeInvoke('plan_character_card_return', {
++            request: {
++                stagedRef: requireNonEmptyString(stagedRef, 'Character Card Return staged ref'),
++                format: requireNonEmptyString(format, 'Character Card Return format'),
++                replaceAvatar: Boolean(replaceAvatar),
++                sessionId: requireNonEmptyString(sessionId, 'Character Card Return session id'),
++                branchId: requireNonEmptyString(branchId, 'Character Card Return branch id'),
++                choices,
++            },
++        });
++    }
++
++    async function commitReturnImport({
++        stagedRef,
++        format,
++        replaceAvatar,
++        suppliedPlan,
++        sessionId,
++        branchId,
++        choices = {},
++    }) {
++        if (!suppliedPlan || typeof suppliedPlan !== 'object') {
++            throw new Error('Character Card Return confirmed plan is required');
++        }
++        return safeInvoke('commit_character_card_return', {
++            request: {
++                stagedRef: requireNonEmptyString(stagedRef, 'Character Card Return staged ref'),
++                format: requireNonEmptyString(format, 'Character Card Return format'),
++                replaceAvatar: Boolean(replaceAvatar),
++                suppliedPlan,
++                sessionId: requireNonEmptyString(sessionId, 'Character Card Return session id'),
++                branchId: requireNonEmptyString(branchId, 'Character Card Return branch id'),
++                choices,
++            },
++        });
++    }
++
++    async function discardReturnPreview(stagedRef) {
++        return safeInvoke('discard_character_card_return_preview', {
++            logical_ref: requireNonEmptyString(stagedRef, 'Character Card Return staged ref'),
++        });
++    }
++
+     return {
+         isNativePickerAvailable,
+         pickFiles,
++        previewReturnImport,
++        planReturnImport,
++        commitReturnImport,
++        discardReturnPreview,
+     };
+ }
+diff --git a/src/tauri/main/kernel/invokes/tauri-commands.js b/src/tauri/main/kernel/invokes/tauri-commands.js
+--- a/src/tauri/main/kernel/invokes/tauri-commands.js
++++ b/src/tauri/main/kernel/invokes/tauri-commands.js
+@@ -14,6 +14,7 @@ export {};
+  *   | 'cancel_data_archive_job'
+  *   | 'cleanup_export_data_archive'
+  *   | 'cleanup_user_backup_archive'
++ *   | 'commit_character_card_return'
+  *   | 'count_openai_token_prefixes'
+  *   | 'count_openai_tokens_batch'
+@@ -36,6 +37,7 @@ export {};
+  *   | 'delete_chat'
+  *   | 'delete_chat_backup'
+  *   | 'discard_chat_backup_materialization'
++ *   | 'discard_character_card_return_preview'
+  *   | 'delete_extension'
+@@ -107,6 +109,7 @@ export {};
+  *   | 'normalize_world_info_name'
+  *   | 'plan_agent_run_prune'
++ *   | 'plan_character_card_return'
+  *   | 'read_secret_state'
+@@ -119,6 +122,7 @@ export {};
+  *   | 'preview_skill_import'
++ *   | 'preview_character_card_return'
+  *   | 'prepare_data_archive_import_target_path'
+  *   | 'prepare_agent_prompt_assembly'
