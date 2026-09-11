@@ -186,5 +186,6 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
              base_card_revision: 7,
 -            base_card_hash: "abc123".to_string(),
 +            base_card_hash: "a".repeat(64),
-             origin_proof: String::new(),
+-            origin_proof: String::new(),
++            origin_proof: "b".repeat(64),
          }
