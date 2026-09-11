@@ -1,0 +1,257 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
+@@ -39,7 +39,7 @@ mod delegation;
+ mod error_payload;
+ mod executor;
+ mod guidance;
+-mod input_context;
++pub(crate) mod input_context;
+ mod invocation;
+ mod journal;
+ mod lifecycle;
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service/input_context.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service/input_context.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_runtime_service/input_context.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service/input_context.rs
+@@ -116,7 +116,7 @@ fn resolve_input_message_count(
+     }
+ }
+ 
+-fn persist_state_id_from_message(
++pub(crate) fn persist_state_id_from_message(
+     message: &Value,
+     index: usize,
+ ) -> Result<Option<String>, ApplicationError> {
+diff --git a/src-tauri/crates/tt-application/src/services/mod.rs b/src-tauri/crates/tt-application/src/services/mod.rs
+--- a/src-tauri/crates/tt-application/src/services/mod.rs
++++ b/src-tauri/crates/tt-application/src/services/mod.rs
+@@ -17,6 +17,7 @@ pub mod background_service;
+ pub mod bundled_template_service;
+ pub mod character_card_materialization_service;
+ pub mod character_card_materialization_orchestrator;
++pub mod character_card_return_selected_state;
+ #[cfg(test)]
+ mod character_card_materialization_return_tests;
+ #[cfg(test)]
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_return_selected_state.rs b/src-tauri/crates/tt-application/src/services/character_card_return_selected_state.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-application/src/services/character_card_return_selected_state.rs
+@@ -0,0 +1,199 @@
++use std::sync::Arc;
++
++use serde_json::Value;
++
++use super::agent_identity::workspace_id_for_stable_chat_id;
++use super::agent_runtime_service::input_context::persist_state_id_from_message;
++use tt_domain::errors::DomainError;
++use tt_domain::models::agent::{AgentChatRef, AgentRun, AgentRunStatus};
++use tt_domain::models::character_card_materialization::CharacterCardBindingContext;
++use tt_ports::repositories::agent_run_repository::{AgentRunListQuery, AgentRunRepository};
++use tt_ports::repositories::chat_repository::{ChatRepository, FindLastMessageQuery};
++use tt_ports::repositories::group_chat_repository::GroupChatRepository;
++
++const MAX_CHAT_REF_PROBE_RUNS: usize = 64;
++
++#[derive(Debug, Clone)]
++pub struct CharacterCardReturnSelectedState {
++    pub stable_chat_id: String,
++    pub chat_ref: AgentChatRef,
++    pub state_id: String,
++    pub workspace_id: String,
++    pub producing_run: AgentRun,
++}
++
++pub struct CharacterCardReturnSelectedStateResolver {
++    runs: Arc<dyn AgentRunRepository>,
++    chats: Arc<dyn ChatRepository>,
++    groups: Arc<dyn GroupChatRepository>,
++}
++
++impl CharacterCardReturnSelectedStateResolver {
++    pub fn new(
++        runs: Arc<dyn AgentRunRepository>,
++        chats: Arc<dyn ChatRepository>,
++        groups: Arc<dyn GroupChatRepository>,
++    ) -> Self {
++        Self { runs, chats, groups }
++    }
++
++    /// Resolve the branch currently selected by the host chat.
++    ///
++    /// Run ordering is used only to recover the immutable chat locator for a
++    /// stableChatId. The authoritative persistent state id is always read back
++    /// from the currently selected chat payload, so swipe/regenerate branches
++    /// cannot be replaced by "latest run wins" behavior.
++    pub async fn resolve(
++        &self,
++        context: &CharacterCardBindingContext,
++    ) -> Result<CharacterCardReturnSelectedState, DomainError> {
++        let stable_chat_id = context.branch_id.0.trim();
++        if stable_chat_id.is_empty() {
++            return Err(DomainError::InvalidData(
++                "character_card_return.branch_id_empty".to_string(),
++            ));
++        }
++
++        let candidate_runs = self
++            .runs
++            .list_runs(AgentRunListQuery {
++                chat_ref: None,
++                stable_chat_id: Some(stable_chat_id.to_string()),
++                statuses: None,
++                before: None,
++                limit: MAX_CHAT_REF_PROBE_RUNS,
++            })
++            .await?;
++        let candidate = candidate_runs.first().ok_or_else(|| {
++            DomainError::NotFound(
++                "character_card_return.branch_has_no_agent_run_index".to_string(),
++            )
++        })?;
++        if candidate_runs
++            .iter()
++            .any(|run| run.chat_ref != candidate.chat_ref)
++        {
++            return Err(DomainError::Conflict(
++                "character_card_return.stable_chat_id_maps_to_multiple_chat_refs".to_string(),
++            ));
++        }
++        let chat_ref = candidate.chat_ref.clone();
++        let state_id = self.selected_persist_state_id(&chat_ref).await?;
++        let producing_run = self.runs.load_run(&state_id).await?;
++
++        if producing_run.id != state_id
++            || producing_run.stable_chat_id != stable_chat_id
++            || producing_run.chat_ref != chat_ref
++        {
++            return Err(DomainError::Conflict(
++                "character_card_return.selected_state_run_identity_mismatch".to_string(),
++            ));
++        }
++        if producing_run.status != AgentRunStatus::Completed {
++            return Err(DomainError::Conflict(format!(
++                "character_card_return.selected_state_run_not_completed: {:?}",
++                producing_run.status
++            )));
++        }
++
++        let expected_workspace_id = workspace_id_for_stable_chat_id(&chat_ref, stable_chat_id)
++            .map_err(|error| {
++                DomainError::InvalidData(format!(
++                    "character_card_return.workspace_identity_invalid: {error}"
++                ))
++            })?;
++        if producing_run.workspace_id != expected_workspace_id {
++            return Err(DomainError::Conflict(
++                "character_card_return.workspace_identity_mismatch".to_string(),
++            ));
++        }
++
++        Ok(CharacterCardReturnSelectedState {
++            stable_chat_id: stable_chat_id.to_string(),
++            chat_ref,
++            state_id,
++            workspace_id: expected_workspace_id,
++            producing_run,
++        })
++    }
++
++    async fn selected_persist_state_id(
++        &self,
++        chat_ref: &AgentChatRef,
++    ) -> Result<String, DomainError> {
++        let query = FindLastMessageQuery {
++            role: None,
++            has_top_level_keys: None,
++            has_extra_keys: None,
++            scan_limit: Some(1),
++        };
++        let last = match chat_ref {
++            AgentChatRef::Character {
++                character_id,
++                file_name,
++            } => self
++                .chats
++                .find_last_character_chat_message(character_id, file_name, query)
++                .await?,
++            AgentChatRef::Group { chat_id } => self
++                .groups
++                .find_last_group_chat_message(chat_id, query)
++                .await?,
++        };
++        let message_count = last
++            .map(|message| message.index.saturating_add(1))
++            .ok_or_else(|| {
++                DomainError::NotFound(
++                    "character_card_return.selected_chat_has_no_messages".to_string(),
++                )
++            })?;
++        let lines = match chat_ref {
++            AgentChatRef::Character {
++                character_id,
++                file_name,
++            } => self
++                .chats
++                .get_chat_payload_tail_lines(character_id, file_name, message_count)
++                .await?
++                .lines,
++            AgentChatRef::Group { chat_id } => self
++                .groups
++                .get_group_chat_payload_tail_lines(chat_id, message_count)
++                .await?
++                .lines,
++        };
++        last_committed_persist_state_id(&lines)?.ok_or_else(|| {
++            DomainError::NotFound(
++                "character_card_return.selected_chat_has_no_committed_persistent_state".to_string(),
++            )
++        })
++    }
++}
++
++fn last_committed_persist_state_id(lines: &[String]) -> Result<Option<String>, DomainError> {
++    for (index, line) in lines.iter().enumerate().rev() {
++        let message: Value = serde_json::from_str(line).map_err(|error| {
++            DomainError::InvalidData(format!(
++                "character_card_return.chat_message_invalid_json at {index}: {error}"
++            ))
++        })?;
++        let state_id = persist_state_id_from_message(&message, index).map_err(|error| {
++            DomainError::InvalidData(format!(
++                "character_card_return.persist_state_metadata_invalid: {error}"
++            ))
++        })?;
++        if state_id.is_some() {
++            return Ok(state_id);
++        }
++    }
++    Ok(None)
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn selected_state_uses_latest_committed_agent_message() {
++        let lines = vec![
++            r#"{"is_user":false,"extra":{"tauritavern":{"agent":{"persistStateStatus":"committed","persistStateId":"run-old"}}}}"#.to_string(),
++            r#"{"is_user":true,"mes":"continue"}"#.to_string(),
++            r#"{"is_user":false,"extra":{"tauritavern":{"agent":{"persistStateStatus":"not_committed"}}}}"#.to_string(),
++            r#"{"is_user":false,"extra":{"tauritavern":{"agent":{"persistStateStatus":"committed","persistStateId":"run-selected"}}}}"#.to_string(),
++        ];
++        assert_eq!(
++            last_committed_persist_state_id(&lines).unwrap().as_deref(),
++            Some("run-selected")
++        );
++    }
++
++    #[test]
++    fn selected_state_ignores_non_committed_agent_message() {
++        let lines = vec![
++            r#"{"is_user":false,"extra":{"tauritavern":{"agent":{"persistStateStatus":"not_committed"}}}}"#.to_string(),
++        ];
++        assert_eq!(last_committed_persist_state_id(&lines).unwrap(), None);
++    }
++}
