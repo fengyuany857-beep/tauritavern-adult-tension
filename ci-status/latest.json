@@ -6,9 +6,9 @@
   "control_repo_source_sha": "e973071e0cd3f060720723588c6279b4f30651a7",
   "workflow_trigger_sha": "e973071e0cd3f060720723588c6279b4f30651a7",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
-  "stage": "Publish self-sign IPA with embedded auto-registering three-Skill bundle",
-  "state": "PASS",
+  "stage": "Complete: self-sign IPA + Agent fix + continuity + three Skills ready",
+  "state": "COMPLETE",
   "exit_code": 0,
-  "updated_at": "2026-09-11T18:44:44Z",
-  "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-38-a1"
+  "updated_at": "2026-09-11T18:44:46Z",
+  "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-104-a1"
 }
