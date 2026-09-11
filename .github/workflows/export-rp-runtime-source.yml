@@ -2,7 +2,7 @@ name: Export RP Runtime Source
 
 on:
   push:
-    branches: [main]
+    branches: [main, repair/ios-agent-continuity-20260910]
     paths:
       - RP_RUNTIME_EXPORT_TRIGGER
 
