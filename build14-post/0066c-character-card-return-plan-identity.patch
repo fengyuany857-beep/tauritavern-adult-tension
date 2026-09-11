@@ -85,15 +85,14 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
          let staged_bytes = self.materialization.read_staged_import(staged_ref).await?;
          let staged_hash = sha256_hex(&staged_bytes);
          let imported_card = match format {
-@@ -502,6 +503,8 @@ impl CharacterCardMaterializationOrchestrator {
+@@ -502,6 +503,7 @@ impl CharacterCardMaterializationOrchestrator {
          let resolved_hash =
              canonical_definition_hash(&resolved_definition).map_err(DomainError::InvalidData)?;
 +        let resolved_choices_hash = canonical_return_choices_hash(choices)?;
-+
  
          let expected_profile_revision = binding.profile_revision_at_last_sync.ok_or_else(|| {
              DomainError::Conflict(
-@@ -521,6 +524,8 @@ impl CharacterCardMaterializationOrchestrator {
+@@ -521,6 +523,8 @@ impl CharacterCardMaterializationOrchestrator {
  
          let mut plan = ReturnImportPlan {
              plan_token: String::new(),
@@ -102,7 +101,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
              target_binding_id: binding.binding_id,
              expected_binding_generation: binding.generation,
              expected_card_revision: binding.card_revision,
-@@ -528,14 +533,17 @@ impl CharacterCardMaterializationOrchestrator {
+@@ -528,16 +532,16 @@ impl CharacterCardMaterializationOrchestrator {
              expected_profile_revision,
              staged_import_hash: staged_hash,
              base_snapshot_hash: Some(base_hash),
@@ -119,13 +118,14 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 -            &plan,
 -            expected_session_id,
 -            expected_branch_id,
--            (format, replace_avatar),
+-            format,
+-            replace_avatar,
 -        );
 +        plan.plan_token = compute_return_plan_token(&secret, &plan);
          plan.validate_shape().map_err(DomainError::InvalidData)?;
  
          Ok(CharacterCardReturnPlanResult {
-@@ -795,16 +803,11 @@ fn set_return_field(
+@@ -795,16 +799,11 @@ fn set_return_field(
      Ok(())
  }
  
@@ -134,7 +134,8 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 -    plan: &ReturnImportPlan,
 -    session_id: &SessionId,
 -    branch_id: &BranchId,
--    return_mode: (PortableCharacterCardFormat, bool),
+-    format: PortableCharacterCardFormat,
+-    replace_avatar: bool,
 -) -> String {
 +pub(crate) fn compute_return_plan_token(secret: &[u8], plan: &ReturnImportPlan) -> String {
      let mut message = Vec::from(b"tauritavern.character-card-return-plan.v1\0".as_slice());
@@ -147,14 +148,14 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
          plan.target_binding_id.as_str(),
          generation.as_str(),
          card_revision.as_str(),
-@@ -813,11 +816,13 @@ pub(crate) fn compute_return_plan_token(
+@@ -813,11 +812,13 @@ pub(crate) fn compute_return_plan_token(
          plan.staged_import_hash.as_str(),
          plan.base_snapshot_hash.as_deref().unwrap_or_default(),
          plan.resolved_choices_hash.as_str(),
 -        session_id.0.as_str(),
 -        branch_id.0.as_str(),
--        return_mode.0.as_str(),
--        if return_mode.1 { "replace_avatar" } else { "preserve_avatar" },
+-        format.as_str(),
+-        if replace_avatar { "replace_avatar" } else { "preserve_avatar" },
 +        plan.expected_final_card_hash.as_str(),
 +        plan.session_id.0.as_str(),
 +        plan.branch_id.0.as_str(),
@@ -163,7 +164,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
      ] {
          message.extend_from_slice(&(component.len() as u64).to_be_bytes());
          message.extend_from_slice(component.as_bytes());
-@@ -848,6 +853,47 @@ fn return_plan_hmac_sha256(secret: &[u8], message: &[u8]) -> [u8; 32] {
+@@ -848,6 +849,47 @@ fn return_plan_hmac_sha256(secret: &[u8], message: &[u8]) -> [u8; 32] {
      outer.finalize().into()
  }
 +
