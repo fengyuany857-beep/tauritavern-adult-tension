@@ -16,6 +16,10 @@
 99:[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
 105:[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
 111:[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+120:[1mFor more information about this error, try `rustc --explain E0425`.[0m
+121:[1m[91merror[0m: could not compile `tt-application` (lib) due to 17 previous errors
+122:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+123: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
 
@@ -134,3 +138,10 @@
 [1m[94m1164[0m [1m[94m|[0m                 advance_return_journal(
      [1m[94m|[0m                 [1m[91m^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
 
+[1m[92m   Compiling[0m tt-adapter-storage-userdata v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-userdata)
+[1m[92m   Compiling[0m tt-adapter-media v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-media)
+[1m[92m   Compiling[0m tt-adapter-extension v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-extension)
+[1mFor more information about this error, try `rustc --explain E0425`.[0m
+[1m[91merror[0m: could not compile `tt-application` (lib) due to 17 previous errors
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+ ELIFECYCLE  Command failed with exit code 101.
