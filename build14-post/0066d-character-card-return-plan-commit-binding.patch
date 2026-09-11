@@ -1,0 +1,129 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -615,17 +615,21 @@ impl CharacterCardMaterializationOrchestrator {
+         let _commit_guard = self.return_commit_lock.lock().await;
+         supplied_plan.validate_shape().map_err(DomainError::InvalidData)?;
++
++        validate_return_plan_commit_context(
++            supplied_plan,
++            staged_ref,
++            format,
++            replace_avatar,
++            expected_session_id,
++            expected_branch_id,
++        )?;
++        if canonical_return_choices_hash(choices)? != supplied_plan.resolved_choices_hash {
++            return Err(DomainError::Conflict(
++                "Character Card Return merge choices do not match the confirmed plan".to_string(),
++            ));
++        }
+ 
+         let secret = self.materialization.load_or_create_origin_secret().await?;
+-        let expected_token = compute_return_plan_token(
+-            &secret,
+-            supplied_plan,
+-            expected_session_id,
+-            expected_branch_id,
+-            format,
+-            replace_avatar,
+-        );
++        let expected_token = compute_return_plan_token(&secret, supplied_plan);
+         if !constant_time_text_eq(&expected_token, &supplied_plan.plan_token) {
+             return Err(DomainError::Conflict(
+                 "Character Card Return plan token is invalid or belongs to another context"
+@@ -687,7 +691,7 @@ impl CharacterCardMaterializationOrchestrator {
+         let resolved_local = merge_resolved_portable_into_local(
+             &local_raw,
+             &planned.resolved_definition,
+-            &supplied_plan.resolved_choices_hash,
++            &supplied_plan.expected_final_card_hash,
+         )?;
+         let resolved_json = serde_json::to_string(&resolved_local).map_err(|error| {
+             DomainError::InvalidData(format!(
+@@ -716,7 +720,7 @@ impl CharacterCardMaterializationOrchestrator {
+             plan_token: supplied_plan.plan_token.clone(),
+             binding_id: binding.binding_id.clone(),
+             export_id: Some(export.export_id.clone()),
+-            expected_after_card_hash: Some(supplied_plan.resolved_choices_hash.clone()),
++            expected_after_card_hash: Some(supplied_plan.expected_final_card_hash.clone()),
+             expected_after_png_hash: None,
+             expected_after_binding_hash: None,
+             state: CharacterCardTransactionState::Prepared,
+@@ -848,7 +852,7 @@ impl CharacterCardMaterializationOrchestrator {
+             let readback = parse_json_card(readback_text.as_bytes())?;
+             let readback_hash = canonical_definition_hash(&portable_definition_projection(readback))
+                 .map_err(DomainError::InvalidData)?;
+-            if readback_hash != supplied_plan.resolved_choices_hash {
++            if readback_hash != supplied_plan.expected_final_card_hash {
+                 return Err(DomainError::Conflict(
+                     "Character Card Return readback hash mismatch".to_string(),
+                 ));
+@@ -936,7 +940,7 @@ impl CharacterCardMaterializationOrchestrator {
+         if journal.state != CharacterCardTransactionState::Committed
+             || journal.plan_token != plan.plan_token
+             || journal.expected_after_card_hash.as_deref()
+-                != Some(plan.resolved_choices_hash.as_str())
++                != Some(plan.expected_final_card_hash.as_str())
+         {
+             return Err(DomainError::Conflict(
+                 "committed Character Card Return journal does not match supplied plan"
+@@ -966,7 +970,7 @@ impl CharacterCardMaterializationOrchestrator {
+         let card = parse_json_card(card_text.as_bytes())?;
+         let card_hash = canonical_definition_hash(&portable_definition_projection(card))
+             .map_err(DomainError::InvalidData)?;
+-        if card_hash != plan.resolved_choices_hash {
++        if card_hash != plan.expected_final_card_hash {
+             return Err(DomainError::Conflict(
+                 "committed Character Card Return card no longer matches committed result"
+                     .to_string(),
+@@ -906,6 +910,47 @@ fn canonical_return_choices_hash(
+     Ok(sha256_hex(&bytes))
+ }
+ 
++fn validate_return_plan_commit_context(
++    plan: &ReturnImportPlan,
++    staged_ref: &str,
++    format: PortableCharacterCardFormat,
++    replace_avatar: bool,
++    expected_session_id: &SessionId,
++    expected_branch_id: &BranchId,
++) -> Result<(), DomainError> {
++    if plan.staged_import_ref != staged_ref {
++        return Err(DomainError::Conflict(
++            "Character Card Return staged ref does not match the confirmed plan".to_string(),
++        ));
++    }
++    if plan.format != format.as_str() {
++        return Err(DomainError::Conflict(
++            "Character Card Return format does not match the confirmed plan".to_string(),
++        ));
++    }
++    if plan.replace_avatar != replace_avatar {
++        return Err(DomainError::Conflict(
++            "Character Card Return avatar policy does not match the confirmed plan".to_string(),
++        ));
++    }
++    if &plan.session_id != expected_session_id {
++        return Err(DomainError::Conflict(
++            "Character Card Return session does not match the confirmed plan".to_string(),
++        ));
++    }
++    if &plan.branch_id != expected_branch_id {
++        return Err(DomainError::Conflict(
++            "Character Card Return branch does not match the confirmed plan".to_string(),
++        ));
++    }
++    let staged_transaction_id = staged_return_transaction_id(staged_ref, format)?;
++    if staged_transaction_id != plan.transaction_id {
++        return Err(DomainError::Conflict(
++            "Character Card Return preview transaction does not match the confirmed plan"
++                .to_string(),
++        ));
++    }
++    Ok(())
++}
++
+ fn constant_time_text_eq(left: &str, right: &str) -> bool {
+     let left = left.as_bytes();
+     let right = right.as_bytes();
