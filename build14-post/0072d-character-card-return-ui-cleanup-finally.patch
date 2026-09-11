@@ -1,0 +1,23 @@
+diff --git a/src/scripts/tauri/character-card-return-ui.js b/src/scripts/tauri/character-card-return-ui.js
+--- a/src/scripts/tauri/character-card-return-ui.js
++++ b/src/scripts/tauri/character-card-return-ui.js
+@@ -283,13 +283,14 @@ async function runCharacterCardReturn() {
+             t`Character Card Return committed`,
+         );
+     } finally {
+-        if (!stagedRef) return;
+-        try {
+-            await api.discardReturnPreview(stagedRef);
+-        } catch (error) {
+-            console.warn('[CharacterCardReturn] staged preview cleanup failed', error);
+-            if (!committed) window.toastr?.warning?.(t`The staged Return preview could not be cleaned up automatically.`);
++        if (stagedRef) {
++            try {
++                await api.discardReturnPreview(stagedRef);
++            } catch (error) {
++                console.warn('[CharacterCardReturn] staged preview cleanup failed', error);
++                if (!committed) window.toastr?.warning?.(t`The staged Return preview could not be cleaned up automatically.`);
++            }
+         }
+     }
+ }
