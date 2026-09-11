@@ -1,0 +1,251 @@
+diff --git a/src-tauri/crates/tt-domain/src/models/rp_architecture.rs b/src-tauri/crates/tt-domain/src/models/rp_architecture.rs
+--- a/src-tauri/crates/tt-domain/src/models/rp_architecture.rs
++++ b/src-tauri/crates/tt-domain/src/models/rp_architecture.rs
+@@ -330,6 +330,132 @@ pub struct WorldMigrationReport {
+     pub required_user_decisions: Vec<String>,
+ }
+ 
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
++pub enum CanonChangeClass {
++    CharacterAdded,
++    CharacterUpdated,
++    CharacterRemoved,
++    WorldRuleChanged,
++    LoreSourceChanged,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CanonChangeSet {
++    pub change_set_id: String,
++    pub world_id: WorldId,
++    pub from_canon_revision: u64,
++    pub to_canon_revision: u64,
++    pub from_canon_fingerprint: String,
++    pub to_canon_fingerprint: String,
++    #[serde(default)]
++    pub changed_entity_refs: Vec<CharacterId>,
++    #[serde(default)]
++    pub added_entity_refs: Vec<CharacterId>,
++    #[serde(default)]
++    pub updated_entity_refs: Vec<CharacterId>,
++    #[serde(default)]
++    pub removed_entity_refs: Vec<CharacterId>,
++    #[serde(default)]
++    pub origin_proposal_ids: Vec<String>,
++    #[serde(default)]
++    pub change_classes: Vec<CanonChangeClass>,
++    pub created_at_runtime_revision: u64,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
++pub enum LoreAssetStatus {
++    Ready,
++    NeedsRevalidation,
++    Blocked,
++    Disabled,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
++pub enum LoreTargetIntent {
++    WorldinfoConstant,
++    WorldinfoKeyword,
++    CanonRegistryRef,
++    StaticRuntimeSource,
++    NoSerialization,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
++pub enum LoreSensitivity {
++    Public,
++    Restricted,
++    Secret,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct LoreRecord {
++    pub lore_id: String,
++    #[serde(rename = "type")]
++    pub lore_type: String,
++    pub title: String,
++    #[serde(default)]
++    pub aliases: Vec<String>,
++    #[serde(default)]
++    pub source_refs: Vec<String>,
++    #[serde(default)]
++    pub source_entity_refs: Vec<CharacterId>,
++    pub content: String,
++    pub sensitivity: LoreSensitivity,
++    #[serde(default)]
++    pub primary_triggers: Vec<String>,
++    #[serde(default)]
++    pub secondary_triggers: Vec<String>,
++    pub collision_risk: String,
++    #[serde(default)]
++    pub owner_fact_refs: Vec<String>,
++    #[serde(default)]
++    pub dependent_lore_refs: Vec<String>,
++    pub target_intent: LoreTargetIntent,
++    pub status: LoreAssetStatus,
++    pub source_revision: u64,
++    pub lore_revision: u64,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct LoreDependencyRef {
++    pub lore_id: String,
++    #[serde(default)]
++    pub source_entity_refs: Vec<CharacterId>,
++    #[serde(default)]
++    pub dependent_lore_refs: Vec<String>,
++}
++
++#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct LoreDependencyIndex {
++    #[serde(default)]
++    pub by_entity: BTreeMap<CharacterId, Vec<String>>,
++    #[serde(default)]
++    pub by_lore: BTreeMap<String, LoreDependencyRef>,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct LorePackManifest {
++    pub lore_pack_id: String,
++    pub lore_revision: u64,
++    pub lore_fingerprint: String,
++    pub source_canon_revision: u64,
++    #[serde(default)]
++    pub entry_refs: Vec<String>,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct WorldAssetIdentity {
++    pub manifest_revision: u64,
++    pub canon_revision: u64,
++    pub canon_fingerprint: String,
++    pub asset_revision: u64,
++    pub asset_fingerprint: String,
++    #[serde(default)]
++    pub lore_pack_refs: Vec<String>,
++}
++
+ pub fn check_world_binding(
+     session: &SessionIdentity,
+     manifest: &WorldManifest,
+diff --git a/src-tauri/crates/tt-domain/tests/rp_asset_contracts.rs b/src-tauri/crates/tt-domain/tests/rp_asset_contracts.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-domain/tests/rp_asset_contracts.rs
+@@ -0,0 +1,112 @@
++use std::collections::BTreeMap;
++
++use tt_domain::models::rp_architecture::{
++    CanonChangeClass, CanonChangeSet, CharacterId, LoreAssetStatus, LoreDependencyIndex,
++    LoreDependencyRef, LorePackManifest, LoreRecord, LoreSensitivity, LoreTargetIntent,
++    WorldAssetIdentity, WorldId,
++};
++
++#[test]
++fn canon_changeset_serialization_is_stable() {
++    let change_set = CanonChangeSet {
++        change_set_id: "changeset-1".to_string(),
++        world_id: WorldId("cityschool-core".to_string()),
++        from_canon_revision: 7,
++        to_canon_revision: 8,
++        from_canon_fingerprint: "a".repeat(64),
++        to_canon_fingerprint: "b".repeat(64),
++        changed_entity_refs: vec![CharacterId("yintingchuan".to_string())],
++        added_entity_refs: vec![CharacterId("yintingchuan".to_string())],
++        updated_entity_refs: Vec::new(),
++        removed_entity_refs: Vec::new(),
++        origin_proposal_ids: vec!["proposal-1".to_string()],
++        change_classes: vec![CanonChangeClass::CharacterAdded],
++        created_at_runtime_revision: 42,
++    };
++
++    let value = serde_json::to_value(&change_set).unwrap();
++    assert_eq!(value["changeClasses"][0], "CHARACTER_ADDED");
++    assert_eq!(value["addedEntityRefs"][0], "yintingchuan");
++    let decoded: CanonChangeSet = serde_json::from_value(value).unwrap();
++    assert_eq!(decoded, change_set);
++}
++
++#[test]
++fn lore_registry_contract_keeps_destination_and_sensitivity_explicit() {
++    let record = LoreRecord {
++        lore_id: "lore.character.yintingchuan.overview".to_string(),
++        lore_type: "CHARACTER_OVERVIEW".to_string(),
++        title: "尹听川".to_string(),
++        aliases: vec!["听川".to_string()],
++        source_refs: vec!["canon:character:yintingchuan".to_string()],
++        source_entity_refs: vec![CharacterId("yintingchuan".to_string())],
++        content: "confirmed public identity".to_string(),
++        sensitivity: LoreSensitivity::Restricted,
++        primary_triggers: vec!["尹听川".to_string()],
++        secondary_triggers: vec!["听川".to_string()],
++        collision_risk: "LOW".to_string(),
++        owner_fact_refs: Vec::new(),
++        dependent_lore_refs: Vec::new(),
++        target_intent: LoreTargetIntent::CanonRegistryRef,
++        status: LoreAssetStatus::NeedsRevalidation,
++        source_revision: 8,
++        lore_revision: 1,
++    };
++
++    let value = serde_json::to_value(&record).unwrap();
++    assert_eq!(value["sensitivity"], "RESTRICTED");
++    assert_eq!(value["targetIntent"], "CANON_REGISTRY_REF");
++    assert_eq!(value["status"], "NEEDS_REVALIDATION");
++    assert_eq!(value["type"], "CHARACTER_OVERVIEW");
++}
++
++#[test]
++fn dependency_index_supports_reverse_character_lookup() {
++    let character = CharacterId("yintingchuan".to_string());
++    let lore_id = "lore.character.yintingchuan.overview".to_string();
++    let mut by_entity = BTreeMap::new();
++    by_entity.insert(character.clone(), vec![lore_id.clone()]);
++    let mut by_lore = BTreeMap::new();
++    by_lore.insert(
++        lore_id.clone(),
++        LoreDependencyRef {
++            lore_id: lore_id.clone(),
++            source_entity_refs: vec![character.clone()],
++            dependent_lore_refs: Vec::new(),
++        },
++    );
++    let index = LoreDependencyIndex { by_entity, by_lore };
++
++    assert_eq!(index.by_entity.get(&character), Some(&vec![lore_id]));
++}
++
++#[test]
++fn world_asset_identity_keeps_canon_and_lore_identity_separate() {
++    let lore_pack = LorePackManifest {
++        lore_pack_id: "cityschool-core.characters".to_string(),
++        lore_revision: 3,
++        lore_fingerprint: "c".repeat(64),
++        source_canon_revision: 8,
++        entry_refs: vec!["lore.character.yintingchuan.overview".to_string()],
++    };
++    let identity = WorldAssetIdentity {
++        manifest_revision: 12,
++        canon_revision: 8,
++        canon_fingerprint: "b".repeat(64),
++        asset_revision: 4,
++        asset_fingerprint: "d".repeat(64),
++        lore_pack_refs: vec![lore_pack.lore_pack_id.clone()],
++    };
++
++    assert_eq!(identity.canon_revision, lore_pack.source_canon_revision);
++    assert_ne!(identity.canon_fingerprint, lore_pack.lore_fingerprint);
++}
