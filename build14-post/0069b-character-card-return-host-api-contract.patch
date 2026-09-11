@@ -1,0 +1,97 @@
+diff --git a/tests/character-card-api-contract.test.mjs b/tests/character-card-api-contract.test.mjs
+--- a/tests/character-card-api-contract.test.mjs
++++ b/tests/character-card-api-contract.test.mjs
+@@ -157,6 +157,94 @@ test('api.characterCards does not fail iOS picked files when staging cleanup fails', async () => {
+     });
+ });
+ 
++test('api.characterCards uses dedicated Return Import commands and byte staging', async () => {
++    const calls = [];
++    const { characterCards } = await installHarness({
++        safeInvoke: async (command, args) => {
++            calls.push({ command, args });
++            if (command === 'preview_character_card_return') {
++                return { transactionId: 'preview-1', stagedImport: { logicalRef: 'staging/preview-1.png' } };
++            }
++            if (command === 'plan_character_card_return') {
++                return { plan: { planToken: 'plan-1' } };
++            }
++            if (command === 'commit_character_card_return') {
++                return { transactionId: 'commit-1' };
++            }
++            return null;
++        },
++    });
++    const file = new File([new Uint8Array([1, 2, 3, 4])], 'Alice.png', { type: 'image/png' });
++
++    const preview = await characterCards.previewReturnImport(file);
++    assert.equal(preview.transactionId, 'preview-1');
++    assert.deepEqual(calls[0], {
++        command: 'preview_character_card_return',
++        args: {
++            bytes: [1, 2, 3, 4],
++            format: 'png',
++            user_indicated_return: true,
++        },
++    });
++
++    const choices = { name: 'KEEP_LOCAL' };
++    const plan = await characterCards.planReturnImport({
++        stagedRef: 'staging/preview-1.png',
++        format: 'png',
++        replaceAvatar: false,
++        sessionId: 'session-a',
++        branchId: 'branch-a',
++        choices,
++    });
++    assert.equal(plan.plan.planToken, 'plan-1');
++    assert.deepEqual(calls[1], {
++        command: 'plan_character_card_return',
++        args: {
++            request: {
++                stagedRef: 'staging/preview-1.png',
++                format: 'png',
++                replaceAvatar: false,
++                sessionId: 'session-a',
++                branchId: 'branch-a',
++                choices,
++            },
++        },
++    });
++
++    const suppliedPlan = { planToken: 'plan-1' };
++    const committed = await characterCards.commitReturnImport({
++        stagedRef: 'staging/preview-1.png',
++        format: 'png',
++        replaceAvatar: false,
++        suppliedPlan,
++        sessionId: 'session-a',
++        branchId: 'branch-a',
++        choices,
++    });
++    assert.equal(committed.transactionId, 'commit-1');
++    assert.deepEqual(calls[2], {
++        command: 'commit_character_card_return',
++        args: {
++            request: {
++                stagedRef: 'staging/preview-1.png',
++                format: 'png',
++                replaceAvatar: false,
++                suppliedPlan,
++                sessionId: 'session-a',
++                branchId: 'branch-a',
++                choices,
++            },
++        },
++    });
++
++    await characterCards.discardReturnPreview('staging/preview-1.png');
++    assert.deepEqual(calls[3], {
++        command: 'discard_character_card_return_preview',
++        args: { logical_ref: 'staging/preview-1.png' },
++    });
++});
++
+ test('api.characterCards leaves Android on the WebView file input path', async () => {
+     await withNavigatorUserAgent('Mozilla/5.0 (Linux; Android 15)', async () => {
+         const calls = [];
