@@ -1,0 +1,48 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -6,12 +6,14 @@ use chrono::Utc;
+ use serde::{Deserialize, Serialize};
+ use serde_json::Value;
+ use sha2::{Digest, Sha256};
++use tokio::sync::Mutex;
+ use tt_domain::errors::DomainError;
+ use tt_domain::models::character_card_materialization::{
+-    BindingScopeKind, BindingStatus, CharacterCardBinding, CharacterCardBindingContext,
+-    ExportRecord, MergeFieldDecision, PortableReturnMetadata, ReturnImportPlan,
+-    ReturnRecognitionState, StagedCharacterCardImport, CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
++    BindingScopeKind, BindingStatus, CharacterCardBinding, CharacterCardBindingContext,
++    CharacterCardTransactionJournal, CharacterCardTransactionState, ExportRecord,
++    MergeFieldDecision, PortableReturnMetadata, ReturnImportPlan, ReturnRecognitionState,
++    StagedCharacterCardImport, UndoRecord, CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
+ };
+@@ -86,10 +88,23 @@ pub struct CharacterCardReturnPlanResult {
+     pub replace_avatar: bool,
+ }
++
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardReturnCommitResult {
++    pub transaction_id: String,
++    pub binding_id: String,
++    pub card_revision: u64,
++    pub binding_generation: u64,
++    pub card_hash: String,
++    pub avatar_replaced: bool,
++    pub idempotent_replay: bool,
++}
+ 
+ pub struct CharacterCardMaterializationOrchestrator {
+     materialization: Arc<dyn CharacterCardMaterializationRepository>,
+     cards: Arc<dyn CharacterCardReturnRepository>,
+     authority: Arc<dyn CharacterCardReturnAuthorityRepository>,
+     runs: Arc<dyn AgentRunRepository>,
++    return_commit_lock: Mutex<()>,
+ }
+@@ -105,6 +120,7 @@ impl CharacterCardMaterializationOrchestrator {
+             cards,
+             authority,
+             runs,
++            return_commit_lock: Mutex::new(()),
+         }
+     }
