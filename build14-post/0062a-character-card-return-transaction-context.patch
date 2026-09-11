@@ -1,0 +1,33 @@
+diff --git a/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
+--- a/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
++++ b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
+@@ -345,6 +345,10 @@ pub struct CharacterCardTransactionJournal {
+     pub plan_token: String,
+     pub binding_id: String,
++    #[serde(default)]
++    pub export_id: Option<String>,
++    #[serde(default)]
++    pub expected_after_card_hash: Option<String>,
+     pub state: CharacterCardTransactionState,
+     pub before_card_ref: Option<String>,
+     pub before_binding_ref: Option<String>,
+diff --git a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+--- a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
++++ b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+@@ -105,6 +105,18 @@ impl CharacterCardMaterializationStore {
+         validate_opaque_id(&journal.transaction_id)?;
+         validate_opaque_id(&journal.binding_id)?;
+         validate_opaque_id(&journal.plan_token)?;
++        if let Some(export_id) = journal.export_id.as_deref() {
++            validate_opaque_id(export_id)?;
++        }
++        if let Some(hash) = journal.expected_after_card_hash.as_deref()
++            && (hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit()))
++        {
++            return Err(DomainError::InvalidData(
++                "Character Card transaction expected-after hash must be SHA-256 hex".to_string(),
++            ));
++        }
+         validate_optional_logical_ref(journal.before_card_ref.as_deref())?;
+         validate_optional_logical_ref(journal.before_binding_ref.as_deref())?;
+         validate_optional_logical_ref(journal.before_profile_ref.as_deref())?;
