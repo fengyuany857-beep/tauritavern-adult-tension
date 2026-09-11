@@ -1,3 +1,5 @@
 # Diagnostic matches
+1:[SECRET-ABSENCE] PASS final IPA contains no forbidden secret/private file paths
 
 # Tail
+[SECRET-ABSENCE] PASS final IPA contains no forbidden secret/private file paths
