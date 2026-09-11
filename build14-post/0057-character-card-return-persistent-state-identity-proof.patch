@@ -1,0 +1,82 @@
+diff --git a/src-tauri/crates/tt-ports/src/repositories/character_card_return_persistent_state_repository.rs b/src-tauri/crates/tt-ports/src/repositories/character_card_return_persistent_state_repository.rs
+--- a/src-tauri/crates/tt-ports/src/repositories/character_card_return_persistent_state_repository.rs
++++ b/src-tauri/crates/tt-ports/src/repositories/character_card_return_persistent_state_repository.rs
+@@ -3,6 +3,15 @@ use tt_domain::errors::DomainError;
+ use tt_domain::models::agent::WorkspacePath;
+ 
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct CharacterCardReturnPersistentText {
++    pub workspace_id: String,
++    pub state_id: String,
++    pub stable_chat_id: String,
++    pub created_from_run_id: String,
++    pub text: String,
++}
++
+ /// Read-only access to a durable Agent persistent-state projection.
+ ///
+ /// Character Card Return uses this instead of a historical run workspace so
+@@ -14,5 +23,5 @@ pub trait CharacterCardReturnPersistentStateRepository: Send + Sync {
+         workspace_id: &str,
+         state_id: &str,
+         path: &WorkspacePath,
+-    ) -> Result<String, DomainError>;
++    ) -> Result<CharacterCardReturnPersistentText, DomainError>;
+ }
+diff --git a/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_agent_repository/persistent_store.rs b/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_agent_repository/persistent_store.rs
+--- a/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_agent_repository/persistent_store.rs
++++ b/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_agent_repository/persistent_store.rs
+@@ -15,7 +15,10 @@ use tt_domain::models::agent::{
+     WorkspacePersistentChangeKind, WorkspacePersistentChangeSet, WorkspaceRootCommit,
+     WorkspaceRootMount, WorkspaceRootScope,
+ };
+ use tt_ports::repositories::agent_run_repository::AgentRunRepository;
+-use tt_ports::repositories::character_card_return_persistent_state_repository::CharacterCardReturnPersistentStateRepository;
++use tt_ports::repositories::character_card_return_persistent_state_repository::{
++    CharacterCardReturnPersistentStateRepository, CharacterCardReturnPersistentText,
++};
+ use tt_ports::repositories::workspace_repository::WorkspaceRepository;
+@@ -338,7 +341,7 @@ impl CharacterCardReturnPersistentStateRepository for FileAgentRepository {
+         workspace_id: &str,
+         state_id: &str,
+         path: &WorkspacePath,
+-    ) -> Result<String, DomainError> {
++    ) -> Result<CharacterCardReturnPersistentText, DomainError> {
+         let state_dir = self.persistent_state_dir(workspace_id, state_id)?;
+         let manifest = self.read_persistent_state_manifest(&state_dir).await?;
+         if manifest.workspace_id != workspace_id || manifest.state_id != state_id {
+@@ -346,6 +349,16 @@ impl CharacterCardReturnPersistentStateRepository for FileAgentRepository {
+                 "character_card_return.persistent_state_identity_mismatch".to_string(),
+             ));
+         }
++        if manifest.created_from_run_id != state_id || manifest.stable_chat_id.trim().is_empty() {
++            return Err(DomainError::InvalidData(
++                "character_card_return.persistent_state_provenance_invalid".to_string(),
++            ));
++        }
++        let stable_chat_id = manifest.stable_chat_id.clone();
++        let created_from_run_id = manifest.created_from_run_id.clone();
+         let requested = path.as_str();
+         if !manifest.files.iter().any(|file| file.path == requested) {
+             return Err(DomainError::NotFound(format!(
+@@ -390,11 +403,19 @@ impl CharacterCardReturnPersistentStateRepository for FileAgentRepository {
+             )));
+         }
+ 
+-        fs::read_to_string(&canonical_target).await.map_err(|error| {
++        let text = fs::read_to_string(&canonical_target).await.map_err(|error| {
+             DomainError::InternalError(format!(
+                 "Failed to read durable persistent file {}: {error}",
+                 canonical_target.display()
+             ))
+-        })
++        })?;
++        Ok(CharacterCardReturnPersistentText {
++            workspace_id: workspace_id.to_string(),
++            state_id: state_id.to_string(),
++            stable_chat_id,
++            created_from_run_id,
++            text,
++        })
+     }
+ }
