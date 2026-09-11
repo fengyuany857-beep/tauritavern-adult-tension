@@ -223,7 +223,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
                  card_hash: readback_hash,
                  avatar_replaced: replace_avatar,
                  idempotent_replay: false,
-@@ -816,6 +816,9 @@ impl CharacterCardMaterializationOrchestrator {
+@@ -930,6 +959,9 @@ impl CharacterCardMaterializationOrchestrator {
          let expected_revision = plan.expected_card_revision.checked_add(1).ok_or_else(|| {
              DomainError::InvalidData("Character Card revision overflow".to_string())
          })?;
@@ -235,7 +235,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
              || binding.card_revision != expected_revision
              || binding.profile_revision_at_last_sync != Some(plan.expected_profile_revision)
          {
-@@ -851,7 +854,7 @@ impl CharacterCardMaterializationOrchestrator {
+@@ -965,7 +997,7 @@ impl CharacterCardMaterializationOrchestrator {
              transaction_id: transaction_id.to_string(),
              binding_id: binding.binding_id,
              card_revision: expected_revision,
@@ -244,7 +244,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
              card_hash,
              avatar_replaced,
              idempotent_replay: true,
-@@ -887,21 +890,26 @@ impl CharacterCardMaterializationOrchestrator {
+@@ -1001,21 +1033,26 @@ impl CharacterCardMaterializationOrchestrator {
              ) {
                  (Some(card_ref), Some(binding_ref)) => {
                      let before_png = self.materialization.read_snapshot(card_ref).await?;
@@ -286,7 +286,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
                                      .to_string(),
                              ));
                          }
-@@ -910,6 +918,15 @@ impl CharacterCardMaterializationOrchestrator {
+@@ -1024,6 +1061,15 @@ impl CharacterCardMaterializationOrchestrator {
                              .restore_card_png_bytes(&before_binding.card_storage_identity, &before_png)
                              .await?;
                      }
@@ -302,7 +302,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
  
                      let current_binding = self
                          .materialization
-@@ -920,22 +937,30 @@ impl CharacterCardMaterializationOrchestrator {
+@@ -1037,22 +1083,30 @@ impl CharacterCardMaterializationOrchestrator {
                              before_binding.binding_id
                          )))?;
                      if current_binding != before_binding {
@@ -345,7 +345,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
                  }
                  _ if snapshots_required => {
                      return Err(DomainError::InvalidData(
-@@ -948,8 +973,11 @@ impl CharacterCardMaterializationOrchestrator {
+@@ -1065,8 +1119,11 @@ impl CharacterCardMaterializationOrchestrator {
              }
  
              if let Some(export_id) = journal.export_id.as_deref() {
@@ -360,7 +360,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
                          Some(transaction_id) if transaction_id == journal.transaction_id => {
                              export.transaction_id = None;
                              self.materialization.write_export_record(&export).await?;
-@@ -962,8 +990,18 @@ impl CharacterCardMaterializationOrchestrator {
+@@ -1079,8 +1136,18 @@ impl CharacterCardMaterializationOrchestrator {
                          }
                          None => {}
                      }
@@ -376,7 +376,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
                  }
              }
              Ok(())
-@@ -1029,6 +1067,14 @@ fn validate_local_card_plan_hash(
+@@ -1160,6 +1227,14 @@ fn validate_local_card_plan_hash(
      Ok(())
  }
  
