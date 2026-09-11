@@ -22,7 +22,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 +        link.origin_proof = "b".repeat(64);
          attach_portable_return_metadata(&mut exported, &link, &ExportAnnotations::default()).unwrap();
          assert_eq!(
-@@ -457,7 +457,7 @@ mod tests {
+@@ -446,7 +446,7 @@ mod tests {
      fn scanner_allows_only_portable_tauritavern_namespace() {
          let mut card = json!({"data":{"name":"Lin","extensions":{}}});
          let mut link = metadata();
@@ -30,4 +30,4 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_materia
 +        link.origin_proof = "b".repeat(64);
          attach_portable_return_metadata(&mut card, &link, &ExportAnnotations::default()).unwrap();
          assert!(scan_portable_card(&card).is_ok());
-     }
+         card["data"]["extensions"]["tauritavern"]["control_owner"] = json!("ai");
