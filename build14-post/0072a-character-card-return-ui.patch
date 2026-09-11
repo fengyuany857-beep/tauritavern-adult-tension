@@ -1,0 +1,348 @@
+diff --git a/src/scripts/tauri/character-card-return-ui.js b/src/scripts/tauri/character-card-return-ui.js
+new file mode 100644
+--- /dev/null
++++ b/src/scripts/tauri/character-card-return-ui.js
+@@ -0,0 +1,343 @@
++// @ts-check
++
++import { t } from '../i18n.js';
++import { POPUP_RESULT, POPUP_TYPE, Popup } from '../popup.js';
++import { SURFACE, applySurface } from '../tauritavern/layout-kit.js';
++import {
++    isNativeCharacterCardPickerAvailable,
++    pickNativeCharacterCardFiles,
++} from './character-card-picker.js';
++import { getActiveChatSnapshot } from '../../tauri/main/adapters/st/active-chat-ref.js';
++import { resolveStableChatId } from '../../tauri/main/api/agent-chat-identity.js';
++
++const BUTTON_ID = 'tt_character_card_return_button';
++const COMMIT_ELIGIBLE_STATE = 'KNOWN_EXACT_RETURN';
++
++function characterCardApi() {
++    const api = window.__TAURITAVERN__?.api?.characterCards;
++    for (const name of [
++        'previewReturnImport',
++        'resolveReturnContext',
++        'planReturnImport',
++        'commitReturnImport',
++        'discardReturnPreview',
++    ]) {
++        if (typeof api?.[name] !== 'function') {
++            throw new Error(t`Character Card Return API is not available`);
++        }
++    }
++    return api;
++}
++
++function returnFormat(file) {
++    const name = String(file?.name || '').toLowerCase();
++    if (name.endsWith('.png')) return 'png';
++    if (name.endsWith('.json')) return 'json';
++    throw new Error(t`Character Card Return only accepts PNG or JSON files`);
++}
++
++function pickWebViewFile() {
++    return new Promise((resolve) => {
++        const input = document.createElement('input');
++        input.type = 'file';
++        input.accept = '.png,.json,image/png,application/json';
++        input.style.display = 'none';
++        const finish = (file) => {
++            input.remove();
++            resolve(file);
++        };
++        input.addEventListener('change', () => finish(input.files?.[0] || null), { once: true });
++        input.addEventListener('cancel', () => finish(null), { once: true });
++        document.body.append(input);
++        input.click();
++    });
++}
++
++async function pickReturnFile() {
++    if (!isNativeCharacterCardPickerAvailable()) return pickWebViewFile();
++    const files = await pickNativeCharacterCardFiles({
++        multiple: false,
++        title: t`Return Character Card`,
++    });
++    return files?.[0] || null;
++}
++
++function appendTextRow(parent, labelText, value) {
++    const row = document.createElement('div');
++    row.style.display = 'grid';
++    row.style.gridTemplateColumns = 'minmax(8rem, .35fr) minmax(0, 1fr)';
++    row.style.gap = '.75rem';
++    const label = document.createElement('strong');
++    label.textContent = labelText;
++    const content = document.createElement('code');
++    content.textContent = String(value ?? '');
++    content.style.overflowWrap = 'anywhere';
++    row.append(label, content);
++    parent.append(row);
++}
++
++function valueText(value) {
++    if (value === undefined) return t`Missing`;
++    const text = JSON.stringify(value, null, 2) ?? String(value);
++    return text.length > 800 ? `${text.slice(0, 800)}…` : text;
++}
++
++function buildDiffPopup(preview, format) {
++    const root = document.createElement('div');
++    root.style.display = 'flex';
++    root.style.flexDirection = 'column';
++    root.style.gap = '.8rem';
++    const title = document.createElement('h3');
++    title.textContent = t`Character Card Return Preview`;
++    root.append(title);
++    appendTextRow(root, t`Recognition`, preview?.recognitionState || 'UNKNOWN');
++    appendTextRow(root, t`Format`, format.toUpperCase());
++
++    const warnings = Array.isArray(preview?.warnings) ? preview.warnings : [];
++    if (warnings.length) {
++        const list = document.createElement('ul');
++        for (const warning of warnings) {
++            const item = document.createElement('li');
++            item.textContent = String(warning);
++            list.append(item);
++        }
++        root.append(list);
++    }
++
++    const decisions = Array.isArray(preview?.decisions) ? preview.decisions : [];
++    decisions.forEach((decision, index) => {
++        const section = document.createElement('section');
++        section.style.border = '1px solid var(--SmartThemeBorderColor)';
++        section.style.borderRadius = '6px';
++        section.style.padding = '.7rem';
++        section.style.display = 'flex';
++        section.style.flexDirection = 'column';
++        section.style.gap = '.5rem';
++
++        const header = document.createElement('strong');
++        header.textContent = `${decision?.fieldPath || `field-${index}`} · ${decision?.state || 'UNKNOWN'}`;
++        section.append(header);
++
++        for (const [labelText, value] of [
++            [t`Base`, decision?.base],
++            [t`Local`, decision?.local],
++            [t`Returned`, decision?.imported],
++        ]) {
++            const details = document.createElement('details');
++            const summary = document.createElement('summary');
++            summary.textContent = labelText;
++            const pre = document.createElement('pre');
++            pre.textContent = valueText(value);
++            pre.style.whiteSpace = 'pre-wrap';
++            pre.style.overflowWrap = 'anywhere';
++            details.append(summary, pre);
++            section.append(details);
++        }
++
++        if (decision?.requiresUserConfirmation) {
++            const select = document.createElement('select');
++            select.className = 'text_pole';
++            select.dataset.returnFieldIndex = String(index);
++            select.append(new Option(t`Choose how to resolve this field`, ''));
++            if (decision?.localPresence !== 'MISSING') {
++                select.append(new Option(t`Keep Local`, 'KEEP_LOCAL'));
++            }
++            if (decision?.importedPresence !== 'MISSING') {
++                select.append(new Option(t`Use Returned`, 'USE_IMPORTED'));
++            }
++            section.append(select);
++        } else {
++            const automatic = document.createElement('small');
++            automatic.textContent = t`No manual choice is required for this field.`;
++            section.append(automatic);
++        }
++        root.append(section);
++    });
++
++    if (preview?.avatarMayReplace) {
++        const label = document.createElement('label');
++        label.className = 'checkbox_label';
++        const checkbox = document.createElement('input');
++        checkbox.type = 'checkbox';
++        checkbox.dataset.returnReplaceAvatar = 'true';
++        const text = document.createElement('span');
++        text.textContent = t`Replace avatar pixels with the returned PNG`;
++        label.append(checkbox, text);
++        root.append(label);
++    }
++    return root;
++}
++
++function collectDiffChoices(root, preview) {
++    const choices = {};
++    const decisions = Array.isArray(preview?.decisions) ? preview.decisions : [];
++    decisions.forEach((decision, index) => {
++        if (!decision?.requiresUserConfirmation) return;
++        const select = root.querySelector(`[data-return-field-index="${index}"]`);
++        if (!(select instanceof HTMLSelectElement) || !select.value) {
++            throw new Error(t`Every conflicted field needs an explicit choice before commit.`);
++        }
++        choices[String(decision.fieldPath)] = select.value;
++    });
++    const avatar = root.querySelector('[data-return-replace-avatar="true"]');
++    return {
++        choices,
++        replaceAvatar: avatar instanceof HTMLInputElement ? avatar.checked : false,
++    };
++}
++
++async function promptForDiff(preview, format) {
++    const eligible = preview?.recognitionState === COMMIT_ELIGIBLE_STATE;
++    while (true) {
++        const root = buildDiffPopup(preview, format);
++        const popup = new Popup(root, eligible ? POPUP_TYPE.CONFIRM : POPUP_TYPE.TEXT, '', {
++            okButton: eligible ? t`Prepare Commit` : t`Close`,
++            cancelButton: eligible ? t`Cancel Return` : false,
++            wide: true,
++            large: true,
++            allowVerticalScrolling: true,
++            leftAlign: true,
++        });
++        applySurface(popup.dlg, SURFACE.FullscreenWindow);
++        const result = await popup.show();
++        if (!eligible || result !== POPUP_RESULT.AFFIRMATIVE) return null;
++        try {
++            return collectDiffChoices(root, preview);
++        } catch (error) {
++            window.toastr?.warning?.(error instanceof Error ? error.message : String(error));
++        }
++    }
++}
++
++async function confirmPlan(planResult) {
++    const plan = planResult?.plan;
++    if (!plan || typeof plan !== 'object') throw new Error(t`Character Card Return plan is invalid`);
++    const root = document.createElement('div');
++    const title = document.createElement('h3');
++    title.textContent = t`Commit Character Card Return?`;
++    root.append(title);
++    const note = document.createElement('p');
++    note.textContent = t`The plan was re-read from immutable staged bytes and current RP authority.`;
++    root.append(note);
++    appendTextRow(root, t`Binding`, plan.targetBindingId);
++    appendTextRow(root, t`Card revision`, plan.expectedCardRevision);
++    appendTextRow(root, t`Binding generation`, plan.expectedBindingGeneration);
++    appendTextRow(root, t`Final card hash`, plan.expectedFinalCardHash);
++    appendTextRow(root, t`Avatar`, plan.replaceAvatar ? t`Replace` : t`Preserve`);
++    const popup = new Popup(root, POPUP_TYPE.CONFIRM, '', {
++        okButton: t`Commit Return`,
++        cancelButton: t`Back`,
++        wide: true,
++        allowVerticalScrolling: true,
++        leftAlign: true,
++    });
++    applySurface(popup.dlg, SURFACE.FullscreenWindow);
++    return await popup.show() === POPUP_RESULT.AFFIRMATIVE;
++}
++
++async function runCharacterCardReturn() {
++    const api = characterCardApi();
++    const file = await pickReturnFile();
++    if (!file) return;
++    const format = returnFormat(file);
++    let stagedRef = '';
++    let committed = false;
++    try {
++        const preview = await api.previewReturnImport(file, { userIndicatedReturn: true });
++        stagedRef = String(preview?.stagedImport?.logicalRef || '').trim();
++        if (!stagedRef) throw new Error(t`Character Card Return preview did not provide a staged reference`);
++
++        let context = null;
++        if (preview?.recognitionState === COMMIT_ELIGIBLE_STATE) {
++            const activeChat = getActiveChatSnapshot();
++            const stableChatId = await resolveStableChatId(activeChat.ref);
++            context = await api.resolveReturnContext({ stagedRef, format, stableChatId });
++        }
++
++        const diff = await promptForDiff(preview, format);
++        if (!diff || !context) return;
++
++        const planResult = await api.planReturnImport({
++            stagedRef,
++            format,
++            replaceAvatar: diff.replaceAvatar,
++            sessionId: context.sessionId,
++            branchId: context.branchId,
++            choices: diff.choices,
++        });
++        if (!await confirmPlan(planResult)) return;
++
++        const result = await api.commitReturnImport({
++            stagedRef,
++            format,
++            replaceAvatar: diff.replaceAvatar,
++            suppliedPlan: planResult.plan,
++            sessionId: context.sessionId,
++            branchId: context.branchId,
++            choices: diff.choices,
++        });
++        committed = true;
++        window.toastr?.success?.(
++            `${t`Revision`} ${result?.cardRevision ?? ''}`.trim(),
++            t`Character Card Return committed`,
++        );
++    } finally {
++        if (!stagedRef) return;
++        try {
++            await api.discardReturnPreview(stagedRef);
++        } catch (error) {
++            console.warn('[CharacterCardReturn] staged preview cleanup failed', error);
++            if (!committed) window.toastr?.warning?.(t`The staged Return preview could not be cleaned up automatically.`);
++        }
++    }
++}
++
++function mountReturnButton() {
++    if (!window.__TAURITAVERN__ || document.getElementById(BUTTON_ID)) return;
++    const bar = document.querySelector('#avatar_controls .form_create_bottom_buttons_block');
++    const form = document.getElementById('form_create');
++    if (!(bar instanceof HTMLElement) || !(form instanceof HTMLElement)) return;
++
++    const button = document.createElement('button');
++    button.id = BUTTON_ID;
++    button.type = 'button';
++    button.className = 'menu_button menu_button_icon';
++    button.title = t`Return Character Card`;
++    button.setAttribute('aria-label', t`Return Character Card`);
++    button.innerHTML = '<i class="fa-solid fa-code-compare"></i>';
++    const anchor = document.getElementById('char_connections_button');
++    if (anchor?.parentElement === bar) anchor.after(button);
++    else bar.insertBefore(button, document.getElementById('export_button'));
++
++    const sync = () => {
++        const visible = form.getAttribute('actiontype') === 'editcharacter';
++        button.classList.toggle('displayNone', !visible);
++        button.disabled = !visible;
++    };
++    new MutationObserver(sync).observe(form, { attributes: true, attributeFilter: ['actiontype'] });
++    button.addEventListener('click', async (event) => {
++        event.preventDefault();
++        if (button.disabled) return;
++        button.disabled = true;
++        try {
++            await runCharacterCardReturn();
++        } catch (error) {
++            console.error('[CharacterCardReturn]', error);
++            window.toastr?.error?.(error instanceof Error ? error.message : String(error));
++        } finally {
++            sync();
++        }
++    });
++    sync();
++}
++
++function installCharacterCardReturnUi() {
++    mountReturnButton();
++    if (!document.getElementById(BUTTON_ID)) setTimeout(mountReturnButton, 0);
++}
++
++if (document.readyState === 'loading') {
++    document.addEventListener('DOMContentLoaded', installCharacterCardReturnUi, { once: true });
++} else {
++    queueMicrotask(installCharacterCardReturnUi);
++}
