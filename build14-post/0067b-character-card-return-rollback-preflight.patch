@@ -1,0 +1,119 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -1005,6 +1005,96 @@ impl CharacterCardMaterializationOrchestrator {
+         })
+     }
+ 
++    async fn preflight_return_rollback_ownership(
++        &self,
++        journal: &CharacterCardTransactionJournal,
++        pre_rollback_state: CharacterCardTransactionState,
++    ) -> Result<(), DomainError> {
++        let snapshots_required = !matches!(
++            pre_rollback_state,
++            CharacterCardTransactionState::Prepared
++                | CharacterCardTransactionState::StagedInputVerified
++        );
++
++        match (
++            journal.before_card_ref.as_deref(),
++            journal.before_binding_ref.as_deref(),
++        ) {
++            (Some(card_ref), Some(binding_ref)) => {
++                let before_png = self.materialization.read_snapshot(card_ref).await?;
++                let before_png_hash = sha256_hex(&before_png);
++                let before_binding_bytes = self.materialization.read_snapshot(binding_ref).await?;
++                let before_binding: CharacterCardBinding = serde_json::from_slice(
++                    &before_binding_bytes,
++                )
++                .map_err(|error| {
++                    DomainError::InvalidData(format!(
++                        "invalid Character Card rollback binding snapshot: {error}"
++                    ))
++                })?;
++
++                let current_png = self
++                    .cards
++                    .read_card_png_bytes(&before_binding.card_storage_identity)
++                    .await?;
++                let current_png_hash = sha256_hex(&current_png);
++                if current_png_hash != before_png_hash {
++                    let expected_after = journal.expected_after_png_hash.as_deref().ok_or_else(|| {
++                        DomainError::Conflict(
++                            "rollback cannot prove ownership of current exact Character Card PNG"
++                                .to_string(),
++                        )
++                    })?;
++                    if current_png_hash != expected_after {
++                        return Err(DomainError::Conflict(
++                            "Character Card PNG changed after Return transaction; rollback will not overwrite it"
++                                .to_string(),
++                        ));
++                    }
++                }
++
++                let current_binding = self
++                    .materialization
++                    .read_binding(&before_binding.binding_id)
++                    .await?
++                    .ok_or_else(|| DomainError::NotFound(format!(
++                        "character card binding {}",
++                        before_binding.binding_id
++                    )))?;
++                if current_binding != before_binding {
++                    let expected_after = journal
++                        .expected_after_binding_hash
++                        .as_deref()
++                        .ok_or_else(|| DomainError::Conflict(
++                            "rollback cannot prove ownership of current Character Card binding"
++                                .to_string(),
++                        ))?;
++                    if binding_state_hash(&current_binding)? != expected_after {
++                        return Err(DomainError::Conflict(
++                            "Character Card binding changed after Return transaction; rollback will not overwrite it"
++                                .to_string(),
++                        ));
++                    }
++                }
++            }
++            _ if snapshots_required => {
++                return Err(DomainError::InvalidData(
++                    "Return transaction requires rollback snapshots but journal is incomplete"
++                        .to_string(),
++                ));
++            }
++            _ => {}
++        }
++
++        if let Some(export_id) = journal.export_id.as_deref() {
++            let export = self
++                .materialization
++                .read_export_record(export_id)
++                .await?
++                .ok_or_else(|| DomainError::NotFound(format!(
++                    "character card export record {export_id}"
++                )))?;
++            if export.transaction_id.as_deref().is_some_and(|owner| owner != journal.transaction_id) {
++                return Err(DomainError::Conflict(
++                    "Character Card export was consumed by another transaction during rollback"
++                        .to_string(),
++                ));
++            }
++        }
++        Ok(())
++    }
++
+     async fn rollback_return_transaction(
+         &self,
+         journal: &mut CharacterCardTransactionJournal,
+@@ -1022,6 +1112,10 @@ impl CharacterCardMaterializationOrchestrator {
+         .await?;
+ 
+         let rollback: Result<(), DomainError> = async {
++            self.preflight_return_rollback_ownership(journal, pre_rollback_state)
++                .await?;
++
+             let snapshots_required = !matches!(
+                 pre_rollback_state,
+                 CharacterCardTransactionState::Prepared
