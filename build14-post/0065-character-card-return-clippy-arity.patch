@@ -1,0 +1,11 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -600,6 +600,7 @@ impl CharacterCardMaterializationOrchestrator {
+         })
+     }
+ 
++    #[allow(clippy::too_many_arguments)]
+     pub async fn commit_staged_return(
+         &self,
+         staged_ref: &str,
