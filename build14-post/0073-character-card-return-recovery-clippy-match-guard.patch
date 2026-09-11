@@ -1,0 +1,35 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -221,19 +221,17 @@ impl CharacterCardMaterializationOrchestrator {
+                         continue;
+                     }
+                 }
+-                CharacterCardTransactionState::ReadbackVerified => {
+-                    if self
+-                        .return_is_fully_owned_for_recovery(&journal)
+-                        .await?
+-                    {
+-                        advance_return_journal(
+-                            &*self.materialization,
+-                            &mut journal,
+-                            CharacterCardTransactionState::Committed,
+-                        )
+-                        .await?;
+-                        continue;
+-                    }
++                CharacterCardTransactionState::ReadbackVerified
++                    if self
++                        .return_is_fully_owned_for_recovery(&journal)
++                        .await? =>
++                {
++                    advance_return_journal(
++                        &*self.materialization,
++                        &mut journal,
++                        CharacterCardTransactionState::Committed,
++                    )
++                    .await?;
++                    continue;
+                 }
+                 _ => {}
+             }
