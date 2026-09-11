@@ -1,0 +1,245 @@
+diff --git a/src-tauri/crates/tt-domain/src/models/rp_architecture.rs b/src-tauri/crates/tt-domain/src/models/rp_architecture.rs
+--- a/src-tauri/crates/tt-domain/src/models/rp_architecture.rs
++++ b/src-tauri/crates/tt-domain/src/models/rp_architecture.rs
+@@ -426,6 +426,18 @@ pub struct LoreRecord {
+     pub lore_revision: u64,
+ }
+ 
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct LoreRegistry {
++    pub schema_version: u32,
++    pub world_id: WorldId,
++    pub registry_revision: u64,
++    #[serde(default)]
++    pub entries: BTreeMap<String, LoreRecord>,
++}
++
+ #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+ #[serde(rename_all = "camelCase", deny_unknown_fields)]
+ pub struct LoreDependencyRef {
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
+@@ -49,6 +49,7 @@ mod prompt_snapshot;
+ mod rp_canonization;
+ mod rp_asset_rebuild;
++mod rp_lore_invalidation;
+ mod scheduler;
+ mod skill_scope;
+ mod timeline_projection;
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_lore_invalidation.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_lore_invalidation.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_lore_invalidation.rs
+@@ -0,0 +1,172 @@
++use std::collections::{BTreeMap, BTreeSet};
++
++use tt_domain::models::rp_architecture::{
++    CanonChangeClass, CanonChangeSet, CharacterId, LoreDependencyIndex, LoreDependencyRef,
++    LoreRegistry,
++};
++
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub(super) struct LoreInvalidationResult {
++    pub affected_lore_ids: Vec<String>,
++    pub invalidation_reasons: BTreeMap<String, Vec<String>>,
++    pub character_projection_candidates: Vec<String>,
++    pub broad_revalidation_required: bool,
++}
++
++pub(super) fn build_lore_dependency_index(registry: &LoreRegistry) -> LoreDependencyIndex {
++    let mut by_entity: BTreeMap<CharacterId, BTreeSet<String>> = BTreeMap::new();
++    let mut by_lore = BTreeMap::new();
++
++    for (lore_id, record) in &registry.entries {
++        for character_id in &record.source_entity_refs {
++            by_entity
++                .entry(character_id.clone())
++                .or_default()
++                .insert(lore_id.clone());
++        }
++        by_lore.insert(
++            lore_id.clone(),
++            LoreDependencyRef {
++                lore_id: lore_id.clone(),
++                source_entity_refs: record.source_entity_refs.clone(),
++                dependent_lore_refs: record.dependent_lore_refs.clone(),
++            },
++        );
++    }
++
++    LoreDependencyIndex {
++        by_entity: by_entity
++            .into_iter()
++            .map(|(character_id, lore_ids)| (character_id, lore_ids.into_iter().collect()))
++            .collect(),
++        by_lore,
++    }
++}
++
++pub(super) fn invalidate_lore_for_canon_change(
++    change_set: &CanonChangeSet,
++    index: &LoreDependencyIndex,
++) -> LoreInvalidationResult {
++    let mut affected = BTreeSet::new();
++    let mut reasons: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
++    let mut candidates = BTreeSet::new();
++
++    for character_id in &change_set.added_entity_refs {
++        let existing = index.by_entity.get(character_id).cloned().unwrap_or_default();
++        if existing.is_empty() {
++            candidates.insert(format!("lore.character.{}.overview", character_id.0));
++            candidates.insert(format!("lore.character.{}.personality", character_id.0));
++        } else {
++            add_affected(
++                &mut affected,
++                &mut reasons,
++                &existing,
++                "CHARACTER_ADDED",
++            );
++        }
++    }
++
++    for character_id in &change_set.updated_entity_refs {
++        if let Some(existing) = index.by_entity.get(character_id) {
++            add_affected(
++                &mut affected,
++                &mut reasons,
++                existing,
++                "CHARACTER_UPDATED",
++            );
++        }
++    }
++
++    for character_id in &change_set.removed_entity_refs {
++        if let Some(existing) = index.by_entity.get(character_id) {
++            add_affected(
++                &mut affected,
++                &mut reasons,
++                existing,
++                "CHARACTER_REMOVED",
++            );
++        }
++    }
++
++    let broad_revalidation_required = change_set.change_classes.iter().any(|class| {
++        matches!(class, CanonChangeClass::WorldRuleChanged | CanonChangeClass::LoreSourceChanged)
++    });
++
++    LoreInvalidationResult {
++        affected_lore_ids: affected.into_iter().collect(),
++        invalidation_reasons: reasons
++            .into_iter()
++            .map(|(lore_id, values)| (lore_id, values.into_iter().collect()))
++            .collect(),
++        character_projection_candidates: candidates.into_iter().collect(),
++        broad_revalidation_required,
++    }
++}
++
++fn add_affected(
++    affected: &mut BTreeSet<String>,
++    reasons: &mut BTreeMap<String, BTreeSet<String>>,
++    lore_ids: &[String],
++    reason: &str,
++) {
++    for lore_id in lore_ids {
++        affected.insert(lore_id.clone());
++        reasons
++            .entry(lore_id.clone())
++            .or_default()
++            .insert(reason.to_string());
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use tt_domain::models::rp_architecture::{
++        LoreAssetStatus, LoreRecord, LoreSensitivity, LoreTargetIntent, WorldId,
++    };
++
++    fn lore(lore_id: &str, character_id: &str) -> LoreRecord {
++        LoreRecord {
++            lore_id: lore_id.to_string(),
++            lore_type: "CHARACTER_OVERVIEW".to_string(),
++            title: character_id.to_string(),
++            aliases: Vec::new(),
++            source_refs: Vec::new(),
++            source_entity_refs: vec![CharacterId(character_id.to_string())],
++            content: String::new(),
++            sensitivity: LoreSensitivity::Restricted,
++            primary_triggers: Vec::new(),
++            secondary_triggers: Vec::new(),
++            collision_risk: "LOW".to_string(),
++            owner_fact_refs: Vec::new(),
++            dependent_lore_refs: Vec::new(),
++            target_intent: LoreTargetIntent::CanonRegistryRef,
++            status: LoreAssetStatus::Ready,
++            source_revision: 1,
++            lore_revision: 1,
++        }
++    }
++
++    #[test]
++    fn changed_character_invalidates_only_its_dependencies() {
++        let mut entries = BTreeMap::new();
++        entries.insert("lore.a".to_string(), lore("lore.a", "a"));
++        entries.insert("lore.b".to_string(), lore("lore.b", "b"));
++        let registry = LoreRegistry {
++            schema_version: 1,
++            world_id: WorldId("world".to_string()),
++            registry_revision: 1,
++            entries,
++        };
++        let index = build_lore_dependency_index(&registry);
++        let change_set = CanonChangeSet {
++            change_set_id: "cs".to_string(),
++            world_id: WorldId("world".to_string()),
++            from_canon_revision: 1,
++            to_canon_revision: 2,
++            from_canon_fingerprint: "a".to_string(),
++            to_canon_fingerprint: "b".to_string(),
++            changed_entity_refs: vec![CharacterId("a".to_string())],
++            added_entity_refs: Vec::new(),
++            updated_entity_refs: vec![CharacterId("a".to_string())],
++            removed_entity_refs: Vec::new(),
++            origin_proposal_ids: Vec::new(),
++            change_classes: vec![CanonChangeClass::CharacterUpdated],
++            created_at_runtime_revision: 1,
++        };
++        let result = invalidate_lore_for_canon_change(&change_set, &index);
++        assert_eq!(result.affected_lore_ids, vec!["lore.a".to_string()]);
++        assert!(!result.affected_lore_ids.contains(&"lore.b".to_string()));
++        assert!(!result.broad_revalidation_required);
++    }
++
++    #[test]
++    fn new_character_without_lore_creates_projection_candidates_not_full_invalidation() {
++        let change_set = CanonChangeSet {
++            change_set_id: "cs".to_string(),
++            world_id: WorldId("world".to_string()),
++            from_canon_revision: 1,
++            to_canon_revision: 2,
++            from_canon_fingerprint: "a".to_string(),
++            to_canon_fingerprint: "b".to_string(),
++            changed_entity_refs: vec![CharacterId("new-npc".to_string())],
++            added_entity_refs: vec![CharacterId("new-npc".to_string())],
++            updated_entity_refs: Vec::new(),
++            removed_entity_refs: Vec::new(),
++            origin_proposal_ids: Vec::new(),
++            change_classes: vec![CanonChangeClass::CharacterAdded],
++            created_at_runtime_revision: 1,
++        };
++        let result = invalidate_lore_for_canon_change(&change_set, &LoreDependencyIndex::default());
++        assert!(result.affected_lore_ids.is_empty());
++        assert_eq!(
++            result.character_projection_candidates,
++            vec![
++                "lore.character.new-npc.overview".to_string(),
++                "lore.character.new-npc.personality".to_string(),
++            ]
++        );
++    }
++}
