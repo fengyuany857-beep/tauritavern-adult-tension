@@ -1,0 +1,8 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
+@@ -499,3 +499,3 @@ mod tests {
+             base_card_hash: "a".repeat(64),
+-            origin_proof: String::new(),
++            origin_proof: "b".repeat(64),
+         }
