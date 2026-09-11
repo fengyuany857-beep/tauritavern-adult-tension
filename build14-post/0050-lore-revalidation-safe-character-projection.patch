@@ -1,0 +1,277 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
+@@ -50,6 +50,7 @@ mod rp_canonization;
+ mod rp_asset_rebuild;
+ mod rp_lore_invalidation;
++mod rp_lore_revalidation;
+ mod scheduler;
+ mod skill_scope;
+ mod timeline_projection;
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_lore_revalidation.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_lore_revalidation.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_lore_revalidation.rs
+@@ -0,0 +1,238 @@
++use std::collections::{BTreeMap, BTreeSet};
++
++use serde_json::{Value, json};
++use tt_domain::models::rp_architecture::{
++    CharacterId, LoreAssetStatus, LoreRecord, LoreSensitivity, LoreTargetIntent,
++};
++
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub(super) enum LoreRevalidationDecision {
++    Ready,
++    ReviewRequired,
++    Blocked,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub(super) struct LoreRevalidationResult {
++    pub decision: LoreRevalidationDecision,
++    pub reasons: Vec<String>,
++}
++
++#[derive(Debug, Clone)]
++pub(super) struct SafeCharacterProjectionSource {
++    pub character_id: CharacterId,
++    pub display_name: String,
++    pub aliases: Vec<String>,
++    pub narrative_role: String,
++    /// Only facts already classified PUBLIC by an authoritative source belong here.
++    pub public_author_canon: BTreeMap<String, Value>,
++    /// Stable is not equivalent to public. The caller must explicitly filter sensitivity.
++    pub public_stable_profile: BTreeMap<String, Value>,
++}
++
++pub(super) fn project_safe_character_lore(
++    source: &SafeCharacterProjectionSource,
++    source_canon_revision: u64,
++) -> Vec<LoreRecord> {
++    let mut triggers = Vec::new();
++    if !source.display_name.trim().is_empty() {
++        triggers.push(source.display_name.trim().to_string());
++    }
++    for alias in &source.aliases {
++        let alias = alias.trim();
++        if !alias.is_empty() && !triggers.iter().any(|value| value == alias) {
++            triggers.push(alias.to_string());
++        }
++    }
++
++    let overview_content = serde_json::to_string_pretty(&json!({
++        "characterId": source.character_id.0,
++        "displayName": source.display_name,
++        "aliases": source.aliases,
++        "narrativeRole": source.narrative_role,
++        "publicAuthorCanon": source.public_author_canon,
++    }))
++    .expect("safe character overview JSON must serialize");
++    let character_id = source.character_id.0.clone();
++    let overview_id = format!("lore.character.{character_id}.overview");
++    let mut records = vec![LoreRecord {
++        lore_id: overview_id.clone(),
++        lore_type: "CHARACTER_OVERVIEW".to_string(),
++        title: source.display_name.clone(),
++        aliases: source.aliases.clone(),
++        source_refs: vec![format!("canon:character:{character_id}")],
++        source_entity_refs: vec![source.character_id.clone()],
++        content: overview_content,
++        sensitivity: LoreSensitivity::Public,
++        primary_triggers: triggers,
++        secondary_triggers: Vec::new(),
++        collision_risk: "LOW".to_string(),
++        owner_fact_refs: Vec::new(),
++        dependent_lore_refs: Vec::new(),
++        target_intent: LoreTargetIntent::WorldinfoKeyword,
++        status: LoreAssetStatus::NeedsRevalidation,
++        source_revision: source_canon_revision,
++        lore_revision: 1,
++    }];
++
++    if !source.public_stable_profile.is_empty() {
++        let personality_id = format!("lore.character.{character_id}.personality");
++        let personality_content = serde_json::to_string_pretty(&json!({
++            "characterId": source.character_id.0,
++            "publicStableProfile": source.public_stable_profile,
++        }))
++        .expect("safe character personality JSON must serialize");
++        records.push(LoreRecord {
++            lore_id: personality_id,
++            lore_type: "CHARACTER_PERSONALITY".to_string(),
++            title: format!("{} · Personality", source.display_name),
++            aliases: source.aliases.clone(),
++            source_refs: vec![format!("canon:character:{character_id}")],
++            source_entity_refs: vec![source.character_id.clone()],
++            content: personality_content,
++            sensitivity: LoreSensitivity::Public,
++            primary_triggers: Vec::new(),
++            secondary_triggers: Vec::new(),
++            collision_risk: "LOW".to_string(),
++            owner_fact_refs: Vec::new(),
++            dependent_lore_refs: vec![overview_id],
++            target_intent: LoreTargetIntent::CanonRegistryRef,
++            status: LoreAssetStatus::NeedsRevalidation,
++            source_revision: source_canon_revision,
++            lore_revision: 1,
++        });
++    }
++
++    records
++}
++
++pub(super) fn trigger_owners(records: impl Iterator<Item = LoreRecord>) -> BTreeMap<String, BTreeSet<String>> {
++    let mut owners: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
++    for record in records {
++        for trigger in record.primary_triggers.iter().chain(record.secondary_triggers.iter()) {
++            let normalized = trigger.trim().to_lowercase();
++            if !normalized.is_empty() {
++                owners.entry(normalized).or_default().insert(record.lore_id.clone());
++            }
++        }
++    }
++    owners
++}
++
++pub(super) fn revalidate_lore_record(
++    record: &LoreRecord,
++    existing_character_ids: &BTreeSet<CharacterId>,
++    owners: &BTreeMap<String, BTreeSet<String>>,
++) -> LoreRevalidationResult {
++    let mut reasons = BTreeSet::new();
++    let missing_source = record
++        .source_entity_refs
++        .iter()
++        .any(|character_id| !existing_character_ids.contains(character_id));
++    if missing_source {
++        reasons.insert("SOURCE_ENTITY_MISSING".to_string());
++    }
++
++    if matches!(record.sensitivity, LoreSensitivity::Secret | LoreSensitivity::Restricted)
++        && matches!(
++            record.target_intent,
++            LoreTargetIntent::WorldinfoConstant | LoreTargetIntent::WorldinfoKeyword
++        )
++    {
++        reasons.insert("SECRET_BOUNDARY_RECHECK".to_string());
++    }
++
++    for trigger in record.primary_triggers.iter().chain(record.secondary_triggers.iter()) {
++        let normalized = trigger.trim().to_lowercase();
++        if owners
++            .get(&normalized)
++            .is_some_and(|values| values.iter().any(|lore_id| lore_id != &record.lore_id))
++        {
++            reasons.insert("TRIGGER_COLLISION_RECHECK".to_string());
++        }
++    }
++
++    if contains_runtime_only_payload(&record.content) {
++        reasons.insert("RUNTIME_ONLY_CONTAMINATION".to_string());
++    }
++
++    let decision = if reasons.contains("SOURCE_ENTITY_MISSING")
++        || reasons.contains("RUNTIME_ONLY_CONTAMINATION")
++        || reasons.contains("SECRET_BOUNDARY_RECHECK")
++    {
++        LoreRevalidationDecision::Blocked
++    } else if !reasons.is_empty() {
++        LoreRevalidationDecision::ReviewRequired
++    } else {
++        LoreRevalidationDecision::Ready
++    };
++
++    LoreRevalidationResult {
++        decision,
++        reasons: reasons.into_iter().collect(),
++    }
++}
++
++fn contains_runtime_only_payload(content: &str) -> bool {
++    [
++        "\"emotion\"",
++        "\"currentGoal\"",
++        "\"location\"",
++        "\"physicalStatus\"",
++        "\"temporaryConditions\"",
++        "\"relationship\"",
++        "\"trust\"",
++    ]
++    .iter()
++    .any(|marker| content.contains(marker))
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn projection_requires_explicit_public_stable_profile() {
++        let source = SafeCharacterProjectionSource {
++            character_id: CharacterId("npc-1".to_string()),
++            display_name: "尹听川".to_string(),
++            aliases: vec!["听川".to_string()],
++            narrative_role: "supporting".to_string(),
++            public_author_canon: BTreeMap::new(),
++            public_stable_profile: BTreeMap::new(),
++        };
++        let records = project_safe_character_lore(&source, 8);
++        assert_eq!(records.len(), 1);
++        assert_eq!(records[0].lore_id, "lore.character.npc-1.overview");
++    }
++
++    #[test]
++    fn restricted_keyword_lore_fails_closed() {
++        let mut record = project_safe_character_lore(
++            &SafeCharacterProjectionSource {
++                character_id: CharacterId("npc-1".to_string()),
++                display_name: "NPC".to_string(),
++                aliases: Vec::new(),
++                narrative_role: "supporting".to_string(),
++                public_author_canon: BTreeMap::new(),
++                public_stable_profile: BTreeMap::new(),
++            },
++            8,
++        )
++        .remove(0);
++        record.sensitivity = LoreSensitivity::Restricted;
++        let ids = [CharacterId("npc-1".to_string())].into_iter().collect();
++        let owners = trigger_owners([record.clone()].into_iter());
++        let result = revalidate_lore_record(&record, &ids, &owners);
++        assert_eq!(result.decision, LoreRevalidationDecision::Blocked);
++        assert!(result.reasons.contains(&"SECRET_BOUNDARY_RECHECK".to_string()));
++    }
++
++    #[test]
++    fn alias_collision_requires_review() {
++        let mut first = project_safe_character_lore(
++            &SafeCharacterProjectionSource {
++                character_id: CharacterId("a".to_string()),
++                display_name: "A".to_string(),
++                aliases: vec!["小白".to_string()],
++                narrative_role: "supporting".to_string(),
++                public_author_canon: BTreeMap::new(),
++                public_stable_profile: BTreeMap::new(),
++            }, 1,
++        ).remove(0);
++        let second = project_safe_character_lore(
++            &SafeCharacterProjectionSource {
++                character_id: CharacterId("b".to_string()),
++                display_name: "B".to_string(),
++                aliases: vec!["小白".to_string()],
++                narrative_role: "supporting".to_string(),
++                public_author_canon: BTreeMap::new(),
++                public_stable_profile: BTreeMap::new(),
++            }, 1,
++        ).remove(0);
++        first.status = LoreAssetStatus::NeedsRevalidation;
++        let owners = trigger_owners([first.clone(), second].into_iter());
++        let ids = [CharacterId("a".to_string()), CharacterId("b".to_string())]
++            .into_iter()
++            .collect();
++        let result = revalidate_lore_record(&first, &ids, &owners);
++        assert_eq!(result.decision, LoreRevalidationDecision::ReviewRequired);
++        assert!(result.reasons.contains(&"TRIGGER_COLLISION_RECHECK".to_string()));
++    }
++}
