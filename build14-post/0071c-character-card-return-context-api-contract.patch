@@ -1,0 +1,41 @@
+diff --git a/tests/character-card-api-contract.test.mjs b/tests/character-card-api-contract.test.mjs
+--- a/tests/character-card-api-contract.test.mjs
++++ b/tests/character-card-api-contract.test.mjs
+@@ -245,6 +245,36 @@ test('api.characterCards uses dedicated Return Import commands and byte staging', async () => {
+     });
+ });
+ 
++test('api.characterCards resolves Return RP context through the dedicated host command', async () => {
++    const calls = [];
++    const { characterCards } = await installHarness({
++        safeInvoke: async (command, args) => {
++            calls.push({ command, args });
++            if (command === 'resolve_character_card_return_context') {
++                return { sessionId: 'session-a', branchId: 'stable-chat-a' };
++            }
++            return null;
++        },
++    });
++
++    const context = await characterCards.resolveReturnContext({
++        stagedRef: 'staging/preview-1.png',
++        format: 'png',
++        stableChatId: 'stable-chat-a',
++    });
++
++    assert.deepEqual(context, { sessionId: 'session-a', branchId: 'stable-chat-a' });
++    assert.deepEqual(calls, [{
++        command: 'resolve_character_card_return_context',
++        args: {
++            request: {
++                stagedRef: 'staging/preview-1.png',
++                format: 'png',
++                stableChatId: 'stable-chat-a',
++            },
++        },
++    }]);
++});
++
+ test('api.characterCards leaves Android on the WebView file input path', async () => {
+     await withNavigatorUserAgent('Mozilla/5.0 (Linux; Android 15)', async () => {
+         const calls = [];
