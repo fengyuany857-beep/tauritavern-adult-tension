@@ -7,8 +7,8 @@
   "workflow_trigger_sha": "9a0fba7a123493aeedfa58ea6c74d28fcac1643a",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
   "stage": "Logging boundaries",
-  "state": "RUNNING",
+  "state": "PASS",
   "exit_code": 0,
-  "updated_at": "2026-09-11T20:11:50Z",
+  "updated_at": "2026-09-11T20:11:53Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-38-a1"
 }
