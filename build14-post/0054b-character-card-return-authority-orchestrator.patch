@@ -1,0 +1,146 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -8,12 +8,17 @@ use sha2::{Digest, Sha256};
+ use tt_domain::errors::DomainError;
+ use tt_domain::models::character_card_materialization::{
+-    BindingStatus, CharacterCardBinding, ExportRecord, MergeFieldDecision,
++    BindingScopeKind, BindingStatus, CharacterCardBinding, ExportRecord, MergeFieldDecision,
+     PortableReturnMetadata, ReturnRecognitionState, StagedCharacterCardImport,
+     CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
+ };
++use tt_ports::repositories::agent_run_repository::AgentRunRepository;
+ use tt_ports::repositories::character_card_materialization_repository::CharacterCardMaterializationRepository;
++use tt_ports::repositories::character_card_return_authority_repository::{
++    CharacterCardReturnAuthorityRepository, CharacterCardReturnAuthoritySnapshot,
++};
+ use tt_ports::repositories::character_card_return_repository::CharacterCardReturnRepository;
+ use uuid::Uuid;
+ 
+@@ -66,16 +71,63 @@ pub struct CharacterCardReturnPreview {
+ pub struct CharacterCardMaterializationOrchestrator {
+     materialization: Arc<dyn CharacterCardMaterializationRepository>,
+     cards: Arc<dyn CharacterCardReturnRepository>,
++    authority: Arc<dyn CharacterCardReturnAuthorityRepository>,
++    runs: Arc<dyn AgentRunRepository>,
+ }
+ 
+ impl CharacterCardMaterializationOrchestrator {
+     pub fn new(
+         materialization: Arc<dyn CharacterCardMaterializationRepository>,
+         cards: Arc<dyn CharacterCardReturnRepository>,
++        authority: Arc<dyn CharacterCardReturnAuthorityRepository>,
++        runs: Arc<dyn AgentRunRepository>,
+     ) -> Self {
+         Self {
+             materialization,
+             cards,
++            authority,
++            runs,
+         }
+     }
++
++    /// Hard gate shared by every future Return Commit path.
++    ///
++    /// This deliberately blocks on any non-terminal Agent Run. It is more
++    /// conservative than target-scoped locking, but guarantees that Return
++    /// cannot race an Agent workspace mutation while target-specific run
++    /// ownership is still evolving.
++    pub async fn verify_commit_authority(
++        &self,
++        binding_id: &str,
++        expected_binding_generation: u64,
++        expected_card_revision: u64,
++        expected_profile_revision: u64,
++    ) -> Result<CharacterCardReturnAuthoritySnapshot, DomainError> {
++        let binding = self
++            .materialization
++            .read_binding(binding_id)
++            .await?
++            .ok_or_else(|| DomainError::NotFound(format!("character card binding {binding_id}")))?;
++        validate_active_binding(&binding)?;
++        if binding.generation != expected_binding_generation {
++            return Err(DomainError::Conflict(format!(
++                "binding generation CAS failed: expected {expected_binding_generation}, current {}",
++                binding.generation
++            )));
++        }
++        if binding.card_revision != expected_card_revision {
++            return Err(DomainError::Conflict(format!(
++                "card revision CAS failed: expected {expected_card_revision}, current {}",
++                binding.card_revision
++            )));
++        }
++
++        if let Some(run) = self
++            .runs
++            .list_all_runs()
++            .await?
++            .into_iter()
++            .find(|run| !run.status.is_terminal())
++        {
++            return Err(DomainError::Conflict(format!(
++                "active Agent run blocks Character Card Return Commit: {} ({:?})",
++                run.id, run.status
++            )));
++        }
++
++        let snapshot = self
++            .authority
++            .resolve_authority(&binding.target, &binding.contexts)
++            .await?;
++        validate_authority_snapshot(&binding, &snapshot, expected_profile_revision)?;
++        Ok(snapshot)
++    }
+ 
+     /// Read-only export relative to RP/World authority. BASE is the sanitized
+     /// definition before Return Metadata is attached.
+@@ -337,6 +389,51 @@ fn validate_active_binding(binding: &CharacterCardBinding) -> Result<(), DomainError> {
+     Ok(())
+ }
+ 
++fn validate_authority_snapshot(
++    binding: &CharacterCardBinding,
++    snapshot: &CharacterCardReturnAuthoritySnapshot,
++    expected_profile_revision: u64,
++) -> Result<(), DomainError> {
++    if snapshot.world_id != binding.target.world_id
++        || snapshot.character_id != binding.target.character_id
++    {
++        return Err(DomainError::Conflict(
++            "authoritative RP target does not match Character Card binding target".to_string(),
++        ));
++    }
++    if binding.target.scope_kind == BindingScopeKind::SessionCharacter
++        && binding.target.source_session_id.as_ref() != Some(&snapshot.session_id)
++    {
++        return Err(DomainError::Conflict(
++            "authoritative RP session does not match session-created Character binding provenance"
++                .to_string(),
++        ));
++    }
++    if !binding.contexts.iter().any(|context| {
++        context.session_id == snapshot.session_id && context.branch_id == snapshot.branch_id
++    }) {
++        return Err(DomainError::Conflict(
++            "authoritative RP session/branch is not an attached binding context".to_string(),
++        ));
++    }
++    if snapshot.profile_revision != expected_profile_revision {
++        return Err(DomainError::Conflict(format!(
++            "RP profile revision CAS failed: expected {expected_profile_revision}, current {}",
++            snapshot.profile_revision
++        )));
++    }
++    if binding.profile_revision_at_last_sync != Some(expected_profile_revision) {
++        return Err(DomainError::Conflict(format!(
++            "binding profile revision is stale: expected synchronized revision {expected_profile_revision}, binding records {:?}",
++            binding.profile_revision_at_last_sync
++        )));
++    }
++    Ok(())
++}
++
+ fn parse_json_card(bytes: &[u8]) -> Result<Value, DomainError> {
+     let card: Value = serde_json::from_slice(bytes)
+         .map_err(|error| DomainError::InvalidData(format!("invalid Character Card JSON: {error}")))?;
