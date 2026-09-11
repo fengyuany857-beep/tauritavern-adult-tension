@@ -1,0 +1,75 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -538,4 +538,68 @@ mod tests {
+         record.base_card_revision += 1;
+         assert!(!export_record_matches_metadata(&record, &metadata));
+     }
++
++    fn binding_with_contexts(contexts: Vec<CharacterCardBindingContext>) -> CharacterCardBinding {
++        CharacterCardBinding {
++            schema_version: CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
++            binding_id: "binding-context-test".to_string(),
++            target: tt_domain::models::character_card_materialization::CharacterCardBindingTarget {
++                scope_kind: BindingScopeKind::SessionCharacter,
++                world_id: tt_domain::models::rp_architecture::WorldId("world-a".to_string()),
++                character_id: tt_domain::models::rp_architecture::CharacterId(
++                    "character-a".to_string(),
++                ),
++                source_session_id: Some(SessionId("session-a".to_string())),
++            },
++            contexts,
++            card_storage_identity: "characters/a.png".to_string(),
++            card_revision: 3,
++            profile_revision_at_last_sync: Some(9),
++            generation: 2,
++            status: BindingStatus::Active,
++            created_at: "2026-09-11T00:00:00Z".to_string(),
++            updated_at: "2026-09-11T00:00:00Z".to_string(),
++        }
++    }
++
++    fn context() -> CharacterCardBindingContext {
++        CharacterCardBindingContext {
++            session_id: SessionId("session-a".to_string()),
++            branch_id: BranchId("branch-a".to_string()),
++            last_seen_profile_revision: Some(9),
++        }
++    }
++
++    #[test]
++    fn exact_context_gate_rejects_unattached_branch() {
++        let binding = binding_with_contexts(vec![context()]);
++        let error = exact_binding_context(
++            &binding,
++            &SessionId("session-a".to_string()),
++            &BranchId("branch-other".to_string()),
++        )
++        .unwrap_err();
++        assert!(matches!(error, DomainError::Conflict(_)));
++    }
++
++    #[test]
++    fn exact_context_gate_rejects_duplicate_contexts() {
++        let binding = binding_with_contexts(vec![context(), context()]);
++        let error = exact_binding_context(
++            &binding,
++            &SessionId("session-a".to_string()),
++            &BranchId("branch-a".to_string()),
++        )
++        .unwrap_err();
++        assert!(matches!(error, DomainError::Conflict(_)));
++    }
++
++    #[test]
++    fn exact_context_gate_returns_the_single_matching_context() {
++        let binding = binding_with_contexts(vec![context()]);
++        let selected = exact_binding_context(
++            &binding,
++            &SessionId("session-a".to_string()),
++            &BranchId("branch-a".to_string()),
++        )
++        .expect("exact context");
++        assert_eq!(selected.last_seen_profile_revision, Some(9));
++    }
+ }
