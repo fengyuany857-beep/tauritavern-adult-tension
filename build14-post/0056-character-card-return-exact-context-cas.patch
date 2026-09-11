@@ -1,14 +1,6 @@
 diff --git a/src-tauri/crates/tt-ports/src/repositories/character_card_return_authority_repository.rs b/src-tauri/crates/tt-ports/src/repositories/character_card_return_authority_repository.rs
 --- a/src-tauri/crates/tt-ports/src/repositories/character_card_return_authority_repository.rs
 +++ b/src-tauri/crates/tt-ports/src/repositories/character_card_return_authority_repository.rs
-@@ -1,8 +1,8 @@
- use async_trait::async_trait;
- use tt_domain::errors::DomainError;
- use tt_domain::models::character_card_materialization::{
--    CharacterCardBindingContext, CharacterCardBindingTarget,
-+    CharacterCardBindingContext, CharacterCardBindingTarget,
- };
- use tt_domain::models::rp_architecture::{BranchId, CharacterId, SessionId, WorldId};
 @@ -24,8 +24,8 @@ pub trait CharacterCardReturnAuthorityRepository: Send + Sync {
      /// Ambiguous, missing, stale, or inaccessible authority must fail closed.
      async fn resolve_authority(
