@@ -7,8 +7,8 @@
   "workflow_trigger_sha": "c58e25598bd4f85cee506e8ddd0be3878836107c",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
   "stage": "Rust crate boundaries",
-  "state": "RUNNING",
+  "state": "PASS",
   "exit_code": 0,
-  "updated_at": "2026-09-11T15:19:44Z",
+  "updated_at": "2026-09-11T15:20:00Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-38-a1"
 }
