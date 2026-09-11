@@ -22,6 +22,9 @@
 132:[1m[91merror[0m[1m: function `semantically_equal_world_info_entry` is never used[0m
 138:[1m[91merror[0m: could not compile `tt-application` (lib) due to 19 previous errors
 139:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+140:[1m[91merror[0m[1m: fields `lore_id` and `next_entry` are never read[0m
+155:[1m[91merror[0m: could not compile `tt-application` (lib test) due to 1 previous error
+156: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
 
@@ -163,3 +166,20 @@
 
 [1m[91merror[0m: could not compile `tt-application` (lib) due to 19 previous errors
 [1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+[1m[91merror[0m[1m: fields `lore_id` and `next_entry` are never read[0m
+  [1m[94m--> [0mcrates/tt-application/src/services/agent_runtime_service/rp_lore_compiler.rs:18:9
+   [1m[94m|[0m
+[1m[94m17[0m [1m[94m|[0m pub(super) struct WorldInfoPatchEntry {
+   [1m[94m|[0m                   [1m[94m-------------------[0m [1m[94mfields in this struct[0m
+[1m[94m18[0m [1m[94m|[0m     pub lore_id: String,
+   [1m[94m|[0m         [1m[91m^^^^^^^[0m
+[1m[94m...[0m
+[1m[94m21[0m [1m[94m|[0m     pub next_entry: Option<Value>,
+   [1m[94m|[0m         [1m[91m^^^^^^^^^^[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `WorldInfoPatchEntry` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   [1m[94m= [0m[1mnote[0m: `-D dead-code` implied by `-D warnings`
+   [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[expect(dead_code)]` or `#[allow(dead_code)]`
+
+[1m[91merror[0m: could not compile `tt-application` (lib test) due to 1 previous error
+ ELIFECYCLE  Command failed with exit code 101.
