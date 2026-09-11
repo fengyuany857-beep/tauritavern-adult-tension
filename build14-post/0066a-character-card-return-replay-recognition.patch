@@ -1,0 +1,78 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_service.rs
+@@ -407,6 +407,9 @@ pub fn recognize_return_card(
+     if !context.binding_exists {
+         return ReturnRecognitionState::UnknownBinding;
+     }
++    if context.export_already_committed {
++        return ReturnRecognitionState::DuplicatedOrReplayedExport;
++    }
+     if context.local_binding_generation != Some(metadata.binding_generation) {
+         return ReturnRecognitionState::StaleBindingGeneration;
+     }
+@@ -419,9 +422,6 @@ pub fn recognize_return_card(
+     if !context.card_exists {
+         return ReturnRecognitionState::CardTargetMissing;
+     }
+-    if context.export_already_committed {
+-        return ReturnRecognitionState::DuplicatedOrReplayedExport;
+-    }
+     if !context.base_snapshot_exists {
+         return ReturnRecognitionState::KnownReturnBaseMissing;
+     }
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -259,6 +259,7 @@ impl CharacterCardMaterializationOrchestrator {
+         let mut local_card = None;
+         let mut base_card = None;
+         let mut base_snapshot_available = false;
++        let mut export_tuple_matches = false;
+         let mut warnings = Vec::new();
+ 
+         if let Some(locator) = trusted_locator {
+@@ -276,6 +277,7 @@ impl CharacterCardMaterializationOrchestrator {
+             }
+             if let Some(record) = export_record.as_ref() {
+                 if export_record_matches_metadata(record, locator) {
++                    export_tuple_matches = true;
+                     match self.materialization.read_snapshot(&record.snapshot_ref).await {
+                         Ok(bytes) => {
+                             base_card = Some(parse_json_card(&bytes)?);
+@@ -305,7 +307,8 @@ impl CharacterCardMaterializationOrchestrator {
+             card_exists: local_card.is_some(),
+             base_snapshot_exists: base_snapshot_available,
+             export_already_committed: export_record
+                 .as_ref()
+-                .is_some_and(|record: &ExportRecord| record.transaction_id.is_some()),
++                .is_some_and(|record: &ExportRecord| {
++                    export_tuple_matches && record.transaction_id.is_some()
++                }),
+         };
+         let mut recognition_state = recognize_return_card(&imported_card, &secret, &context);
+         if let Err(violation) = scan_portable_card(&imported_card) {
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_return_tests.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_return_tests.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_return_tests.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_return_tests.rs
+@@ -49,6 +49,20 @@ fn exact_valid_return_reaches_three_way_path() {
+     );
+ }
+ 
++#[test]
++fn consumed_export_wins_over_post_commit_generation_advance() {
++    let secret = b"local-secret";
++    let card = signed_return_card(secret);
++    let mut replay = recognition_context();
++    replay.local_binding_generation = Some(4);
++    replay.export_already_committed = true;
++    assert_eq!(
++        recognize_return_card(&card, secret, &replay),
++        ReturnRecognitionState::DuplicatedOrReplayedExport
++    );
++}
++
+ #[test]
+ fn forged_proof_never_auto_binds() {
+     let secret = b"local-secret";
+     let mut card = signed_return_card(secret);
