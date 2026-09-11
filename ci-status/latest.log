@@ -14,6 +14,7 @@
 82:[1m[91merror[0m[1m: function `contains_runtime_only_payload` is never used[0m
 88:[1m[91merror[0m: could not compile `tt-application` (lib) due to 11 previous errors
 89:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+90: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
 
@@ -105,3 +106,4 @@
 
 [1m[91merror[0m: could not compile `tt-application` (lib) due to 11 previous errors
 [1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+ ELIFECYCLE  Command failed with exit code 101.
