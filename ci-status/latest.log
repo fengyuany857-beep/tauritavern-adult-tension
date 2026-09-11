@@ -21,3 +21,4 @@
 [1m[92m    Checking[0m tt-adapter-extension v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-extension)
 [1m[92m    Checking[0m tt-adapter-storage-userdata v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-userdata)
 [1m[92m    Checking[0m tt-adapter-media v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-media)
+[1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 1m 20s
