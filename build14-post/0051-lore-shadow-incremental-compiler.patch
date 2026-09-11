@@ -1,0 +1,240 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service.rs
+@@ -51,6 +51,7 @@ mod rp_asset_rebuild;
+ mod rp_lore_invalidation;
+ mod rp_lore_revalidation;
++mod rp_lore_compiler;
+ mod scheduler;
+ mod skill_scope;
+ mod timeline_projection;
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_lore_compiler.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_lore_compiler.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_lore_compiler.rs
+@@ -0,0 +1,233 @@
++use std::collections::{BTreeMap, BTreeSet};
++
++use serde_json::{Map, Value, json};
++use tt_domain::models::rp_architecture::{
++    LoreAssetStatus, LoreRecord, LoreTargetIntent,
++};
++
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub(super) enum WorldInfoPatchKind {
++    NoOp,
++    Create,
++    Update,
++    Disable,
++}
++
++#[derive(Debug, Clone)]
++pub(super) struct WorldInfoPatchEntry {
++    pub lore_id: String,
++    pub world_info_uid: Option<i64>,
++    pub kind: WorldInfoPatchKind,
++    pub next_entry: Option<Value>,
++}
++
++#[derive(Debug, Clone, Default)]
++pub(super) struct WorldInfoPatchPlan {
++    pub entries: Vec<WorldInfoPatchEntry>,
++}
++
++impl WorldInfoPatchPlan {
++    pub(super) fn is_no_op(&self) -> bool {
++        self.entries
++            .iter()
++            .all(|entry| entry.kind == WorldInfoPatchKind::NoOp)
++    }
++}
++
++pub(super) fn compile_shadow_lore_patch(
++    registry: &BTreeMap<String, LoreRecord>,
++    affected_lore_ids: &BTreeSet<String>,
++    lore_uid_map: &BTreeMap<String, i64>,
++    world_entries: &Map<String, Value>,
++) -> WorldInfoPatchPlan {
++    let mut plan = WorldInfoPatchPlan::default();
++    for lore_id in affected_lore_ids {
++        let Some(record) = registry.get(lore_id) else {
++            if let Some(uid) = lore_uid_map.get(lore_id).copied() {
++                let current = world_entries.get(&uid.to_string());
++                plan.entries.push(WorldInfoPatchEntry {
++                    lore_id: lore_id.clone(),
++                    world_info_uid: Some(uid),
++                    kind: if current.is_some() {
++                        WorldInfoPatchKind::Disable
++                    } else {
++                        WorldInfoPatchKind::NoOp
++                    },
++                    next_entry: current.cloned().map(disabled_entry),
++                });
++            }
++            continue;
++        };
++
++        if record.status != LoreAssetStatus::Ready {
++            plan.entries.push(WorldInfoPatchEntry {
++                lore_id: lore_id.clone(),
++                world_info_uid: lore_uid_map.get(lore_id).copied(),
++                kind: WorldInfoPatchKind::NoOp,
++                next_entry: None,
++            });
++            continue;
++        }
++
++        if matches!(record.target_intent, LoreTargetIntent::CanonRegistryRef | LoreTargetIntent::StaticRuntimeSource | LoreTargetIntent::NoSerialization) {
++            plan.entries.push(WorldInfoPatchEntry {
++                lore_id: lore_id.clone(),
++                world_info_uid: lore_uid_map.get(lore_id).copied(),
++                kind: WorldInfoPatchKind::NoOp,
++                next_entry: None,
++            });
++            continue;
++        }
++
++        let uid = lore_uid_map.get(lore_id).copied();
++        let next = build_world_info_entry(record, uid.unwrap_or(-1));
++        let current = uid.and_then(|value| world_entries.get(&value.to_string()));
++        let kind = match current {
++            None => WorldInfoPatchKind::Create,
++            Some(current) if semantically_equal_world_info_entry(current, &next) => {
++                WorldInfoPatchKind::NoOp
++            }
++            Some(_) => WorldInfoPatchKind::Update,
++        };
++        plan.entries.push(WorldInfoPatchEntry {
++            lore_id: lore_id.clone(),
++            world_info_uid: uid,
++            kind,
++            next_entry: (kind != WorldInfoPatchKind::NoOp).then_some(next),
++        });
++    }
++    plan
++}
++
++fn build_world_info_entry(record: &LoreRecord, uid: i64) -> Value {
++    let constant = record.target_intent == LoreTargetIntent::WorldinfoConstant;
++    let selective = !constant && !record.secondary_triggers.is_empty();
++    json!({
++        "uid": uid,
++        "key": record.primary_triggers,
++        "keysecondary": record.secondary_triggers,
++        "comment": format!("TauriTavern Lore: {}", record.lore_id),
++        "content": record.content,
++        "constant": constant,
++        "selective": selective,
++        "selectiveLogic": 0,
++        "order": 100,
++        "position": 0,
++        "disable": false,
++        "probability": 100,
++        "useProbability": true,
++        "depth": 4,
++        "role": 0,
++        "sticky": 0,
++        "cooldown": 0,
++        "delay": 0
++    })
++}
++
++fn disabled_entry(mut entry: Value) -> Value {
++    if let Some(object) = entry.as_object_mut() {
++        object.insert("disable".to_string(), Value::Bool(true));
++    }
++    entry
++}
++
++fn semantically_equal_world_info_entry(left: &Value, right: &Value) -> bool {
++    const KEYS: [&str; 8] = [
++        "key",
++        "keysecondary",
++        "comment",
++        "content",
++        "constant",
++        "selective",
++        "disable",
++        "role",
++    ];
++    KEYS.iter().all(|key| left.get(*key) == right.get(*key))
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use tt_domain::models::rp_architecture::{LoreSensitivity, LoreTargetIntent};
++
++    fn ready_lore(id: &str, content: &str) -> LoreRecord {
++        LoreRecord {
++            lore_id: id.to_string(),
++            lore_type: "CHARACTER_OVERVIEW".to_string(),
++            title: id.to_string(),
++            aliases: Vec::new(),
++            source_refs: Vec::new(),
++            source_entity_refs: Vec::new(),
++            content: content.to_string(),
++            sensitivity: LoreSensitivity::Public,
++            primary_triggers: vec![id.to_string()],
++            secondary_triggers: Vec::new(),
++            collision_risk: "LOW".to_string(),
++            owner_fact_refs: Vec::new(),
++            dependent_lore_refs: Vec::new(),
++            target_intent: LoreTargetIntent::WorldinfoKeyword,
++            status: LoreAssetStatus::Ready,
++            source_revision: 1,
++            lore_revision: 1,
++        }
++    }
++
++    #[test]
++    fn unchanged_lore_compiles_to_no_op() {
++        let lore = ready_lore("lore.a", "same");
++        let expected = build_world_info_entry(&lore, 7);
++        let registry = [(lore.lore_id.clone(), lore)].into_iter().collect();
++        let affected = ["lore.a".to_string()].into_iter().collect();
++        let uid_map = [("lore.a".to_string(), 7)].into_iter().collect();
++        let world_entries = [("7".to_string(), expected)].into_iter().collect();
++        let plan = compile_shadow_lore_patch(&registry, &affected, &uid_map, &world_entries);
++        assert!(plan.is_no_op());
++    }
++
++    #[test]
++    fn changed_lore_only_updates_affected_uid() {
++        let lore_a = ready_lore("lore.a", "new-a");
++        let lore_b = ready_lore("lore.b", "unchanged-b");
++        let registry = [
++            (lore_a.lore_id.clone(), lore_a),
++            (lore_b.lore_id.clone(), lore_b.clone()),
++        ]
++        .into_iter()
++        .collect();
++        let affected = ["lore.a".to_string()].into_iter().collect();
++        let uid_map = [
++            ("lore.a".to_string(), 7),
++            ("lore.b".to_string(), 8),
++        ]
++        .into_iter()
++        .collect();
++        let world_entries = [
++            ("7".to_string(), build_world_info_entry(&ready_lore("lore.a", "old-a"), 7)),
++            ("8".to_string(), build_world_info_entry(&lore_b, 8)),
++        ]
++        .into_iter()
++        .collect();
++        let plan = compile_shadow_lore_patch(&registry, &affected, &uid_map, &world_entries);
++        assert_eq!(plan.entries.len(), 1);
++        assert_eq!(plan.entries[0].world_info_uid, Some(7));
++        assert_eq!(plan.entries[0].kind, WorldInfoPatchKind::Update);
++    }
++
++    #[test]
++    fn non_serialized_lore_never_writes_world_info() {
++        let mut lore = ready_lore("lore.private", "secret");
++        lore.target_intent = LoreTargetIntent::CanonRegistryRef;
++        let registry = [(lore.lore_id.clone(), lore)].into_iter().collect();
++        let affected = ["lore.private".to_string()].into_iter().collect();
++        let plan = compile_shadow_lore_patch(&registry, &affected, &BTreeMap::new(), &Map::new());
++        assert!(plan.is_no_op());
++    }
++}
