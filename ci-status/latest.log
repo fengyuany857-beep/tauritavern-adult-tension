@@ -1,3 +1,136 @@
 # Diagnostic matches
+15:[1m[91merror[E0425][0m[1m: cannot find function `constant_time_text_eq` in this scope[0m
+21:[1m[91merror[E0425][0m[1m: cannot find function `return_transaction_id` in this scope[0m
+27:[1m[91merror[E0425][0m[1m: cannot find function `parse_staged_card` in this scope[0m
+33:[1m[91merror[E0425][0m[1m: cannot find function `validate_binding_plan_cas` in this scope[0m
+39:[1m[91merror[E0425][0m[1m: cannot find function `validate_local_card_plan_hash` in this scope[0m
+45:[1m[91merror[E0425][0m[1m: cannot find function `merge_resolved_portable_into_local` in this scope[0m
+51:[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+57:[1m[91merror[E0425][0m[1m: cannot find function `validate_local_card_plan_hash` in this scope[0m
+63:[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+69:[1m[91merror[E0425][0m[1m: cannot find function `validate_binding_plan_cas` in this scope[0m
+75:[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+81:[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+87:[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+93:[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+99:[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+105:[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+111:[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
 
 # Tail
+
+> tauritavern@2.2.0 test:rust /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> cargo test --manifest-path src-tauri/Cargo.toml --workspace --no-default-features
+
+[1m[92m   Compiling[0m tt-domain v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-domain)
+[1m[92m   Compiling[0m tauritavern v2.2.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern)
+[1m[92m   Compiling[0m tt-contracts v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-contracts)
+[1m[92m   Compiling[0m tt-ports v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-ports)
+[1m[92m   Compiling[0m tt-adapter-storage-core v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-core)
+[1m[92m   Compiling[0m tt-adapter-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-http)
+[1m[92m   Compiling[0m tt-adapter-archive v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-archive)
+[1m[92m   Compiling[0m tt-adapter-tokenization v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-tokenization)
+[1m[92m   Compiling[0m tt-adapter-provider-http v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-provider-http)
+[1m[92m   Compiling[0m tt-application v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-application)
+[1m[91merror[E0425][0m[1m: cannot find function `constant_time_text_eq` in this scope[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:625:13
+    [1m[94m|[0m
+[1m[94m625[0m [1m[94m|[0m         if !constant_time_text_eq(&expected_token, &supplied_plan.plan_token) {
+    [1m[94m|[0m             [1m[91m^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `return_transaction_id` in this scope[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:631:30
+    [1m[94m|[0m
+[1m[94m631[0m [1m[94m|[0m         let transaction_id = return_transaction_id(&supplied_plan.plan_token)?;
+    [1m[94m|[0m                              [1m[91m^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `parse_staged_card` in this scope[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:694:27
+    [1m[94m|[0m
+[1m[94m694[0m [1m[94m|[0m         let staged_card = parse_staged_card(&*self.cards, format, &staged_bytes).await?;
+    [1m[94m|[0m                           [1m[91m^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `validate_binding_plan_cas` in this scope[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:710:9
+    [1m[94m|[0m
+[1m[94m710[0m [1m[94m|[0m         validate_binding_plan_cas(&binding, supplied_plan)?;
+    [1m[94m|[0m         [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `validate_local_card_plan_hash` in this scope[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:723:9
+    [1m[94m|[0m
+[1m[94m723[0m [1m[94m|[0m         validate_local_card_plan_hash(&local_raw, supplied_plan)?;
+    [1m[94m|[0m         [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `merge_resolved_portable_into_local` in this scope[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:724:30
+    [1m[94m|[0m
+[1m[94m724[0m [1m[94m|[0m         let resolved_local = merge_resolved_portable_into_local(
+    [1m[94m|[0m                              [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:768:13
+    [1m[94m|[0m
+[1m[94m768[0m [1m[94m|[0m             advance_return_journal(
+    [1m[94m|[0m             [1m[91m^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `validate_local_card_plan_hash` in this scope[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:778:13
+    [1m[94m|[0m
+[1m[94m778[0m [1m[94m|[0m             validate_local_card_plan_hash(
+    [1m[94m|[0m             [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:794:13
+    [1m[94m|[0m
+[1m[94m794[0m [1m[94m|[0m             advance_return_journal(
+    [1m[94m|[0m             [1m[91m^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `validate_binding_plan_cas` in this scope[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:817:13
+    [1m[94m|[0m
+[1m[94m817[0m [1m[94m|[0m             validate_binding_plan_cas(&live_binding, supplied_plan)?;
+    [1m[94m|[0m             [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:840:13
+    [1m[94m|[0m
+[1m[94m840[0m [1m[94m|[0m             advance_return_journal(
+    [1m[94m|[0m             [1m[91m^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:860:13
+    [1m[94m|[0m
+[1m[94m860[0m [1m[94m|[0m             advance_return_journal(
+    [1m[94m|[0m             [1m[91m^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:869:13
+    [1m[94m|[0m
+[1m[94m869[0m [1m[94m|[0m             advance_return_journal(
+    [1m[94m|[0m             [1m[91m^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:936:13
+    [1m[94m|[0m
+[1m[94m936[0m [1m[94m|[0m             advance_return_journal(
+    [1m[94m|[0m             [1m[91m^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:942:13
+    [1m[94m|[0m
+[1m[94m942[0m [1m[94m|[0m             advance_return_journal(
+    [1m[94m|[0m             [1m[91m^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+    [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:1055:9
+     [1m[94m|[0m
+[1m[94m1055[0m [1m[94m|[0m         advance_return_journal(
+     [1m[94m|[0m         [1m[91m^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
+[1m[91merror[E0425][0m[1m: cannot find function `advance_return_journal` in this scope[0m
+    [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:1164:17
+     [1m[94m|[0m
+[1m[94m1164[0m [1m[94m|[0m                 advance_return_journal(
+     [1m[94m|[0m                 [1m[91m^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mnot found in this scope[0m
+
