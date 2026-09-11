@@ -1,0 +1,29 @@
+diff --git a/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
+--- a/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
++++ b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
+@@ -718,15 +718,22 @@ mod tests {
+     fn return_plan_requires_generation_and_hashes() {
+         let plan = ReturnImportPlan {
+             plan_token: "plan-random".to_string(),
++            transaction_id: "preview-transaction-1".to_string(),
++            staged_import_ref: "staging/preview-transaction-1.json".to_string(),
+             target_binding_id: "binding-random".to_string(),
+             expected_binding_generation: 4,
+             expected_card_revision: 8,
+-            expected_card_hash: "cardhash".to_string(),
++            expected_card_hash: "1111111111111111111111111111111111111111111111111111111111111111".to_string(),
+             expected_profile_revision: 11,
+-            staged_import_hash: "importhash".to_string(),
+-            base_snapshot_hash: Some("basehash".to_string()),
+-            resolved_choices_hash: "choiceshash".to_string(),
++            staged_import_hash: "2222222222222222222222222222222222222222222222222222222222222222".to_string(),
++            base_snapshot_hash: Some("3333333333333333333333333333333333333333333333333333333333333333".to_string()),
++            session_id: SessionId("session-current".to_string()),
++            branch_id: BranchId("branch-a".to_string()),
++            format: "json".to_string(),
++            replace_avatar: false,
++            resolved_choices_hash: "4444444444444444444444444444444444444444444444444444444444444444".to_string(),
++            expected_final_card_hash: "5555555555555555555555555555555555555555555555555555555555555555".to_string(),
+         };
+         assert!(plan.validate_shape().is_ok());
+     }
