@@ -1,3 +1,43 @@
 # Diagnostic matches
 
 # Tail
+✔ Adult Tension profile uses bounded layered context and tool budgets (0.898083ms)
+✔ Adapter recommendations avoid routine duplicate World Info and full Skill reads (0.149208ms)
+✔ RP state bounds hot memory while recall indexes historical memory (0.346209ms)
+✔ Adult Tension distribution bootstraps once and exposes local readiness (0.213375ms)
+✔ api.agent.profiles forwards profile commands with camelCase DTOs (38.268375ms)
+✔ api.agent.profiles publishes profile change events after successful mutations (0.679875ms)
+✔ api.agent.profiles fails fast on invalid profile inputs (0.66775ms)
+✔ api.agent.tools lists canonical catalog items (0.262583ms)
+✔ api.agent.promptAssembly prepares backend broker requests (0.271791ms)
+✔ api.agent.promptAssembly normalizes current model connection through backend commands (0.353625ms)
+✔ api.agent.startRunWithPromptSnapshot refreshes Model Target LLM connection before starting run (4.460292ms)
+✔ api.agent.readEvents requests timeline projection only when asked (0.3645ms)
+✔ api.agent.submitGuidance forwards camelCase DTO and fails fast on invalid input (0.404209ms)
+✔ api.agent.listRuns forwards run history filters with camelCase DTOs (15.299916ms)
+✔ api.agent.listRuns fails fast on invalid history filters (1.022417ms)
+✔ api.agent.retention forwards settings and prune contracts (0.541583ms)
+✔ api.agent.retention fails fast on invalid retention inputs (0.43075ms)
+✔ api.agent.readModelTurn forwards camelCase DTO and fails fast on invalid input (1.042834ms)
+✔ api.agent.pruneChatPersistentStates forwards explicit candidate state ids (8.369708ms)
+✔ api.agent.pruneChatPersistentStates fails fast on invalid candidate state ids (0.589084ms)
+✔ agent chat commit bridge detaches on partial success terminal event (1.164959ms)
+✔ agent chat commit bridge runs generated output cleanup before saving (1.609ms)
+✔ agent chat commit bridge cleans append commits as one raw target message (1.522875ms)
+✔ agent prompt assembly bridge reads pending request by assembly id (3.093541ms)
+✔ shared agent run event subscription fans out over one backend poller (0.823417ms)
+✔ Auto Acceptance is wired through production Settings and Host ABI (4.792084ms)
+✔ Auto Acceptance inline Vue expressions are syntactically parseable (0.970417ms)
+✔ Auto Acceptance uses isolated file storage and the production RP path (2.902792ms)
+✔ Auto Acceptance remains quick, bounded, and offline by default (0.295833ms)
+✔ Acceptance report export reuses the existing safe export chain (0.493625ms)
+✔ Adult Tension self-sign distribution blocks upstream update drift (1.409583ms)
+✔ Acceptance build identity includes fork and CI provenance fields (0.776042ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 192.858708
