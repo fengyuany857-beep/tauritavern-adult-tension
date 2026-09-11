@@ -1,6 +1,14 @@
 # Diagnostic matches
 2:> tauritavern@2.2.0 check:rust:clippy /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
 3:> cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
+19:[1m[91merror[0m[1m: this `if` can be collapsed into the outer `match`[0m
+30:    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_match
+31:    [1m[94m= [0m[1mnote[0m: `-D clippy::collapsible-match` implied by `-D warnings`
+32:    [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::collapsible_match)]`
+46:[1m[91merror[0m: could not compile `tt-application` (lib) due to 1 previous error
+47:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+48:[1m[91merror[0m: could not compile `tt-application` (lib test) due to 1 previous error
+49: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
 
@@ -21,3 +29,34 @@
 [1m[92m    Checking[0m tt-adapter-storage-userdata v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-userdata)
 [1m[92m    Checking[0m tt-adapter-extension v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-extension)
 [1m[92m    Checking[0m tt-adapter-media v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-media)
+[1m[91merror[0m[1m: this `if` can be collapsed into the outer `match`[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_materialization_orchestrator.rs:207:21
+    [1m[94m|[0m
+[1m[94m207[0m [1m[94m|[0m [1m[91m/[0m                     if self
+[1m[94m208[0m [1m[94m|[0m [1m[91m|[0m                         .return_is_fully_owned_for_recovery(&journal)
+[1m[94m209[0m [1m[94m|[0m [1m[91m|[0m                         .await?
+[1m[94m...[0m   [1m[91m|[0m
+[1m[94m217[0m [1m[94m|[0m [1m[91m|[0m                         continue;
+[1m[94m218[0m [1m[94m|[0m [1m[91m|[0m                     }
+    [1m[94m|[0m [1m[91m|_____________________^[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_match
+    [1m[94m= [0m[1mnote[0m: `-D clippy::collapsible-match` implied by `-D warnings`
+    [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(clippy::collapsible_match)]`
+[1m[96mhelp[0m: collapse nested if block
+    [1m[94m|[0m
+[1m[94m206[0m [92m~ [0m                | CharacterCardTransactionState::ReadbackVerified
+[1m[94m207[0m [1m[94m|[0m                     if self
+[1m[94m208[0m [1m[94m|[0m                         .return_is_fully_owned_for_recovery(&journal)
+[1m[94m209[0m [1m[94m|[0m                         .await?
+[1m[94m210[0m [92m~ [0m                    [92m=> [0m{
+[1m[94m211[0m [1m[94m|[0m                         advance_return_journal(
+[1m[94m...[0m
+[1m[94m217[0m [1m[94m|[0m                         continue;
+[1m[94m218[0m [92m~ [0m                    }
+    [1m[94m|[0m
+
+[1m[91merror[0m: could not compile `tt-application` (lib) due to 1 previous error
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+[1m[91merror[0m: could not compile `tt-application` (lib test) due to 1 previous error
+ ELIFECYCLE  Command failed with exit code 101.
