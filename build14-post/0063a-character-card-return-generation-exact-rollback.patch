@@ -1,0 +1,394 @@
+diff --git a/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
+--- a/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
++++ b/src-tauri/crates/tt-domain/src/models/character_card_materialization.rs
+@@ -349,6 +349,10 @@ pub struct CharacterCardTransactionJournal {
+     pub export_id: Option<String>,
+     #[serde(default)]
+     pub expected_after_card_hash: Option<String>,
++    #[serde(default)]
++    pub expected_after_png_hash: Option<String>,
++    #[serde(default)]
++    pub expected_after_binding_hash: Option<String>,
+     pub state: CharacterCardTransactionState,
+     pub before_card_ref: Option<String>,
+     pub before_binding_ref: Option<String>,
+diff --git a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+--- a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
++++ b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+@@ -117,6 +117,24 @@ impl CharacterCardMaterializationStore {
+                 "Character Card transaction expected-after hash must be SHA-256 hex".to_string(),
+             ));
+         }
++        if let Some(hash) = journal.expected_after_png_hash.as_deref()
++            && (hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit()))
++        {
++            return Err(DomainError::InvalidData(
++                "Character Card transaction expected-after PNG hash must be SHA-256 hex"
++                    .to_string(),
++            ));
++        }
++        if let Some(hash) = journal.expected_after_binding_hash.as_deref()
++            && (hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit()))
++        {
++            return Err(DomainError::InvalidData(
++                "Character Card transaction expected-after binding hash must be SHA-256 hex"
++                    .to_string(),
++            ));
++        }
+         validate_optional_logical_ref(journal.before_card_ref.as_deref())?;
+         validate_optional_logical_ref(journal.before_binding_ref.as_deref())?;
+         validate_optional_logical_ref(journal.before_profile_ref.as_deref())?;
+diff --git a/src-tauri/crates/tt-ports/src/repositories/character_card_return_repository.rs b/src-tauri/crates/tt-ports/src/repositories/character_card_return_repository.rs
+--- a/src-tauri/crates/tt-ports/src/repositories/character_card_return_repository.rs
++++ b/src-tauri/crates/tt-ports/src/repositories/character_card_return_repository.rs
+@@ -20,6 +20,17 @@ pub trait CharacterCardReturnRepository: Send + Sync {
+     /// snapshot for both metadata and avatar pixels.
+     async fn read_card_png_bytes(&self, storage_identity: &str) -> Result<Vec<u8>, DomainError>;
+ 
++    /// Build the exact PNG bytes that `write_return_definition` would persist,
++    /// without mutating storage. Return transactions journal the SHA-256 of
++    /// these bytes before the first Card side effect so crash recovery can
++    /// distinguish transaction-owned output from unrelated avatar edits.
++    async fn prepare_return_png_bytes(
++        &self,
++        storage_identity: &str,
++        character_card_json: &str,
++        avatar_png: Option<&[u8]>,
++    ) -> Result<Vec<u8>, DomainError>;
++
+     /// Replace metadata on the same stored Character. If `avatar_png` is None,
+     /// the existing PNG carrier is preserved. If present, its image is used as
+     /// the new avatar carrier while supplied JSON becomes the authoritative card
+diff --git a/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_character_repository/repository.rs b/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_character_repository/repository.rs
+--- a/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_character_repository/repository.rs
++++ b/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_character_repository/repository.rs
+@@ -1053,6 +1053,41 @@ impl CharacterCardReturnRepository for FileCharacterRepository {
+         })
+     }
+ 
++    async fn prepare_return_png_bytes(
++        &self,
++        storage_identity: &str,
++        character_card_json: &str,
++        avatar_png: Option<&[u8]>,
++    ) -> Result<Vec<u8>, DomainError> {
++        if !validate_path_segment(storage_identity) {
++            return Err(DomainError::InvalidData(
++                "Character storage identity is invalid".to_string(),
++            ));
++        }
++        let file_path = self.get_character_path(storage_identity);
++        if !file_path.exists() {
++            return Err(DomainError::NotFound(format!(
++                "Character not found: {storage_identity}"
++            )));
++        }
++
++        let carrier = if let Some(avatar_png) = avatar_png {
++            if !is_png_bytes(avatar_png) {
++                return Err(DomainError::InvalidData(
++                    "Return avatar carrier is not a PNG".to_string(),
++                ));
++            }
++            avatar_png.to_vec()
++        } else {
++            fs::read(&file_path).await.map_err(|error| {
++                DomainError::InternalError(format!(
++                    "Failed to read existing Character Card avatar carrier: {error}"
++                ))
++            })?
++        };
++        write_character_data_to_png(&carrier, character_card_json)
++    }
++
+     async fn write_return_definition(
+         &self,
+         storage_identity: &str,
+         character_card_json: &str,
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -690,6 +690,8 @@ impl CharacterCardMaterializationOrchestrator {
+             binding_id: binding.binding_id.clone(),
+             export_id: Some(export.export_id.clone()),
+             expected_after_card_hash: Some(supplied_plan.resolved_choices_hash.clone()),
++            expected_after_png_hash: None,
++            expected_after_binding_hash: None,
+             state: CharacterCardTransactionState::Prepared,
+             before_card_ref: None,
+             before_binding_ref: None,
+@@ -747,11 +749,44 @@ impl CharacterCardMaterializationOrchestrator {
+             )
+             .await?;
+ 
++            let next_card_revision = binding.card_revision.checked_add(1).ok_or_else(|| {
++                DomainError::InvalidData("Character Card revision overflow".to_string())
++            })?;
++            let next_binding_generation = binding.generation.checked_add(1).ok_or_else(|| {
++                DomainError::InvalidData("Character Card binding generation overflow".to_string())
++            })?;
++            let mut next_binding = binding.clone();
++            next_binding.card_revision = next_card_revision;
++            next_binding.generation = next_binding_generation;
++            next_binding.updated_at = Utc::now().to_rfc3339();
++            if let Some(context) = next_binding.contexts.iter_mut().find(|context| {
++                &context.session_id == expected_session_id
++                    && &context.branch_id == expected_branch_id
++            }) {
++                context.last_seen_profile_revision = Some(supplied_plan.expected_profile_revision);
++            }
++
+             let avatar_png = if format == PortableCharacterCardFormat::Png && replace_avatar {
+                 Some(staged_bytes.as_slice())
+             } else {
+                 None
+             };
++            let expected_after_png = self
++                .cards
++                .prepare_return_png_bytes(
++                    &binding.card_storage_identity,
++                    &resolved_json,
++                    avatar_png,
++                )
++                .await?;
++            journal.expected_after_png_hash = Some(sha256_hex(&expected_after_png));
++            journal.expected_after_binding_hash = Some(binding_state_hash(&next_binding)?);
++            journal.updated_at = Utc::now().to_rfc3339();
++            // Persist exact ownership tokens before the first Card side effect.
++            self.materialization.write_transaction(&journal).await?;
++
+             self.cards
+                 .write_return_definition(
+                     &binding.card_storage_identity,
+@@ -760,20 +795,17 @@ impl CharacterCardMaterializationOrchestrator {
+                     avatar_png,
+                 )
+                 .await?;
++            let written_png = self.cards.read_card_png_bytes(&binding.card_storage_identity).await?;
++            if sha256_hex(&written_png) != sha256_hex(&expected_after_png) {
++                return Err(DomainError::Conflict(
++                    "Character Card Return exact PNG writeback mismatch".to_string(),
++                ));
++            }
+             advance_return_journal(
+                 &*self.materialization,
+                 &mut journal,
+                 CharacterCardTransactionState::CardWritten,
+             )
+             .await?;
+ 
+-            let next_card_revision = binding.card_revision.checked_add(1).ok_or_else(|| {
+-                DomainError::InvalidData("Character Card revision overflow".to_string())
+-            })?;
+-            let mut next_binding = binding.clone();
+-            next_binding.card_revision = next_card_revision;
+-            next_binding.updated_at = Utc::now().to_rfc3339();
+-            if let Some(context) = next_binding.contexts.iter_mut().find(|context| {
+-                &context.session_id == expected_session_id
+-                    && &context.branch_id == expected_branch_id
+-            }) {
+-                context.last_seen_profile_revision = Some(supplied_plan.expected_profile_revision);
+-            }
+             self.materialization.write_binding(&next_binding).await?;
+             advance_return_journal(
+                 &*self.materialization,
+@@ -808,10 +840,7 @@ impl CharacterCardMaterializationOrchestrator {
+                     "character card binding {}",
+                     binding.binding_id
+                 )))?;
+-            if readback_binding.generation != supplied_plan.expected_binding_generation
+-                || readback_binding.card_revision != next_card_revision
+-                || readback_binding.profile_revision_at_last_sync
+-                    != Some(supplied_plan.expected_profile_revision)
+-            {
++            if readback_binding != next_binding {
+                 return Err(DomainError::Conflict(
+                     "Character Card Return binding readback mismatch".to_string(),
+                 ));
+@@ -833,7 +862,7 @@ impl CharacterCardMaterializationOrchestrator {
+             }
+             self.verify_commit_authority(
+                 &binding.binding_id,
+-                supplied_plan.expected_binding_generation,
++                next_binding_generation,
+                 next_card_revision,
+                 supplied_plan.expected_profile_revision,
+                 expected_session_id,
+@@ -866,7 +895,7 @@ impl CharacterCardMaterializationOrchestrator {
+                 transaction_id: transaction_id.clone(),
+                 binding_id: binding.binding_id.clone(),
+                 card_revision: next_card_revision,
+-                binding_generation: supplied_plan.expected_binding_generation,
++                binding_generation: next_binding_generation,
+                 card_hash: readback_hash,
+                 avatar_replaced: replace_avatar,
+                 idempotent_replay: false,
+@@ -816,6 +816,9 @@ impl CharacterCardMaterializationOrchestrator {
+         let expected_revision = plan.expected_card_revision.checked_add(1).ok_or_else(|| {
+             DomainError::InvalidData("Character Card revision overflow".to_string())
+         })?;
+-        if binding.generation != plan.expected_binding_generation
++        let expected_generation = plan.expected_binding_generation.checked_add(1).ok_or_else(|| {
++            DomainError::InvalidData("Character Card binding generation overflow".to_string())
++        })?;
++        if binding.generation != expected_generation
+             || binding.card_revision != expected_revision
+             || binding.profile_revision_at_last_sync != Some(plan.expected_profile_revision)
+         {
+@@ -851,7 +854,7 @@ impl CharacterCardMaterializationOrchestrator {
+             transaction_id: transaction_id.to_string(),
+             binding_id: binding.binding_id,
+             card_revision: expected_revision,
+-            binding_generation: plan.expected_binding_generation,
++            binding_generation: expected_generation,
+             card_hash,
+             avatar_replaced,
+             idempotent_replay: true,
+@@ -887,21 +890,26 @@ impl CharacterCardMaterializationOrchestrator {
+             ) {
+                 (Some(card_ref), Some(binding_ref)) => {
+                     let before_png = self.materialization.read_snapshot(card_ref).await?;
+-                    let before_card_json = self.cards.inspect_png_card_json(&before_png).await?;
+-                    let before_card = parse_json_card(before_card_json.as_bytes())?;
+-                    let before_hash = canonical_definition_hash(&portable_definition_projection(before_card))
+-                        .map_err(DomainError::InvalidData)?;
++                    let before_png_hash = sha256_hex(&before_png);
+                     let before_binding_bytes = self.materialization.read_snapshot(binding_ref).await?;
+                     let before_binding: CharacterCardBinding = serde_json::from_slice(&before_binding_bytes)
+                         .map_err(|error| DomainError::InvalidData(format!(
+                             "invalid Character Card rollback binding snapshot: {error}"
+                         )))?;
+ 
+-                    let current_text = self.cards.read_card_json(&before_binding.card_storage_identity).await?;
+-                    let current_card = parse_json_card(current_text.as_bytes())?;
+-                    let current_hash = canonical_definition_hash(&portable_definition_projection(current_card))
+-                        .map_err(DomainError::InvalidData)?;
+-                    if current_hash != before_hash {
+-                        let Some(expected_after) = journal.expected_after_card_hash.as_deref() else {
++                    let current_png = self
++                        .cards
++                        .read_card_png_bytes(&before_binding.card_storage_identity)
++                        .await?;
++                    let current_png_hash = sha256_hex(&current_png);
++                    if current_png_hash != before_png_hash {
++                        let Some(expected_after) = journal.expected_after_png_hash.as_deref() else {
+                             return Err(DomainError::Conflict(
+-                                "rollback cannot prove ownership of current Character Card state"
++                                "rollback cannot prove ownership of current exact Character Card PNG"
+                                     .to_string(),
+                             ));
+                         };
+-                        if current_hash != expected_after {
++                        if current_png_hash != expected_after {
+                             return Err(DomainError::Conflict(
+-                                "Character Card changed after Return transaction; rollback will not overwrite it"
++                                "Character Card PNG changed after Return transaction; rollback will not overwrite it"
+                                     .to_string(),
+                             ));
+                         }
+@@ -910,6 +918,15 @@ impl CharacterCardMaterializationOrchestrator {
+                             .restore_card_png_bytes(&before_binding.card_storage_identity, &before_png)
+                             .await?;
+                     }
++                    let restored_png = self
++                        .cards
++                        .read_card_png_bytes(&before_binding.card_storage_identity)
++                        .await?;
++                    if sha256_hex(&restored_png) != before_png_hash {
++                        return Err(DomainError::Conflict(
++                            "Character Card rollback PNG readback mismatch".to_string(),
++                        ));
++                    }
+ 
+                     let current_binding = self
+                         .materialization
+@@ -920,22 +937,30 @@ impl CharacterCardMaterializationOrchestrator {
+                             before_binding.binding_id
+                         )))?;
+                     if current_binding != before_binding {
+-                        let expected_written_revision = before_binding.card_revision.checked_add(1)
+-                            .ok_or_else(|| DomainError::InvalidData(
+-                                "Character Card revision overflow".to_string(),
+-                            ))?;
+-                        if current_binding.generation != before_binding.generation
+-                            || current_binding.card_revision != expected_written_revision
+-                            || current_binding.profile_revision_at_last_sync
+-                                != before_binding.profile_revision_at_last_sync
+-                        {
++                        let Some(expected_after) = journal.expected_after_binding_hash.as_deref() else {
++                            return Err(DomainError::Conflict(
++                                "rollback cannot prove ownership of current Character Card binding"
++                                    .to_string(),
++                            ));
++                        };
++                        if binding_state_hash(&current_binding)? != expected_after {
+                             return Err(DomainError::Conflict(
+                                 "Character Card binding changed after Return transaction; rollback will not overwrite it"
+                                     .to_string(),
+                             ));
+                         }
+                         self.materialization.write_binding(&before_binding).await?;
+                     }
++                    let restored_binding = self
++                        .materialization
++                        .read_binding(&before_binding.binding_id)
++                        .await?
++                        .ok_or_else(|| DomainError::NotFound(format!(
++                            "character card binding {}",
++                            before_binding.binding_id
++                        )))?;
++                    if restored_binding != before_binding {
++                        return Err(DomainError::Conflict(
++                            "Character Card rollback binding readback mismatch".to_string(),
++                        ));
++                    }
+                 }
+                 _ if snapshots_required => {
+                     return Err(DomainError::InvalidData(
+@@ -948,8 +973,11 @@ impl CharacterCardMaterializationOrchestrator {
+             }
+ 
+             if let Some(export_id) = journal.export_id.as_deref() {
+-                if let Some(mut export) = self.materialization.read_export_record(export_id).await? {
+-                    match export.transaction_id.as_deref() {
++                let mut export = self
++                    .materialization
++                    .read_export_record(export_id)
++                    .await?
++                    .ok_or_else(|| DomainError::NotFound(format!("character card export record {export_id}")))?;
++                match export.transaction_id.as_deref() {
+                         Some(transaction_id) if transaction_id == journal.transaction_id => {
+                             export.transaction_id = None;
+                             self.materialization.write_export_record(&export).await?;
+@@ -962,8 +990,18 @@ impl CharacterCardMaterializationOrchestrator {
+                         }
+                         None => {}
+                     }
++                let readback_export = self
++                    .materialization
++                    .read_export_record(export_id)
++                    .await?
++                    .ok_or_else(|| DomainError::NotFound(format!("character card export record {export_id}")))?;
++                if readback_export.transaction_id.is_some() {
++                    return Err(DomainError::Conflict(
++                        "Character Card rollback export marker readback mismatch".to_string(),
++                    ));
+                 }
+             }
+             Ok(())
+@@ -1029,6 +1067,14 @@ fn validate_local_card_plan_hash(
+     Ok(())
+ }
+ 
++fn binding_state_hash(binding: &CharacterCardBinding) -> Result<String, DomainError> {
++    let bytes = serde_json::to_vec(binding).map_err(|error| {
++        DomainError::InvalidData(format!(
++            "failed to hash Character Card binding state: {error}"
++        ))
++    })?;
++    Ok(sha256_hex(&bytes))
++}
++
+ /// Apply only portable definition values onto the current stored card. Starting
+ /// from LOCAL deliberately preserves storage/runtime-only fields stripped by
+ /// portable_definition_projection (chat/date/fav/world/internal namespace).
