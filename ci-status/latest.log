@@ -120,49 +120,15 @@
 1772:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 1778:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 1784:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1790:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1796:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1802:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1808:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1814:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1820:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1826:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 # Tail
-test services::chat_completion_service::prompt_caching_plan::tests::vertexai_claude_raw_predict_uses_vertex_strategy ... ok
-test services::chat_completion_service::prompt_caching_plan::tests::vertexai_gemini_generate_content_does_not_use_claude_strategy ... ok
-test services::chat_completion_service::tests::custom_gemini_interactions_status_uses_makersuite_transport ... ok
-test services::chat_completion_service::tests::custom_claude_messages_status_uses_claude_transport ... ok
-test services::chat_completion_service::tests::nanogpt_claude_cache_control_is_inserted_for_claude_models ... ok
-test services::chat_completion_service::tests::nanogpt_claude_cache_control_is_skipped_for_non_claude_models ... ok
-test services::chat_completion_service::tests::vertexai_claude_rejects_one_hour_cache_for_old_models ... ok
-test services::chat_completion_service::tests::vertexai_global_prompt_cache_adds_session_header ... ok
-test services::chat_completion_service::tests::vertexai_regional_prompt_cache_skips_session_header ... ok
-test services::chat_file_validation::tests::accepts_safe_chat_file_names_with_or_without_jsonl_extension ... ok
-test services::chat_file_validation::tests::rejects_path_components_that_sanitize_to_empty ... ok
-test services::chat_history_coordinator::tests::a_new_checkpoint_after_invalidation_authorizes_history_again ... ok
-test services::chat_history_coordinator::tests::active_generation_globally_stops_worker_admission ... ok
-test services::chat_history_coordinator::tests::checkpoint_and_outer_finish_schedule_the_latest_commit ... ok
-test services::chat_history_coordinator::tests::completed_generation_reports_a_full_pending_map ... ok
-test services::chat_history_coordinator::tests::explicit_completion_clears_an_older_suspended_request ... ok
-test services::chat_history_coordinator::tests::explicit_completion_preserves_a_newer_commit ... ok
-test services::chat_history_coordinator::tests::generation_without_a_commit_restores_existing_pending_request ... ok
-test services::chat_history_coordinator::tests::global_interval_applies_after_an_attempt_even_with_trailing_work ... ok
-test services::chat_history_coordinator::tests::in_flight_commit_creates_a_trailing_latest_request ... ok
-test services::chat_history_coordinator::tests::invalidate_all_preserves_generation_gate_and_global_cooldown ... ok
-test services::chat_history_coordinator::tests::maintenance_only_refreshes_an_existing_pending_request ... ok
-test services::chat_history_coordinator::tests::new_generation_replaces_stale_generation_state ... ok
-test services::chat_history_coordinator::tests::invalidation_revokes_an_active_checkpoint ... ok
-test services::chat_history_coordinator::tests::non_checkpoint_commit_invalidates_pre_generation_pending ... ok
-test services::chat_history_coordinator::tests::pending_capacity_still_allows_existing_locator_coalescing ... ok
-test services::chat_history_coordinator::tests::provider_only_generation_does_not_schedule_history ... ok
-test services::chat_history_coordinator::tests::repeated_commits_are_latest_wins_without_growing_the_map ... ok
-test services::chat_history_coordinator::tests::transient_attempt_does_not_overwrite_a_newer_trailing_request ... ok
-test services::chat_history_coordinator::tests::transient_attempt_is_deferred_without_consuming_the_global_interval ... ok
-test services::chat_history_coordinator::tests::unrelated_commit_waits_without_being_lost_during_generation ... ok
-test services::content_service::tests::download_external_import_url_returns_png_payload ... ok
-test services::data_archive_service::tests::cleanup_export_marks_artifact_disposed_and_is_idempotent ... ok
-test services::data_archive_service::tests::dropping_registry_requests_job_cancellation ... ok
-test services::data_archive_service::tests::cleanup_export_marks_missing_when_artifact_is_already_gone ... ok
-test services::data_archive_service::tests::finalize_export_delivery_disposes_even_when_cleanup_fails ... ok
-test services::data_archive_service::tests::partial_import_cancel_initializes_reconciles_and_reports_local_mutation ... ok
-test services::data_archive_service::tests::partial_import_failure_reports_reconcile_error ... ok
-test services::data_archive_service::tests::partial_import_failure_initializes_reconciles_and_reports_local_mutation ... ok
-test services::data_archive_service::tests::registries_are_instance_scoped ... ok
-test services::data_archive_service::tests::service_resolves_completed_export_artifact ... ok
 test services::data_archive_service::tests::save_export_marks_artifact_disposed_with_saved_path ... ok
 test services::data_archive_service::tests::save_export_restores_available_artifact_on_save_error ... ok
 test services::data_archive_service::tests::start_export_protects_claimed_completed_artifact_from_stale_cleanup ... ok
@@ -522,3 +488,44 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 [1m[92m   Doc-tests[0m tt_adapter_storage_userdata
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_sync
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_adapter_tokenization
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_application
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_contracts
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_domain
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_ports
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
