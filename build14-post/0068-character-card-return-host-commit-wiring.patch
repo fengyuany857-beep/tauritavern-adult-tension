@@ -1,18 +1,20 @@
 diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
 --- a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
 +++ b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
-@@ -20,4 +20,9 @@ use tt_application::services::character_card_materialization_orchestrator::{
-     CharacterCardReturnPreview, PortableCharacterCardExport, PortableCharacterCardFormat,
- };
+@@ -3,6 +3,11 @@ use std::sync::Arc;
+ use tauri::State;
 +use tt_application::services::character_card_materialization_orchestrator::{
 +    CharacterCardReturnCommitResult, CharacterCardReturnPlanResult, ReturnFieldChoice,
 +};
 +use tt_domain::models::character_card_materialization::ReturnImportPlan;
 +use tt_domain::models::rp_architecture::{BranchId, SessionId};
- use tt_domain::models::skill::{SkillScope, SkillScopeRetargetRequest};
  
- const SKILL_SOURCE_KIND_CHARACTER: &str = "character";
-+
+ use crate::app::AppState;
+ use crate::presentation::commands::helpers::{log_command, map_command_error};
+@@ -329,6 +334,31 @@ pub async fn preview_character_card_return(
+         .map_err(map_command_error("Failed to preview Character Card Return"))
+ }
+ 
 +#[derive(Debug, serde::Deserialize)]
 +#[serde(rename_all = "camelCase")]
 +pub struct PlanCharacterCardReturnRequest {
@@ -35,10 +37,7 @@ diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_co
 +    branch_id: String,
 +    choices: std::collections::BTreeMap<String, ReturnFieldChoice>,
 +}
-@@ -329,6 +354,56 @@ pub async fn preview_character_card_return(
-         .map_err(map_command_error("Failed to preview Character Card Return"))
- }
- 
++
 +#[tauri::command]
 +pub async fn plan_character_card_return(
 +    request: PlanCharacterCardReturnRequest,
