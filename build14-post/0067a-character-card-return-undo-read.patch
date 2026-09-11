@@ -1,0 +1,47 @@
+diff --git a/src-tauri/crates/tt-ports/src/repositories/character_card_materialization_repository.rs b/src-tauri/crates/tt-ports/src/repositories/character_card_materialization_repository.rs
+--- a/src-tauri/crates/tt-ports/src/repositories/character_card_materialization_repository.rs
++++ b/src-tauri/crates/tt-ports/src/repositories/character_card_materialization_repository.rs
+@@ -38,6 +38,11 @@ pub trait CharacterCardMaterializationRepository: Send + Sync {
+         &self,
+     ) -> Result<Vec<CharacterCardTransactionJournal>, DomainError>;
+ 
++    async fn read_undo_record(
++        &self,
++        transaction_id: &str,
++    ) -> Result<Option<UndoRecord>, DomainError>;
++
+     async fn write_undo_record(&self, record: &UndoRecord) -> Result<(), DomainError>;
+ 
+     async fn write_snapshot(&self, bytes: &[u8]) -> Result<String, DomainError>;
+diff --git a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+--- a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
++++ b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+@@ -151,6 +151,15 @@ impl CharacterCardMaterializationStore {
+         Ok(output)
+     }
+ 
++    pub async fn read_undo_record(
++        &self,
++        transaction_id: &str,
++    ) -> Result<Option<UndoRecord>, DomainError> {
++        let path = self.undo_dir().join(json_file_name(transaction_id)?);
++        read_optional_json(&path).await
++    }
++
+     pub async fn write_undo_record(&self, record: &UndoRecord) -> Result<(), DomainError> {
+         validate_opaque_id(&record.transaction_id)?;
+         validate_logical_ref(&record.card_before_ref)?;
+@@ -397,6 +406,13 @@ impl CharacterCardMaterializationRepository for CharacterCardMaterializationStore {
+         CharacterCardMaterializationStore::list_transactions(self).await
+     }
+ 
++    async fn read_undo_record(
++        &self,
++        transaction_id: &str,
++    ) -> Result<Option<UndoRecord>, DomainError> {
++        CharacterCardMaterializationStore::read_undo_record(self, transaction_id).await
++    }
++
+     async fn write_undo_record(&self, record: &UndoRecord) -> Result<(), DomainError> {
+         CharacterCardMaterializationStore::write_undo_record(self, record).await
+     }
