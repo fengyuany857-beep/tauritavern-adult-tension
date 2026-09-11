@@ -1,3 +1,9 @@
 # Diagnostic matches
 
 # Tail
+
+> tauritavern@2.2.0 test:rust /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> cargo test --manifest-path src-tauri/Cargo.toml --workspace --no-default-features
+
+[1m[92m   Compiling[0m tt-domain v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-domain)
+[1m[92m   Compiling[0m tauritavern v2.2.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tauritavern)
