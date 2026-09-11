@@ -1,0 +1,9 @@
+diff --git a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+--- a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
++++ b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+@@ -546,3 +546,3 @@ fn validate_logical_ref(value: &str) -> Result<(), DomainError> {
+         || value.contains(":\\")
+         || value
+-            .split(|character| character == '/' || character == '\\')
++            .split(['/', '\\'])
+             .any(|segment| segment.is_empty() || segment == "..")
