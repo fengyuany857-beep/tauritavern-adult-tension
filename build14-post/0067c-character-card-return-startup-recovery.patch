@@ -1,0 +1,136 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -123,6 +123,96 @@ impl CharacterCardMaterializationOrchestrator {
+         }
+     }
+ 
++    /// Resolve interrupted Return transactions before the host exposes any
++    /// Character Card commands. Only a persisted ReadbackVerified transaction
++    /// with exact durable ownership proof may roll forward to Committed; all
++    /// earlier states roll back. Ambiguous ownership fails startup closed.
++    pub async fn recover_incomplete_returns(&self) -> Result<(), DomainError> {
++        let _commit_guard = self.return_commit_lock.lock().await;
++        let transactions = self.materialization.list_transactions().await?;
++        for mut journal in transactions {
++            match journal.state {
++                CharacterCardTransactionState::Committed
++                | CharacterCardTransactionState::RolledBack => continue,
++                CharacterCardTransactionState::RollbackFailed => {
++                    return Err(DomainError::Conflict(format!(
++                        "Character Card Return transaction {} has an unresolved rollback failure",
++                        journal.transaction_id
++                    )));
++                }
++                CharacterCardTransactionState::ReadbackVerified => {
++                    if self
++                        .readback_verified_return_is_fully_owned(&journal)
++                        .await?
++                    {
++                        advance_return_journal(
++                            &*self.materialization,
++                            &mut journal,
++                            CharacterCardTransactionState::Committed,
++                        )
++                        .await?;
++                        continue;
++                    }
++                }
++                _ => {}
++            }
++
++            self.rollback_return_transaction(&mut journal).await?;
++        }
++        Ok(())
++    }
++
++    async fn readback_verified_return_is_fully_owned(
++        &self,
++        journal: &CharacterCardTransactionJournal,
++    ) -> Result<bool, DomainError> {
++        let (
++            Some(card_before_ref),
++            Some(binding_before_ref),
++            Some(expected_card_hash),
++            Some(expected_png_hash),
++            Some(expected_binding_hash),
++            Some(export_id),
++        ) = (
++            journal.before_card_ref.as_deref(),
++            journal.before_binding_ref.as_deref(),
++            journal.expected_after_card_hash.as_deref(),
++            journal.expected_after_png_hash.as_deref(),
++            journal.expected_after_binding_hash.as_deref(),
++            journal.export_id.as_deref(),
++        ) else {
++            return Ok(false);
++        };
++
++        let Some(undo) = self
++            .materialization
++            .read_undo_record(&journal.transaction_id)
++            .await?
++        else {
++            return Ok(false);
++        };
++        if undo.transaction_id != journal.transaction_id
++            || undo.card_before_ref != card_before_ref
++            || undo.binding_before_ref != binding_before_ref
++            || undo.profile_before_ref != journal.before_profile_ref
++            || undo.expected_after_card_hash != expected_card_hash
++            || undo.expected_after_profile_hash.is_some()
++        {
++            return Ok(false);
++        }
++
++        let Some(binding) = self.materialization.read_binding(&journal.binding_id).await? else {
++            return Ok(false);
++        };
++        if binding_state_hash(&binding)? != expected_binding_hash {
++            return Ok(false);
++        }
++        let png = self.cards.read_card_png_bytes(&binding.card_storage_identity).await?;
++        if sha256_hex(&png) != expected_png_hash {
++            return Ok(false);
++        }
++        let card_text = self.cards.read_card_json(&binding.card_storage_identity).await?;
++        let card = parse_json_card(card_text.as_bytes())?;
++        let card_hash = canonical_definition_hash(&portable_definition_projection(card))
++            .map_err(DomainError::InvalidData)?;
++        if card_hash != expected_card_hash {
++            return Ok(false);
++        }
++
++        let Some(export) = self.materialization.read_export_record(export_id).await? else {
++            return Ok(false);
++        };
++        Ok(export.transaction_id.as_deref() == Some(journal.transaction_id.as_str()))
++    }
++
+     /// Read-only export relative to RP/World authority. BASE is the sanitized
+     /// definition before Return Metadata is attached.
+     pub async fn export_bound_card(
+diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
+--- a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
++++ b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
+@@ -145,7 +145,7 @@ pub(super) async fn build(
+             repositories.agent_run_repository.clone(),
+         ),
+     );
+-    let character_card_materialization_orchestrator = Arc::new(
++    let character_card_materialization_orchestrator =
+         CharacterCardMaterializationOrchestrator::new(
+             repositories.character_card_materialization_repository.clone(),
+             repositories.character_card_return_repository.clone(),
+@@ -153,7 +153,9 @@ pub(super) async fn build(
+             repositories.agent_run_repository.clone(),
+-        ),
+-    );
++        );
++    character_card_materialization_orchestrator
++        .recover_incomplete_returns()
++        .await?;
++    let character_card_materialization_orchestrator = Arc::new(character_card_materialization_orchestrator);
+     let acceptance_root = app_handle
+         .path()
+         .app_cache_dir()
