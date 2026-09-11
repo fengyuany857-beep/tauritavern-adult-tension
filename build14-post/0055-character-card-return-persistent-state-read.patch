@@ -1,0 +1,125 @@
+diff --git a/src-tauri/crates/tt-ports/src/repositories/mod.rs b/src-tauri/crates/tt-ports/src/repositories/mod.rs
+--- a/src-tauri/crates/tt-ports/src/repositories/mod.rs
++++ b/src-tauri/crates/tt-ports/src/repositories/mod.rs
+@@ -8,6 +8,7 @@ pub mod background_repository;
+ pub mod character_card_materialization_repository;
+ pub mod character_card_return_authority_repository;
++pub mod character_card_return_persistent_state_repository;
+ pub mod character_card_return_repository;
+ pub mod character_repository;
+ pub mod chat_completion_repository;
+diff --git a/src-tauri/crates/tt-ports/src/repositories/character_card_return_persistent_state_repository.rs b/src-tauri/crates/tt-ports/src/repositories/character_card_return_persistent_state_repository.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-ports/src/repositories/character_card_return_persistent_state_repository.rs
+@@ -0,0 +1,16 @@
++use async_trait::async_trait;
++use tt_domain::errors::DomainError;
++use tt_domain::models::agent::WorkspacePath;
++
++/// Read-only access to a durable Agent persistent-state projection.
++///
++/// Character Card Return uses this instead of a historical run workspace so
++/// the authority snapshot follows the persistStateId attached to the actually
++/// selected chat history branch.
++#[async_trait]
++pub trait CharacterCardReturnPersistentStateRepository: Send + Sync {
++    async fn read_persistent_text(
++        &self,
++        workspace_id: &str,
++        state_id: &str,
++        path: &WorkspacePath,
++    ) -> Result<String, DomainError>;
++}
+diff --git a/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_agent_repository/persistent_store.rs b/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_agent_repository/persistent_store.rs
+--- a/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_agent_repository/persistent_store.rs
++++ b/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_agent_repository/persistent_store.rs
+@@ -8,10 +8,12 @@ use uuid::Uuid;
+ 
+ use super::FileAgentRepository;
+ use super::fs_tree::{copy_directory_contents, scan_workspace_files, snapshot_map};
+ use super::paths::validate_workspace_root_path;
+ use tt_domain::errors::DomainError;
+ use tt_domain::models::agent::{
+-    AgentRun, WorkspaceManifest, WorkspacePersistentChange, WorkspacePersistentChangeKind,
+-    WorkspacePersistentChangeSet, WorkspaceRootCommit, WorkspaceRootMount, WorkspaceRootScope,
++    AgentRun, WorkspaceManifest, WorkspacePath, WorkspacePersistentChange,
++    WorkspacePersistentChangeKind, WorkspacePersistentChangeSet, WorkspaceRootCommit,
++    WorkspaceRootMount, WorkspaceRootScope,
+ };
+ use tt_ports::repositories::agent_run_repository::AgentRunRepository;
++use tt_ports::repositories::character_card_return_persistent_state_repository::CharacterCardReturnPersistentStateRepository;
+ use tt_ports::repositories::workspace_repository::WorkspaceRepository;
+@@ -329,6 +331,66 @@ impl FileAgentRepository {
+     }
+ }
++
++#[async_trait::async_trait]
++impl CharacterCardReturnPersistentStateRepository for FileAgentRepository {
++    async fn read_persistent_text(
++        &self,
++        workspace_id: &str,
++        state_id: &str,
++        path: &WorkspacePath,
++    ) -> Result<String, DomainError> {
++        let state_dir = self.persistent_state_dir(workspace_id, state_id)?;
++        let manifest = self.read_persistent_state_manifest(&state_dir).await?;
++        if manifest.workspace_id != workspace_id || manifest.state_id != state_id {
++            return Err(DomainError::InvalidData(
++                "character_card_return.persistent_state_identity_mismatch".to_string(),
++            ));
++        }
++        let requested = path.as_str();
++        if !manifest.files.iter().any(|file| file.path == requested) {
++            return Err(DomainError::NotFound(format!(
++                "character_card_return.persistent_file_not_found: {requested}"
++            )));
++        }
++
++        let target = state_dir.join(requested);
++        let metadata = fs::symlink_metadata(&target).await.map_err(|error| {
++            if error.kind() == std::io::ErrorKind::NotFound {
++                DomainError::NotFound(format!(
++                    "character_card_return.persistent_file_not_found: {requested}"
++                ))
++            } else {
++                DomainError::InternalError(format!(
++                    "Failed to inspect durable persistent file {}: {error}",
++                    target.display()
++                ))
++            }
++        })?;
++        if metadata.file_type().is_symlink() || !metadata.is_file() {
++            return Err(DomainError::InvalidData(format!(
++                "character_card_return.persistent_file_invalid: {requested}"
++            )));
++        }
++
++        let canonical_state = fs::canonicalize(&state_dir).await.map_err(|error| {
++            DomainError::InternalError(format!(
++                "Failed to resolve durable persistent state {}: {error}",
++                state_dir.display()
++            ))
++        })?;
++        let canonical_target = fs::canonicalize(&target).await.map_err(|error| {
++            DomainError::InternalError(format!(
++                "Failed to resolve durable persistent file {}: {error}",
++                target.display()
++            ))
++        })?;
++        if !canonical_target.starts_with(&canonical_state) {
++            return Err(DomainError::InvalidData(format!(
++                "character_card_return.persistent_file_escape: {requested}"
++            )));
++        }
++
++        fs::read_to_string(&canonical_target).await.map_err(|error| {
++            DomainError::InternalError(format!(
++                "Failed to read durable persistent file {}: {error}",
++                canonical_target.display()
++            ))
++        })
++    }
++}
+ 
+ pub(super) fn persistent_roots(manifest: &WorkspaceManifest) -> Result<Vec<String>, DomainError> {
