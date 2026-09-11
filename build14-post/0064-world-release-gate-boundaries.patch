@@ -1,0 +1,106 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -1345,10 +1345,12 @@ fn ensure_stage_session_binding(
+     }
+ 
+     let Some(manifest) = manifest else {
+-        // Build #13 compatibility mode. Legacy worlds remain playable until a
+-        // first-class World Manifest is adopted; once a Session is bound, the
+-        // manifest gate becomes fail-closed on every subsequent RP tool call.
+-        return Ok(());
++        return Err(super::binding::BindingFailure {
++            code: "rp.world_manifest_required",
++            message: "WORLD_MANIFEST_REQUIRED: RP staging requires exactly one active constant `TauriTavern World Manifest`; refusing to create or advance an unbound World Session."
++                .to_string(),
++        });
+     };
+ 
+     if state_has_continuity(state) {
+@@ -2040,6 +2042,15 @@ mod tests {
+         assert_eq!(session.active_branch_id.0, "chat-a");
+     }
+ 
++    #[test]
++    fn fresh_state_rejects_missing_world_manifest() {
++        let mut state = RpState::default();
++        let error = ensure_stage_session_binding(&mut state, "chat-a", None).unwrap_err();
++        assert_eq!(error.code, "rp.world_manifest_required");
++        assert!(state.session.is_none());
++        assert_eq!(state.runtime_revision, 0);
++    }
++
+     #[test]
+     fn bound_state_rejects_world_switch_and_revision_drift() {
+         let mut state = RpState::default();
+         let manifest = world_manifest("world-a", 17, "fp-17");
+diff --git a/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_canonization.rs b/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_canonization.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_canonization.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_runtime_service/rp_canonization.rs
+@@ -137,7 +137,8 @@ impl AgentRuntimeService {
+         })?;
+         registry_entry.insert("content".to_string(), Value::String(registry_text.clone()));
+-        registry_entry.insert("constant".to_string(), Value::Bool(true));
++        registry_entry.insert("constant".to_string(), Value::Bool(false));
++        registry_entry.insert("disable".to_string(), Value::Bool(true));
+         registry_entry.insert("comment".to_string(), Value::String(CANON_REGISTRY_DISPLAY_NAME.to_string()));
+ 
+         manifest.canon_revision = manifest.canon_revision.saturating_add(1);
+@@ -251,12 +252,12 @@ fn new_registry_entry(uid: i64) -> Value {
+         "keysecondary": [],
+         "comment": CANON_REGISTRY_DISPLAY_NAME,
+         "content": "",
+-        "constant": true,
++        "constant": false,
+         "selective": false,
+         "selectiveLogic": 0,
+         "order": 100,
+         "position": 0,
+-        "disable": false,
++        "disable": true,
+         "probability": 100,
+         "useProbability": true,
+         "depth": 4,
+@@ -274,3 +275,14 @@ fn sha256_hex(bytes: &[u8]) -> String {
+     let digest = Sha256::digest(bytes);
+     digest.iter().map(|byte| format!("{byte:02x}")).collect()
+ }
++
++#[cfg(test)]
++mod release_gate_tests {
++    use super::*;
++
++    #[test]
++    fn canon_registry_is_runtime_only_not_prompt_activatable() {
++        let entry = new_registry_entry(7);
++        assert_eq!(entry.get("constant"), Some(&Value::Bool(false)));
++        assert_eq!(entry.get("disable"), Some(&Value::Bool(true)));
++        assert!(entry.get("key").and_then(Value::as_array).is_some_and(Vec::is_empty));
++    }
++}
+diff --git a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+--- a/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
++++ b/src-tauri/crates/tt-application/src/services/runtime_acceptance_service.rs
+@@ -455,6 +455,16 @@ impl RuntimeAcceptanceService {
+         let divergence = self.rp_call(ctx, &divergent.id, &divergent_prompt, "rp.state", json!({})).await?;
+         require_error_code(&divergence, "rp.world_revision_diverged")?;
+ 
++        let no_manifest_prompt = json!({
++            "chatCompletionPayload":{"messages":[{"role":"user","content":"Synthetic acceptance input."}]},
++            "worldInfoActivation":{"entries":[]}
++        });
++        let no_manifest = self.create_run(ctx, "world-none", None, &no_manifest_prompt).await?;
++        let missing = self.rp_call(ctx, &no_manifest.id, &no_manifest_prompt, "rp.stage_turn", json!({
++            "beat_summary":"Must not stage without a World Manifest.","advances_story":true
++        })).await?;
++        require_error_code(&missing, "rp.world_manifest_required")?;
++
+         let ambiguous_prompt = prompt_for_world("acceptance-world-a", 1, "acceptance-fp-a", true, "Synthetic acceptance input.");
+         let ambiguous = self.create_run(ctx, "world-ambiguous", Some(committed.state_id), &ambiguous_prompt).await?;
+         let ambiguity = self.rp_call(ctx, &ambiguous.id, &ambiguous_prompt, "rp.state", json!({})).await?;
+         require_error_code(&ambiguity, "rp.world_manifest_ambiguous")?;
+-        Ok(CaseRunResult::pass("Matching, world mismatch, revision divergence, and ambiguous-manifest paths are distinguished."))
++        Ok(CaseRunResult::pass("Matching, missing-manifest, world mismatch, revision divergence, and ambiguous-manifest paths are distinguished."))
+     }
+ 
+     async fn case_cast_lifecycle(&self, ctx: &SuiteContext) -> Result<CaseRunResult, ApplicationError> {
