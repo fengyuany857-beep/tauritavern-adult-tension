@@ -1,0 +1,16 @@
+diff --git a/src-tauri/crates/tauritavern/src/app/composition/repositories.rs b/src-tauri/crates/tauritavern/src/app/composition/repositories.rs
+--- a/src-tauri/crates/tauritavern/src/app/composition/repositories.rs
++++ b/src-tauri/crates/tauritavern/src/app/composition/repositories.rs
+@@ -145,8 +145,11 @@ pub(super) async fn build(
+     let character_repository: Arc<dyn CharacterRepository> = file_character_repository.clone();
+     let character_card_return_repository: Arc<dyn CharacterCardReturnRepository> =
+         file_character_repository;
++    let character_card_materialization_store =
++        Arc::new(CharacterCardMaterializationStore::new(data_directory));
++    character_card_materialization_store.initialize().await?;
+     let character_card_materialization_repository: Arc<dyn CharacterCardMaterializationRepository> =
+-        Arc::new(CharacterCardMaterializationStore::new(data_directory));
++        character_card_materialization_store;
+     let chat_repository: Arc<dyn ChatRepository> = file_chat_repository.clone();
+     let chat_payload_commit_repository: Arc<dyn ChatPayloadCommitRepository> =
+         file_chat_repository.clone();
