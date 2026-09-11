@@ -1,0 +1,25 @@
+diff --git a/src/scripts/tauri/character-card-return-ui.js b/src/scripts/tauri/character-card-return-ui.js
+--- a/src/scripts/tauri/character-card-return-ui.js
++++ b/src/scripts/tauri/character-card-return-ui.js
+@@ -329,9 +329,14 @@ function mountReturnButton() {
+     sync();
+ }
+ 
+-function installCharacterCardReturnUi() {
++async function installCharacterCardReturnUi() {
++    try {
++        await (window.__TAURITAVERN__?.ready ?? window.__TAURITAVERN_MAIN_READY__);
++    } catch (error) {
++        console.warn('[CharacterCardReturn] Host readiness failed', error);
++    }
+     mountReturnButton();
+     if (!document.getElementById(BUTTON_ID)) setTimeout(mountReturnButton, 0);
+ }
+ 
+ if (document.readyState === 'loading') {
+-    document.addEventListener('DOMContentLoaded', installCharacterCardReturnUi, { once: true });
++    document.addEventListener('DOMContentLoaded', () => void installCharacterCardReturnUi(), { once: true });
+ } else {
+-    queueMicrotask(installCharacterCardReturnUi);
++    queueMicrotask(() => void installCharacterCardReturnUi());
+ }
