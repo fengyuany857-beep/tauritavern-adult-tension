@@ -1,0 +1,115 @@
+diff --git a/src-tauri/crates/tt-ports/src/repositories/character_card_return_authority_repository.rs b/src-tauri/crates/tt-ports/src/repositories/character_card_return_authority_repository.rs
+--- a/src-tauri/crates/tt-ports/src/repositories/character_card_return_authority_repository.rs
++++ b/src-tauri/crates/tt-ports/src/repositories/character_card_return_authority_repository.rs
+@@ -1,8 +1,8 @@
+ use async_trait::async_trait;
+ use tt_domain::errors::DomainError;
+ use tt_domain::models::character_card_materialization::{
+-    CharacterCardBindingContext, CharacterCardBindingTarget,
++    CharacterCardBindingContext, CharacterCardBindingTarget,
+ };
+ use tt_domain::models::rp_architecture::{BranchId, CharacterId, SessionId, WorldId};
+@@ -24,8 +24,8 @@ pub trait CharacterCardReturnAuthorityRepository: Send + Sync {
+     /// Ambiguous, missing, stale, or inaccessible authority must fail closed.
+     async fn resolve_authority(
+         &self,
+         target: &CharacterCardBindingTarget,
+-        contexts: &[CharacterCardBindingContext],
++        context: &CharacterCardBindingContext,
+     ) -> Result<CharacterCardReturnAuthoritySnapshot, DomainError>;
+ }
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -9,10 +9,12 @@ use tt_domain::errors::DomainError;
+ use tt_domain::models::character_card_materialization::{
+-    BindingScopeKind, BindingStatus, CharacterCardBinding, ExportRecord, MergeFieldDecision,
+-    PortableReturnMetadata, ReturnRecognitionState, StagedCharacterCardImport,
+-    CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
++    BindingScopeKind, BindingStatus, CharacterCardBinding, CharacterCardBindingContext,
++    ExportRecord, MergeFieldDecision, PortableReturnMetadata, ReturnRecognitionState,
++    StagedCharacterCardImport, CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
+ };
++use tt_domain::models::rp_architecture::{BranchId, SessionId};
+ use tt_ports::repositories::agent_run_repository::AgentRunRepository;
+ use tt_ports::repositories::character_card_materialization_repository::CharacterCardMaterializationRepository;
+ use tt_ports::repositories::character_card_return_authority_repository::{
+@@ -93,6 +95,8 @@ impl CharacterCardMaterializationOrchestrator {
+         expected_binding_generation: u64,
+         expected_card_revision: u64,
+         expected_profile_revision: u64,
++        expected_session_id: &SessionId,
++        expected_branch_id: &BranchId,
+     ) -> Result<CharacterCardReturnAuthoritySnapshot, DomainError> {
+         let binding = self
+             .materialization
+@@ -112,6 +116,11 @@ impl CharacterCardMaterializationOrchestrator {
+                 binding.card_revision
+             )));
+         }
++        let context = exact_binding_context(
++            &binding,
++            expected_session_id,
++            expected_branch_id,
++        )?;
+ 
+         if let Some(run) = self
+             .runs
+@@ -130,9 +139,9 @@ impl CharacterCardMaterializationOrchestrator {
+ 
+         let snapshot = self
+             .authority
+-            .resolve_authority(&binding.target, &binding.contexts)
++            .resolve_authority(&binding.target, context)
+             .await?;
+-        validate_authority_snapshot(&binding, &snapshot, expected_profile_revision)?;
++        validate_authority_snapshot(&binding, context, &snapshot, expected_profile_revision)?;
+         Ok(snapshot)
+     }
+@@ -389,9 +398,39 @@ fn validate_active_binding(binding: &CharacterCardBinding) -> Result<(), DomainError> {
+     Ok(())
+ }
+ 
++fn exact_binding_context<'a>(
++    binding: &'a CharacterCardBinding,
++    expected_session_id: &SessionId,
++    expected_branch_id: &BranchId,
++) -> Result<&'a CharacterCardBindingContext, DomainError> {
++    let mut matches = binding.contexts.iter().filter(|context| {
++        &context.session_id == expected_session_id && &context.branch_id == expected_branch_id
++    });
++    let Some(context) = matches.next() else {
++        return Err(DomainError::Conflict(
++            "requested Return Commit session/branch is not attached to this Character Card binding"
++                .to_string(),
++        ));
++    };
++    if matches.next().is_some() {
++        return Err(DomainError::Conflict(
++            "duplicate Character Card binding contexts make Return Commit authority ambiguous"
++                .to_string(),
++        ));
++    }
++    Ok(context)
++}
++
+ fn validate_authority_snapshot(
+     binding: &CharacterCardBinding,
++    context: &CharacterCardBindingContext,
+     snapshot: &CharacterCardReturnAuthoritySnapshot,
+     expected_profile_revision: u64,
+ ) -> Result<(), DomainError> {
+@@ -408,13 +447,10 @@ fn validate_authority_snapshot(
+                 .to_string(),
+         ));
+     }
+-    if !binding.contexts.iter().any(|context| {
+-        context.session_id == snapshot.session_id && context.branch_id == snapshot.branch_id
+-    }) {
++    if context.session_id != snapshot.session_id || context.branch_id != snapshot.branch_id {
+         return Err(DomainError::Conflict(
+-            "authoritative RP session/branch is not an attached binding context".to_string(),
++            "authoritative RP session/branch does not match the requested Return Commit context"
++                .to_string(),
+         ));
+     }
