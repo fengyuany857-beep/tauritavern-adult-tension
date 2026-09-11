@@ -1,0 +1,160 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_materialization_orchestrator.rs
+@@ -383,4 +383,156 @@ impl CharacterCardMaterializationOrchestrator {
+         })
+     }
+ 
++    /// Re-read immutable staged bytes and all local authority before producing a
++    /// commit plan. A client-supplied Preview object is never trusted as input.
++    pub async fn plan_staged_return(
++        &self,
++        staged_ref: &str,
++        format: PortableCharacterCardFormat,
++        expected_session_id: &SessionId,
++        expected_branch_id: &BranchId,
++        choices: &BTreeMap<String, ReturnFieldChoice>,
++    ) -> Result<CharacterCardReturnPlanResult, DomainError> {
++        let staged_bytes = self.materialization.read_staged_import(staged_ref).await?;
++        let staged_hash = sha256_hex(&staged_bytes);
++        let imported_card = match format {
++            PortableCharacterCardFormat::Json => parse_json_card(&staged_bytes)?,
++            PortableCharacterCardFormat::Png => {
++                let json = self.cards.inspect_png_card_json(&staged_bytes).await?;
++                parse_json_card(json.as_bytes())?
++            }
++        };
++        scan_portable_card(&imported_card).map_err(portable_security_error)?;
++
++        let metadata = extract_return_metadata(&imported_card).ok_or_else(|| {
++            DomainError::InvalidData(
++                "Character Card Return plan requires authenticated return metadata".to_string(),
++            )
++        })?;
++        metadata.validate_shape().map_err(DomainError::InvalidData)?;
++        let secret = self.materialization.load_or_create_origin_secret().await?;
++        if !verify_origin_proof(&secret, &metadata) {
++            return Err(DomainError::Conflict(
++                "Character Card Return origin proof is not valid for this installation".to_string(),
++            ));
++        }
++
++        let binding = self
++            .materialization
++            .read_binding(&metadata.binding_id)
++            .await?
++            .ok_or_else(|| DomainError::NotFound(format!(
++                "character card binding {}",
++                metadata.binding_id
++            )))?;
++        validate_active_binding(&binding)?;
++        if binding.generation != metadata.binding_generation {
++            return Err(DomainError::Conflict(
++                "Character Card Return binding generation changed after export".to_string(),
++            ));
++        }
++
++        let export = self
++            .materialization
++            .read_export_record(&metadata.export_id)
++            .await?
++            .ok_or_else(|| DomainError::NotFound(format!(
++                "character card export record {}",
++                metadata.export_id
++            )))?;
++        if !export_record_matches_metadata(&export, &metadata) {
++            return Err(DomainError::Conflict(
++                "Character Card Return export tuple no longer matches local export record"
++                    .to_string(),
++            ));
++        }
++        if export.transaction_id.is_some() {
++            return Err(DomainError::Conflict(
++                "Character Card Return export was already committed".to_string(),
++            ));
++        }
++
++        let base_bytes = self.materialization.read_snapshot(&export.snapshot_ref).await?;
++        let base_portable = portable_definition_projection(parse_json_card(&base_bytes)?);
++        let base_hash =
++            canonical_definition_hash(&base_portable).map_err(DomainError::InvalidData)?;
++        if base_hash != metadata.base_card_hash {
++            return Err(DomainError::Conflict(
++                "Character Card Return BASE snapshot hash mismatch".to_string(),
++            ));
++        }
++
++        let local_raw = self.cards.read_card_json(&binding.card_storage_identity).await?;
++        let local_portable = portable_definition_projection(parse_json_card(local_raw.as_bytes())?);
++        let expected_card_hash =
++            canonical_definition_hash(&local_portable).map_err(DomainError::InvalidData)?;
++
++        let recognition = recognize_return_card(
++            &imported_card,
++            &secret,
++            &ReturnRecognitionContext {
++                user_indicated_return: true,
++                binding_exists: true,
++                local_binding_generation: Some(binding.generation),
++                target_exists: true,
++                card_exists: true,
++                base_snapshot_exists: true,
++                export_already_committed: false,
++            },
++        );
++        if recognition != ReturnRecognitionState::KnownExactReturn {
++            return Err(DomainError::Conflict(format!(
++                "Character Card Return is not commit-eligible: {recognition:?}"
++            )));
++        }
++
++        let imported_portable = portable_definition_projection(imported_card);
++        let decisions =
++            top_level_three_way_decisions(&base_portable, &local_portable, &imported_portable);
++        let resolved_definition = resolve_return_decisions(&local_portable, &decisions, choices)?;
++        scan_portable_card(&resolved_definition).map_err(portable_security_error)?;
++        let resolved_hash =
++            canonical_definition_hash(&resolved_definition).map_err(DomainError::InvalidData)?;
++
++        let expected_profile_revision = binding.profile_revision_at_last_sync.ok_or_else(|| {
++            DomainError::Conflict(
++                "Character Card binding has no synchronized RP profile revision".to_string(),
++            )
++        })?;
++        self.verify_commit_authority(
++            &binding.binding_id,
++            binding.generation,
++            binding.card_revision,
++            expected_profile_revision,
++            expected_session_id,
++            expected_branch_id,
++        )
++        .await?;
++
++        let mut plan = ReturnImportPlan {
++            plan_token: String::new(),
++            target_binding_id: binding.binding_id,
++            expected_binding_generation: binding.generation,
++            expected_card_revision: binding.card_revision,
++            expected_card_hash,
++            expected_profile_revision,
++            staged_import_hash: staged_hash,
++            base_snapshot_hash: Some(base_hash),
++            resolved_choices_hash: resolved_hash,
++        };
++        plan.plan_token = compute_return_plan_token(
++            &secret,
++            &plan,
++            expected_session_id,
++            expected_branch_id,
++        );
++        plan.validate_shape().map_err(DomainError::InvalidData)?;
++
++        Ok(CharacterCardReturnPlanResult {
++            plan,
++            resolved_definition,
++            avatar_may_replace: format == PortableCharacterCardFormat::Png,
++        })
++    }
++
+     pub async fn discard_staged_preview(&self, logical_ref: &str) -> Result<(), DomainError> {
