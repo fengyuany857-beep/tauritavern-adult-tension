@@ -1,0 +1,451 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs b/src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs
+@@ -1,15 +1,17 @@
++use std::collections::{BTreeSet, HashSet};
+ use std::sync::Arc;
+ 
+ use chrono::Utc;
+ use serde::{Deserialize, Serialize};
+ use serde_json::{Value, json};
+ use sha2::{Digest, Sha256};
+ use tokio::sync::Mutex;
+-use tt_domain::errors::DomainError;
+-use tt_domain::models::agent::{AgentRun, AgentRunStatus, WorkspacePath};
++use tt_domain::models::agent::profile::ResolvedAgentProfile;
++use tt_domain::models::agent::{AgentRunPresentation, AgentRunStatus, WorkspacePath};
+ use tt_domain::models::character_card_materialization::{
+     BindingStatus, CharacterCardBinding, CharacterCardTransactionJournal,
+     CharacterCardTransactionState, CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
+ };
+@@ -76,12 +78,13 @@ pub struct CharacterCardRpApplyPrepared {
+     pub change_count: usize,
+ }
+ 
+-#[derive(Debug, Clone, Serialize)]
+-#[serde(rename_all = "camelCase")]
+-pub struct CharacterCardRpApplyAuthorization {
++#[derive(Debug, Clone, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CharacterCardRpApplyFinalizeRequest {
+     pub transaction_id: String,
+     pub stable_chat_id: String,
+-    pub base_state_id: String,
+-    pub prepared_state_id: String,
+ }
+ 
+ #[derive(Debug, Clone, Serialize)]
+@@ -182,6 +185,210 @@ impl CharacterCardRpApplyService {
+         })
+     }
+ 
++    pub async fn prepare(
++        &self,
++        request: CharacterCardRpApplyPrepareRequest,
++    ) -> Result<CharacterCardRpApplyPrepared, ApplicationError> {
++        let _guard = self.commit_guard.lock().await;
++        if !request.confirm {
++            return Err(ApplicationError::ValidationError(
++                "CARD_RP_CONFIRMATION_REQUIRED: explicit confirmation is required".to_string(),
++            ));
++        }
++        if request.selections.is_empty() {
++            return Err(ApplicationError::ValidationError(
++                "CARD_RP_SELECTION_REQUIRED: select at least one proposed stable-profile field"
++                    .to_string(),
++            ));
++        }
++
++        let preview = self.preview(&request.stable_chat_id, &request.binding_id).await?;
++        if preview.active_agent_run {
++            return Err(ApplicationError::ValidationError(
++                "ACTIVE_AGENT_RUN: Card to RP Apply is blocked while an Agent Run is active"
++                    .to_string(),
++            ));
++        }
++        if preview.plan_token != request.plan_token {
++            return Err(ApplicationError::ValidationError(
++                "CARD_RP_PLAN_STALE: Card, Binding, selected branch, or profile changed after Preview"
++                    .to_string(),
++            ));
++        }
++
++        let allowed = preview
++            .mappings
++            .iter()
++            .map(|mapping| mapping.trait_key.as_str())
++            .collect::<HashSet<_>>();
++        let mut seen = BTreeSet::new();
++        for selection in &request.selections {
++            let trait_key = selection.trait_key.trim();
++            let statement = selection.statement.trim();
++            if !allowed.contains(trait_key) {
++                return Err(ApplicationError::ValidationError(format!(
++                    "CARD_RP_MAPPING_INVALID: `{trait_key}` was not offered by the current Preview"
++                )));
++            }
++            if !seen.insert(trait_key.to_string()) {
++                return Err(ApplicationError::ValidationError(format!(
++                    "CARD_RP_MAPPING_INVALID: duplicate selection `{trait_key}`"
++                )));
++            }
++            if statement.is_empty() || statement.len() > 4000 {
++                return Err(ApplicationError::ValidationError(format!(
++                    "CARD_RP_MAPPING_INVALID: statement for `{trait_key}` must contain 1..=4000 bytes"
++                )));
++            }
++        }
++
++        let selected = self
++            .selected
++            .resolve_stable_chat_id(&request.stable_chat_id)
++            .await?;
++        if selected.state_id != preview.cas.selected_state_id {
++            return Err(ApplicationError::ValidationError(
++                "CARD_RP_PLAN_STALE: selected persistent state changed after Preview".to_string(),
++            ));
++        }
++        let mut state = self.read_rp_state(&selected).await?;
++        let before_profile_bytes = serde_json::to_vec(&state).map_err(|error| {
++            ApplicationError::ValidationError(format!(
++                "CARD_RP_STATE_INVALID: failed to snapshot selected RP state: {error}"
++            ))
++        })?;
++        let before_profile_ref = self
++            .materialization
++            .write_snapshot(&before_profile_bytes)
++            .await?;
++        let transaction_id = format!("card-rp-{}", Uuid::new_v4().simple());
++        let (profile_revision, change_count) = apply_profile_selections(
++            &mut state,
++            &preview,
++            &request.selections,
++            &transaction_id,
++        )?;
++
++        let source_manifest = self.workspaces.read_manifest(&selected.state_id).await?;
++        let prompt_path = WorkspacePath::parse(&source_manifest.input.prompt_snapshot_path)?;
++        let profile_path = WorkspacePath::parse(&source_manifest.input.resolved_profile_path)?;
++        let prompt_file = self
++            .workspaces
++            .read_text(&selected.state_id, &prompt_path)
++            .await?;
++        let profile_file = self
++            .workspaces
++            .read_text(&selected.state_id, &profile_path)
++            .await?;
++        let prompt_snapshot: Value = serde_json::from_str(&prompt_file.text).map_err(|error| {
++            ApplicationError::ValidationError(format!(
++                "CARD_RP_SOURCE_INVALID: prompt snapshot cannot be decoded: {error}"
++            ))
++        })?;
++        let resolved_profile: ResolvedAgentProfile =
++            serde_json::from_str(&profile_file.text).map_err(|error| {
++                ApplicationError::ValidationError(format!(
++                    "CARD_RP_SOURCE_INVALID: resolved profile cannot be decoded: {error}"
++                ))
++            })?;
++
++        let now = Utc::now();
++        let mut derived_run = selected.producing_run.clone();
++        derived_run.id = transaction_id.clone();
++        derived_run.generation_type = "character_card_apply".to_string();
++        derived_run.presentation = AgentRunPresentation::Background;
++        derived_run.persist_base_state_id = Some(selected.state_id.clone());
++        derived_run.status = AgentRunStatus::Created;
++        derived_run.created_at = now;
++        derived_run.updated_at = now;
++        self.runs.create_run(&derived_run).await?;
++
++        let mut derived_manifest = source_manifest;
++        derived_manifest.run_id = transaction_id.clone();
++        derived_manifest.created_at = now;
++        let prepare_result: Result<usize, ApplicationError> = async {
++            self.workspaces
++                .initialize_run(
++                    &derived_run,
++                    &derived_manifest,
++                    &prompt_snapshot,
++                    &resolved_profile,
++                )
++                .await?;
++            let rp_path = WorkspacePath::parse(RP_STATE_PATH)?;
++            let state_text = serde_json::to_string_pretty(&state).map_err(|error| {
++                ApplicationError::ValidationError(format!(
++                    "CARD_RP_STATE_INVALID: failed to serialize prepared RP state: {error}"
++                ))
++            })?;
++            self.workspaces
++                .write_text(&transaction_id, &rp_path, &state_text)
++                .await?;
++            let changes = self
++                .workspaces
++                .commit_persistent_changes(&transaction_id)
++                .await?;
++            if changes.state_id != transaction_id
++                || changes.base_state_id.as_deref() != Some(selected.state_id.as_str())
++            {
++                return Err(ApplicationError::ValidationError(
++                    "CARD_RP_PREPARE_INVALID: persistent-state identity readback mismatch"
++                        .to_string(),
++                ));
++            }
++            Ok(changes.changes.len())
++        }
++        .await;
++
++        let committed_change_count = match prepare_result {
++            Ok(count) => count,
++            Err(error) => {
++                derived_run.status = AgentRunStatus::Failed;
++                derived_run.updated_at = Utc::now();
++                let _ = self.runs.save_run(&derived_run).await;
++                return Err(error);
++            }
++        };
++        derived_run.status = AgentRunStatus::Completed;
++        derived_run.updated_at = Utc::now();
++        self.runs.save_run(&derived_run).await?;
++
++        let timestamp = Utc::now().to_rfc3339();
++        let journal = CharacterCardTransactionJournal {
++            schema_version: CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
++            transaction_id: transaction_id.clone(),
++            plan_token: request.plan_token,
++            binding_id: request.binding_id,
++            state: CharacterCardTransactionState::RpProfileWritten,
++            before_card_ref: None,
++            before_binding_ref: None,
++            before_profile_ref: Some(before_profile_ref),
++            staged_import_ref: None,
++            created_at: timestamp.clone(),
++            updated_at: timestamp,
++        };
++        self.materialization.write_transaction(&journal).await?;
++
++        Ok(CharacterCardRpApplyPrepared {
++            transaction_id: transaction_id.clone(),
++            stable_chat_id: request.stable_chat_id,
++            base_state_id: selected.state_id,
++            prepared_state_id: transaction_id,
++            character_id: preview.cas.character_id,
++            profile_revision,
++            change_count: change_count.max(committed_change_count),
++        })
++    }
++
++    pub async fn finalize(
++        &self,
++        request: CharacterCardRpApplyFinalizeRequest,
++    ) -> Result<CharacterCardRpApplyCommitResult, ApplicationError> {
++        let _guard = self.commit_guard.lock().await;
++        let transaction_id = require_id(&request.transaction_id, "transactionId")?;
++        let stable_chat_id = require_id(&request.stable_chat_id, "stableChatId")?;
++        let mut journal = self
++            .materialization
++            .read_transaction(transaction_id)
++            .await?
++            .ok_or_else(|| ApplicationError::ValidationError(
++                "CARD_RP_TRANSACTION_MISSING: prepared transaction does not exist".to_string(),
++            ))?;
++        if !matches!(
++            journal.state,
++            CharacterCardTransactionState::RpProfileWritten
++                | CharacterCardTransactionState::ReadbackVerified
++                | CharacterCardTransactionState::Committed
++        ) {
++            return Err(ApplicationError::ValidationError(format!(
++                "CARD_RP_TRANSACTION_INVALID: transaction is in state {:?}",
++                journal.state
++            )));
++        }
++
++        let selected = self
++            .selected
++            .resolve_stable_chat_id(stable_chat_id)
++            .await?;
++        if selected.state_id != transaction_id {
++            return Err(ApplicationError::ValidationError(
++                "CARD_RP_HOST_COMMIT_MISSING: current chat has not selected the prepared persistent state"
++                    .to_string(),
++            ));
++        }
++        let state = self.read_rp_state(&selected).await?;
++        let mut binding = self.active_binding(&journal.binding_id).await?;
++        validate_binding_target(&binding, &selected, &state)?;
++        let character_id = binding.target.character_id.0.clone();
++        let profile_revision = state
++            .get("castRegistry")
++            .and_then(Value::as_object)
++            .and_then(|cast| cast.get(&character_id))
++            .and_then(Value::as_object)
++            .and_then(|entity| entity.get("profileRevision"))
++            .and_then(Value::as_u64)
++            .ok_or_else(|| ApplicationError::ValidationError(
++                "CARD_RP_STATE_INVALID: finalized profileRevision is missing".to_string(),
++            ))?;
++
++        if journal.state != CharacterCardTransactionState::Committed {
++            journal.state = CharacterCardTransactionState::ReadbackVerified;
++            journal.updated_at = Utc::now().to_rfc3339();
++            self.materialization.write_transaction(&journal).await?;
++            binding.profile_revision_at_last_sync = Some(profile_revision);
++            for context in &mut binding.contexts {
++                if context.branch_id.0 == stable_chat_id {
++                    context.last_seen_profile_revision = Some(profile_revision);
++                }
++            }
++            binding.updated_at = Utc::now().to_rfc3339();
++            self.materialization.write_binding(&binding).await?;
++            journal.state = CharacterCardTransactionState::Committed;
++            journal.updated_at = Utc::now().to_rfc3339();
++            self.materialization.write_transaction(&journal).await?;
++        }
++
++        Ok(CharacterCardRpApplyCommitResult {
++            transaction_id: transaction_id.to_string(),
++            binding_id: binding.binding_id,
++            state_id: selected.state_id,
++            profile_revision,
++        })
++    }
++
+     async fn active_binding(
+         &self,
+         binding_id: &str,
+@@ -287,6 +494,13 @@ fn push_mapping(
+     if proposed.is_empty() {
+         return;
+     }
++    if entity
++        .get("authorCanon")
++        .and_then(Value::as_object)
++        .is_some_and(|author| author.contains_key(trait_key))
++    {
++        return;
++    }
+     let current_statement = entity
+         .get("stableProfile")
+         .and_then(Value::as_object)
+@@ -333,3 +547,120 @@ fn hex_sha256(bytes: &[u8]) -> String {
+         .map(|byte| format!("{byte:02x}"))
+         .collect()
+ }
++
++fn apply_profile_selections(
++    state: &mut Value,
++    preview: &CharacterCardRpApplyPreview,
++    selections: &[CharacterCardRpApplySelection],
++    transaction_id: &str,
++) -> Result<(u64, usize), ApplicationError> {
++    let turn = state.get("turn").and_then(Value::as_u64).unwrap_or(0);
++    let entity = state
++        .get_mut("castRegistry")
++        .and_then(Value::as_object_mut)
++        .and_then(|cast| cast.get_mut(&preview.cas.character_id))
++        .and_then(Value::as_object_mut)
++        .ok_or_else(|| ApplicationError::ValidationError(
++            "CARD_RP_TARGET_MISSING: bound character disappeared before Prepare".to_string(),
++        ))?;
++    let current_revision = entity
++        .get("profileRevision")
++        .and_then(Value::as_u64)
++        .ok_or_else(|| ApplicationError::ValidationError(
++            "CARD_RP_STATE_INVALID: profileRevision is missing".to_string(),
++        ))?;
++    if current_revision != preview.cas.profile_revision {
++        return Err(ApplicationError::ValidationError(
++            "CARD_RP_PLAN_STALE: profile revision changed after Preview".to_string(),
++        ));
++    }
++    let author = entity
++        .get("authorCanon")
++        .and_then(Value::as_object)
++        .cloned()
++        .unwrap_or_default();
++    let stable = entity
++        .entry("stableProfile")
++        .or_insert_with(|| json!({}))
++        .as_object_mut()
++        .ok_or_else(|| ApplicationError::ValidationError(
++            "CARD_RP_STATE_INVALID: stableProfile must be an object".to_string(),
++        ))?;
++
++    let mut pending_evidence = Vec::new();
++    let mut change_count = 0usize;
++    for (index, selection) in selections.iter().enumerate() {
++        let trait_key = selection.trait_key.trim();
++        if author.contains_key(trait_key) {
++            return Err(ApplicationError::ValidationError(format!(
++                "CARD_RP_AUTHOR_CANON_PROTECTED: `{trait_key}` is controlled by Author Canon"
++            )));
++        }
++        let statement = selection.statement.trim();
++        let current = stable
++            .get(trait_key)
++            .and_then(Value::as_object)
++            .and_then(|value| value.get("statement"))
++            .and_then(Value::as_str)
++            .unwrap_or_default();
++        if current == statement {
++            continue;
++        }
++        let evidence_id = format!("card-import-{transaction_id}-{index}");
++        stable.insert(
++            trait_key.to_string(),
++            json!({
++                "statement": statement,
++                "evidenceRefs": [evidence_id.clone()],
++                "status": "stable",
++                "updatedTurn": turn,
++            }),
++        );
++        pending_evidence.push(json!({
++            "id": evidence_id,
++            "characterId": preview.cas.character_id,
++            "traitKey": trait_key,
++            "statement": statement,
++            "sourceKind": "imported_card",
++            "context": "character_card_apply",
++            "sourceRef": format!(
++                "binding:{}:generation:{}:cardRevision:{}",
++                preview.cas.binding_id,
++                preview.cas.binding_generation,
++                preview.cas.card_revision,
++            ),
++            "turn": turn,
++            "contradicts": false,
++            "retracted": false,
++        }));
++        change_count += 1;
++    }
++    if change_count == 0 {
++        return Err(ApplicationError::ValidationError(
++            "CARD_RP_NO_CHANGES: selected mappings already match the stable profile".to_string(),
++        ));
++    }
++    let profile_revision = current_revision.saturating_add(1);
++    entity.insert("profileRevision".to_string(), json!(profile_revision));
++
++    let evidence = state
++        .get_mut("profileEvidence")
++        .and_then(Value::as_array_mut)
++        .ok_or_else(|| ApplicationError::ValidationError(
++            "CARD_RP_STATE_INVALID: profileEvidence must be an array".to_string(),
++        ))?;
++    evidence.extend(pending_evidence);
++    if evidence.len() > MAX_PROFILE_EVIDENCE {
++        let overflow = evidence.len() - MAX_PROFILE_EVIDENCE;
++        evidence.drain(..overflow);
++    }
++    let runtime_revision = state
++        .get("runtimeRevision")
++        .and_then(Value::as_u64)
++        .unwrap_or(0)
++        .saturating_add(1);
++    if let Some(object) = state.as_object_mut() {
++        object.insert("runtimeRevision".to_string(), json!(runtime_revision));
++        object.insert("lastRunId".to_string(), json!(transaction_id));
++    }
++    Ok((profile_revision, change_count))
++}
