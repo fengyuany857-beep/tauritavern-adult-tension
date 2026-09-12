@@ -9,14 +9,12 @@ diff --git a/src/scripts/tauri/character-card-return-ui.js b/src/scripts/tauri/c
  import { POPUP_RESULT, POPUP_TYPE, Popup } from '../popup.js';
  import { SURFACE, applySurface } from '../tauritavern/layout-kit.js';
  import {
-@@ -10,6 +11,7 @@ import {
+@@ -11,4 +12,5 @@ import { getActiveChatSnapshot } from '../../tauri/main/adapters/st/active-chat-ref.js';
  import { resolveStableChatId } from '../../tauri/main/api/agent-chat-identity.js';
  
  const BUTTON_ID = 'tt_character_card_return_button';
 +const GUIDE_BUTTON_ID = 'tt_character_card_editing_guide_button';
  const COMMIT_ELIGIBLE_STATE = 'KNOWN_EXACT_RETURN';
- 
- function characterCardApi() {
 @@ -300,6 +302,81 @@ async function runCharacterCardReturn() {
      }
  }
@@ -136,7 +134,7 @@ diff --git a/src/scripts/tauri/character-card-return-ui.js b/src/scripts/tauri/c
 +            await exportEditingGuide();
 +        } catch (error) {
 +            console.error('[CharacterCardEditingGuide]', error);
-+            window.toastr?.error?.(error instanceof Error ? error.message : String(error));
++            toast()?.error?.(error instanceof Error ? error.message : String(error));
 +        } finally {
 +            sync();
 +        }
