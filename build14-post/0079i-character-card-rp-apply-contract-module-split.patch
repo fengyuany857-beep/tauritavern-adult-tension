@@ -1,0 +1,24 @@
+diff --git a/tests/character-card-rp-apply-contract.test.mjs b/tests/character-card-rp-apply-contract.test.mjs
+--- a/tests/character-card-rp-apply-contract.test.mjs
++++ b/tests/character-card-rp-apply-contract.test.mjs
+@@ -58,13 +58,15 @@ test('Card-origin profile evidence is internal and survives later AEGPE rebuilds', () => {
+ });
+ 
+ test('host commit switches only persistent-state metadata through the normal chat save path', () => {
+     const bridge = read('src/tauri/main/api/agent-chat-commit-bridge.js');
++    const hostCommit = read('src/tauri/main/api/agent-persistent-state-host-commit.js');
+     const api = read('src/tauri/main/api/character-cards.js');
+-    assert.match(bridge, /commitPreparedPersistentStateToActiveChat/);
+-    assert.match(bridge, /persistStateId: preparedStateId/);
+-    assert.match(bridge, /persistBaseStateId: baseStateId/);
+-    assert.match(bridge, /persistStateStatus: 'committed'/);
+-    assert.match(bridge, /await persistActiveChat\(script, CHAT_COMMIT_REASON\.MUTATION\)/);
++    assert.match(bridge, /export async function persistActiveChat/);
++    assert.match(hostCommit, /commitPreparedPersistentStateToActiveChat/);
++    assert.match(hostCommit, /persistStateId: preparedStateId/);
++    assert.match(hostCommit, /persistBaseStateId: baseStateId/);
++    assert.match(hostCommit, /persistStateStatus: 'committed'/);
++    assert.match(hostCommit, /await persistActiveChat\(script, CHAT_COMMIT_REASON\.MUTATION\)/);
+     assert.match(api, /prepare_character_card_rp_apply/);
+     assert.match(api, /commitPreparedPersistentStateToActiveChat/);
+     assert.match(api, /finalize_character_card_rp_apply/);
