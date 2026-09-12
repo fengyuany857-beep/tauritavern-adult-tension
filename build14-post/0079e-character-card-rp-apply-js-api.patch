@@ -1,68 +1,92 @@
 diff --git a/src/tauri/main/api/agent-chat-commit-bridge.js b/src/tauri/main/api/agent-chat-commit-bridge.js
 --- a/src/tauri/main/api/agent-chat-commit-bridge.js
 +++ b/src/tauri/main/api/agent-chat-commit-bridge.js
-@@ -440,3 +440,63 @@ async function persistActiveChat(script, commitReason) {
+@@ -420,7 +420,7 @@ function sameChatRef(a, b) {
+     return String(a.chatId || '') === String(b.chatId || '');
+ }
+ 
+-function mergePlainObject(base, patch) {
++export function mergePlainObject(base, patch) {
+     const output = isPlainObject(base) ? { ...base } : {};
+     if (!isPlainObject(patch)) {
+         return output;
+@@ -436,7 +436,7 @@ function isPlainObject(value) {
+     return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+ }
+ 
+-async function persistActiveChat(script, commitReason) {
++export async function persistActiveChat(script, commitReason) {
+     const groupChats = await import('../../../scripts/group-chats.js');
+     if (groupChats.selected_group) {
+         if (typeof groupChats.saveGroupChat !== 'function') {
+@@ -451,3 +451,62 @@ async function persistActiveChat(script, commitReason) {
      }
      await script.saveChat({ commitReason });
  }
-+
-+/**
-+ * Switch the currently selected chat branch to a prepared immutable persistent
-+ * state without rewriting message provenance. The backend performs the final
-+ * readback and Binding sync update after this host commit succeeds.
-+ *
-+ * @param {{ stableChatId: string; baseStateId: string; preparedStateId: string; transactionId: string; changeCount?: number }} input
-+ */
-+export async function commitPreparedPersistentStateToActiveChat(input) {
-+    const stableChatId = requirePayloadString(input, 'stableChatId');
-+    const baseStateId = requirePayloadString(input, 'baseStateId');
-+    const preparedStateId = requirePayloadString(input, 'preparedStateId');
-+    const transactionId = requirePayloadString(input, 'transactionId');
-+    const currentRef = window.__TAURITAVERN__?.api?.chat?.current?.ref?.();
-+    const currentStableChatId = await resolveStableChatId(currentRef);
-+    if (currentStableChatId !== stableChatId) {
-+        throw new Error('CARD_RP_HOST_CHAT_MISMATCH: active chat changed before persistent-state commit');
-+    }
-+
-+    const script = await loadMainScript();
-+    if (!Array.isArray(script.chat)) {
-+        throw new Error('CARD_RP_HOST_CHAT_INVALID: active chat is unavailable');
-+    }
-+    let messageId = -1;
-+    for (let index = script.chat.length - 1; index >= 0; index -= 1) {
-+        const agent = script.chat[index]?.extra?.tauritavern?.agent;
-+        if (agent?.persistStateStatus === 'committed' && agent?.persistStateId === baseStateId) {
-+            messageId = index;
-+            break;
-+        }
-+    }
-+    if (messageId < 0) {
-+        throw new Error('CARD_RP_HOST_BASE_STATE_MISSING: selected persistent-state message is no longer present');
-+    }
-+
-+    const message = script.chat[messageId];
-+    const extra = {
-+        tauritavern: {
-+            agent: {
-+                persistStateId: preparedStateId,
-+                persistBaseStateId: baseStateId,
-+                persistStateStatus: 'committed',
-+                persistChangeCount: Number(input?.changeCount ?? 0),
-+                profileMutation: {
-+                    type: 'character_card_apply',
-+                    transactionId,
-+                },
-+            },
-+        },
-+    };
-+    message.extra = mergePlainObject(message.extra, extra);
-+    const swipeId = Number(message.swipe_id);
-+    if (Array.isArray(message.swipe_info) && Number.isInteger(swipeId) && message.swipe_info[swipeId]) {
-+        message.swipe_info[swipeId].extra = structuredClone(message.extra);
-+    }
-+    await persistActiveChat(script, CHAT_COMMIT_REASON.MUTATION);
-+    return { messageId, preparedStateId, transactionId };
-+}
++diff --git a/src/tauri/main/api/agent-persistent-state-host-commit.js b/src/tauri/main/api/agent-persistent-state-host-commit.js
++new file mode 100644
++--- /dev/null
+++++ b/src/tauri/main/api/agent-persistent-state-host-commit.js
++@@ -0,0 +1,59 @@
+++// @ts-check
+++
+++import { resolveStableChatId } from './agent-chat-identity.js';
+++import { CHAT_COMMIT_REASON } from '../../../scripts/chat-payload-transport.js';
+++import { mergePlainObject, persistActiveChat } from './agent-chat-commit-bridge.js';
+++
+++/**
+++ * Switch the currently selected chat branch to a prepared immutable persistent
+++ * state without rewriting message provenance. The backend performs the final
+++ * readback and Binding sync update after this host commit succeeds.
+++ *
+++ * @param {{ stableChatId: string; baseStateId: string; preparedStateId: string; transactionId: string; changeCount?: number }} input
+++ */
+++export async function commitPreparedPersistentStateToActiveChat(input) {
+++    const stableChatId = required(input?.stableChatId, 'stableChatId');
+++    const baseStateId = required(input?.baseStateId, 'baseStateId');
+++    const preparedStateId = required(input?.preparedStateId, 'preparedStateId');
+++    const transactionId = required(input?.transactionId, 'transactionId');
+++    const currentRef = window.__TAURITAVERN__?.api?.chat?.current?.ref?.();
+++    const currentStableChatId = await resolveStableChatId(currentRef);
+++    if (currentStableChatId !== stableChatId) {
+++        throw new Error('CARD_RP_HOST_CHAT_MISMATCH: active chat changed before persistent-state commit');
+++    }
+++
+++    const script = await import('../../../script.js');
+++    if (!Array.isArray(script.chat)) {
+++        throw new Error('CARD_RP_HOST_CHAT_INVALID: active chat is unavailable');
+++    }
+++    const messageId = script.chat.findLastIndex(message => {
+++        const agent = message?.extra?.tauritavern?.agent;
+++        return agent?.persistStateStatus === 'committed' && agent?.persistStateId === baseStateId;
+++    });
+++    if (messageId < 0) {
+++        throw new Error('CARD_RP_HOST_BASE_STATE_MISSING: selected persistent-state message is no longer present');
+++    }
+++
+++    const message = script.chat[messageId];
+++    message.extra = mergePlainObject(message.extra, {
+++        tauritavern: { agent: {
+++            persistStateId: preparedStateId,
+++            persistBaseStateId: baseStateId,
+++            persistStateStatus: 'committed',
+++            persistChangeCount: Number(input?.changeCount ?? 0),
+++            profileMutation: { type: 'character_card_apply', transactionId },
+++        } },
+++    });
+++    const swipeId = Number(message.swipe_id);
+++    if (Array.isArray(message.swipe_info) && Number.isInteger(swipeId) && message.swipe_info[swipeId]) {
+++        message.swipe_info[swipeId].extra = structuredClone(message.extra);
+++    }
+++    await persistActiveChat(script, CHAT_COMMIT_REASON.MUTATION);
+++    return { messageId, preparedStateId, transactionId };
+++}
+++
+++function required(value, key) {
+++    const text = String(value ?? '').trim();
+++    if (!text) throw new Error(`CARD_RP_HOST_PAYLOAD_INVALID: ${key} is required`);
+++    return text;
+++}
 diff --git a/src/tauri/main/api/character-cards.js b/src/tauri/main/api/character-cards.js
 --- a/src/tauri/main/api/character-cards.js
 +++ b/src/tauri/main/api/character-cards.js
@@ -70,7 +94,7 @@ diff --git a/src/tauri/main/api/character-cards.js b/src/tauri/main/api/characte
  // @ts-check
  
  import { isAndroidRuntime, isIosRuntime } from '../../../scripts/util/mobile-runtime.js';
-+import { commitPreparedPersistentStateToActiveChat } from './agent-chat-commit-bridge.js';
++import { commitPreparedPersistentStateToActiveChat } from './agent-persistent-state-host-commit.js';
  
  const CHARACTER_CARD_EXTENSIONS = ['json', 'png'];
 @@ -205,6 +206,61 @@ function createCharacterCardsApi({
