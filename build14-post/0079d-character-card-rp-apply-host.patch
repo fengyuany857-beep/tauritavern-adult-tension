@@ -1,0 +1,126 @@
+diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
+--- a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
++++ b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
+@@ -19,6 +19,7 @@ use tt_application::services::character_service::CharacterService;
+ use tt_application::services::character_card_draft_materialization_service::CharacterCardDraftMaterializationService;
+ use tt_application::services::character_card_materialization_orchestrator::CharacterCardMaterializationOrchestrator;
++use tt_application::services::character_card_rp_apply_service::CharacterCardRpApplyService;
+ use tt_application::services::character_card_return_durable_authority::CharacterCardReturnDurableAuthorityRepository;
+ use tt_application::services::character_card_return_selected_state::CharacterCardReturnSelectedStateResolver;
+@@ -181,6 +182,20 @@ pub(super) async fn build(
+             character_service.clone(),
+         ),
+     );
++    let selected_character_card_rp_apply_state = CharacterCardReturnSelectedStateResolver::new(
++        repositories.agent_run_repository.clone(),
++        repositories.chat_repository.clone(),
++        repositories.group_chat_repository.clone(),
++    );
++    let character_card_rp_apply_service = Arc::new(CharacterCardRpApplyService::new(
++        selected_character_card_rp_apply_state,
++        repositories
++            .character_card_return_persistent_state_repository
++            .clone(),
++        repositories.character_card_materialization_repository.clone(),
++        character_service.clone(),
++        repositories.agent_run_repository.clone(),
++        repositories.workspace_repository.clone(),
++    ));
+     let chat_service = Arc::new(ChatService::new(
+         repositories.chat_repository.clone(),
+         repositories.character_repository.clone(),
+@@ -222,6 +237,7 @@ pub(super) async fn build(
+     Ok(AppServices {
+         character_service,
+         character_card_draft_materialization_service,
++        character_card_rp_apply_service,
+         chat_service,
+         group_chat_service,
+         chat_history_coordinator,
+diff --git a/src-tauri/crates/tauritavern/src/app/state.rs b/src-tauri/crates/tauritavern/src/app/state.rs
+--- a/src-tauri/crates/tauritavern/src/app/state.rs
++++ b/src-tauri/crates/tauritavern/src/app/state.rs
+@@ -14,6 +14,7 @@ use tt_application::services::character_service::CharacterService;
+ use tt_application::services::character_card_draft_materialization_service::CharacterCardDraftMaterializationService;
++use tt_application::services::character_card_rp_apply_service::CharacterCardRpApplyService;
+ use tt_application::services::character_card_materialization_orchestrator::CharacterCardMaterializationOrchestrator;
+ use tt_application::services::chat_completion_service::ChatCompletionService;
+@@ -101,6 +102,7 @@ pub(crate) struct AppServices {
+     pub(crate) character_service: Arc<CharacterService>,
+     pub(crate) character_card_draft_materialization_service: Arc<CharacterCardDraftMaterializationService>,
++    pub(crate) character_card_rp_apply_service: Arc<CharacterCardRpApplyService>,
+     pub(crate) chat_service: Arc<ChatService>,
+     pub(crate) group_chat_service: Arc<GroupChatService>,
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
+@@ -323,6 +323,61 @@ pub async fn commit_character_card_draft(
+         .map_err(map_command_error("Failed to materialize Character Card draft"))
+ }
+ 
++#[tauri::command]
++pub async fn preview_character_card_rp_apply(
++    stable_chat_id: String,
++    binding_id: String,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<
++    tt_application::services::character_card_rp_apply_service::CharacterCardRpApplyPreview,
++    CommandError,
++> {
++    log_command("preview_character_card_rp_apply");
++    app_state
++        .services
++        .character_card_rp_apply_service
++        .preview(&stable_chat_id, &binding_id)
++        .await
++        .map_err(map_command_error("Failed to preview Character Card to RP Apply"))
++}
++
++#[tauri::command]
++pub async fn prepare_character_card_rp_apply(
++    request: tt_application::services::character_card_rp_apply_service::CharacterCardRpApplyPrepareRequest,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<
++    tt_application::services::character_card_rp_apply_service::CharacterCardRpApplyPrepared,
++    CommandError,
++> {
++    log_command("prepare_character_card_rp_apply");
++    app_state
++        .services
++        .character_card_rp_apply_service
++        .prepare(request)
++        .await
++        .map_err(map_command_error("Failed to prepare Character Card to RP Apply"))
++}
++
++#[tauri::command]
++pub async fn finalize_character_card_rp_apply(
++    request: tt_application::services::character_card_rp_apply_service::CharacterCardRpApplyFinalizeRequest,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<
++    tt_application::services::character_card_rp_apply_service::CharacterCardRpApplyCommitResult,
++    CommandError,
++> {
++    log_command("finalize_character_card_rp_apply");
++    app_state
++        .services
++        .character_card_rp_apply_service
++        .finalize(request)
++        .await
++        .map_err(map_command_error("Failed to finalize Character Card to RP Apply"))
++}
++
+ #[tauri::command]
+ pub async fn export_bound_character_card(
+     binding_id: String,
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
+@@ -28,6 +28,9 @@ pub fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static {
+         super::character_commands::preview_character_card_draft,
+         super::character_commands::commit_character_card_draft,
++        super::character_commands::preview_character_card_rp_apply,
++        super::character_commands::prepare_character_card_rp_apply,
++        super::character_commands::finalize_character_card_rp_apply,
+         super::character_commands::export_bound_character_card,
+         super::character_commands::preview_character_card_return,
