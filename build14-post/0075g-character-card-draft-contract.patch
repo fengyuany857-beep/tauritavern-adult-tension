@@ -1,0 +1,120 @@
+diff --git a/tests/character-card-draft-materialization-contract.test.mjs b/tests/character-card-draft-materialization-contract.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/character-card-draft-materialization-contract.test.mjs
+@@ -0,0 +1,113 @@
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import path from 'node:path';
++import test from 'node:test';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++
++const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++
++function read(relativePath) {
++    return fs.readFileSync(path.join(REPO_ROOT, relativePath), 'utf8');
++}
++
++async function installHarness(safeInvoke) {
++    globalThis.window = { __TAURITAVERN__: { api: {} } };
++    globalThis.navigator = { userAgent: 'Desktop' };
++    const module = await import(pathToFileURL(path.join(REPO_ROOT, 'src/tauri/main/api/character-cards.js')));
++    module.installCharacterCardsApi({
++        safeInvoke,
++        createReadableFileStream: async () => new ReadableStream({ start(controller) { controller.close(); } }),
++        removeTemporaryFile: async () => {},
++    });
++    return globalThis.window.__TAURITAVERN__.api.characterCards;
++}
++
++test('Character Card draft Host ABI keeps preview and commit separate from Return Import', async () => {
++    const calls = [];
++    const api = await installHarness(async (command, args) => {
++        calls.push({ command, args });
++        if (command === 'preview_character_card_draft') {
++            return { cas: { proposedBindingId: 'materialized-1' }, draft: { definition: {} } };
++        }
++        return { binding: { bindingId: 'materialized-1' } };
++    });
++
++    await api.previewMaterializationDraft({
++        stableChatId: 'chat-stable-a',
++        characterId: 'character-a',
++    });
++    assert.deepEqual(calls[0], {
++        command: 'preview_character_card_draft',
++        args: {
++            stable_chat_id: 'chat-stable-a',
++            character_id: 'character-a',
++        },
++    });
++
++    const cas = {
++        stableChatId: 'chat-stable-a',
++        stateId: 'state-a',
++        worldId: 'world-a',
++        sessionId: 'session-a',
++        activeBranchId: 'rp-branch-a',
++        characterId: 'character-a',
++        sourceProfileRevision: 7,
++        proposedBindingId: 'materialized-1',
++    };
++    const definition = {
++        spec: 'chara_card_v2',
++        spec_version: '2.0',
++        data: { name: 'Alice', extensions: {} },
++    };
++    await api.commitMaterializationDraft({ cas, definition });
++    assert.deepEqual(calls[1], {
++        command: 'commit_character_card_draft',
++        args: { request: { cas, definition } },
++    });
++
++    assert.equal(calls.some(({ command }) => command === 'import_character'), false);
++    assert.equal(calls.some(({ command }) => command === 'replace_character'), false);
++    assert.equal(calls.some(({ command }) => command.includes('return')), false);
++});
++
++test('Character Card draft backend revalidates selected durable authority before writing', () => {
++    const service = read('src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs');
++
++    assert.match(service, /resolve_stable_chat_id/);
++    assert.match(service, /created_from_run_id != selected\.producing_run\.id/);
++    assert.match(service, /current\.cas != request\.cas/);
++    assert.match(service, /DRAFT_STALE/);
++    assert.match(service, /source_profile_revision/);
++    assert.match(service, /active_branch_id/);
++    assert.match(service, /state_id/);
++});
++
++test('Character Card draft materialization uses normal Character Library creation then writes binding', () => {
++    const service = read('src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs');
++
++    assert.match(service, /character_service\.create_character/);
++    assert.match(service, /materialization\.write_binding/);
++    assert.match(service, /delete_character\(DeleteCharacterDto/);
++    assert.match(service, /delete_chats: false/);
++    assert.match(service, /card_revision: 1/);
++    assert.match(service, /generation: 1/);
++    assert.doesNotMatch(service, /replace_character\(/);
++    assert.doesNotMatch(service, /import_character\(/);
++});
++
++test('Character Card draft blocks protected host identity and excludes inference by default', () => {
++    const service = read('src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs');
++
++    assert.match(service, /extensions\.contains_key\("tauritavern"\)/);
++    assert.match(service, /protected_namespace/);
++    assert.match(service, /inferred profile field\(s\) were intentionally excluded/);
++    assert.match(service, /no conservative Character Card mapping and was excluded/);
++});
++
++test('Character Card draft commands are registered in the native Host', () => {
++    const commands = read('src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs');
++    const registry = read('src-tauri/crates/tauritavern/src/presentation/commands/registry.rs');
++
++    for (const name of ['preview_character_card_draft', 'commit_character_card_draft']) {
++        assert.match(commands, new RegExp(`pub async fn ${name}`));
++        assert.match(registry, new RegExp(name));
++    }
++});
