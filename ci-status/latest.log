@@ -1,7 +1,3 @@
 # Diagnostic matches
-1:[BUNDLE-ID] source tauri.conf.json=com.tauritavern.client VERIFIED_MATCH
-2:[BUNDLE-ID] final unsigned IPA Info.plist=com.tauritavern.client VERIFIED_MATCH
 
 # Tail
-[BUNDLE-ID] source tauri.conf.json=com.tauritavern.client VERIFIED_MATCH
-[BUNDLE-ID] final unsigned IPA Info.plist=com.tauritavern.client VERIFIED_MATCH
