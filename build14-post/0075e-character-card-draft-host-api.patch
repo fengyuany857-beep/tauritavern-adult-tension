@@ -1,16 +1,7 @@
 diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
 --- a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
 +++ b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
-@@ -3,6 +3,10 @@ use std::sync::Arc;
- use tauri::State;
-+use tt_application::services::character_card_draft_materialization_service::{
-+    CharacterCardDraftCommitRequest, CharacterCardDraftCommitResult,
-+    CharacterCardDraftPreview,
-+};
- use tt_application::services::character_card_materialization_orchestrator::{
-     CharacterCardReturnCommitResult, CharacterCardReturnPlanResult, ReturnFieldChoice,
- };
-@@ -289,6 +293,36 @@ pub async fn export_character_content(
+@@ -289,6 +289,40 @@ pub async fn export_character_content(
          .map_err(map_command_error("Failed to export character content"))
  }
  
@@ -19,7 +10,10 @@ diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_co
 +    stable_chat_id: String,
 +    character_id: String,
 +    app_state: State<'_, Arc<AppState>>,
-+) -> Result<CharacterCardDraftPreview, CommandError> {
++) -> Result<
++    tt_application::services::character_card_draft_materialization_service::CharacterCardDraftPreview,
++    CommandError,
++> {
 +    log_command("preview_character_card_draft");
 +    app_state
 +        .services
@@ -31,9 +25,12 @@ diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_co
 +
 +#[tauri::command]
 +pub async fn commit_character_card_draft(
-+    request: CharacterCardDraftCommitRequest,
++    request: tt_application::services::character_card_draft_materialization_service::CharacterCardDraftCommitRequest,
 +    app_state: State<'_, Arc<AppState>>,
-+) -> Result<CharacterCardDraftCommitResult, CommandError> {
++) -> Result<
++    tt_application::services::character_card_draft_materialization_service::CharacterCardDraftCommitResult,
++    CommandError,
++> {
 +    log_command("commit_character_card_draft");
 +    app_state
 +        .services
