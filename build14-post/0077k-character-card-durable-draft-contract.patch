@@ -72,7 +72,7 @@ new file mode 100644
 +});
 +
 +test('Cast UI resumes durable drafts and makes regeneration explicit for advanced sources', () => {
-+    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast.js');
++    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js');
 +    assert.match(ui, /resumeMaterializationDraft/);
 +    assert.match(ui, /saveMaterializationDraft/);
 +    assert.match(ui, /regenerateMaterializationDraft/);
@@ -85,7 +85,7 @@ new file mode 100644
 +});
 +
 +test('all durable draft UI state remains host-owned rather than persisted in browser storage', () => {
-+    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast.js');
++    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js');
 +    const api = read('src/tauri/main/api/character-cards.js');
 +    assert.doesNotMatch(ui, /persist\/rp\/state\.json/);
 +    assert.doesNotMatch(ui, /indexedDB/);
