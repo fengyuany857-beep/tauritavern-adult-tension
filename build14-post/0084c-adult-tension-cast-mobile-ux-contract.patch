@@ -1,0 +1,82 @@
+diff --git a/tests/adult-tension-cast-mobile-ux-contract.test.mjs b/tests/adult-tension-cast-mobile-ux-contract.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/adult-tension-cast-mobile-ux-contract.test.mjs
+@@ -0,0 +1,77 @@
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import path from 'node:path';
++import test from 'node:test';
++import { fileURLToPath } from 'node:url';
++
++const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
++const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js');
++const i18n = read('src/scripts/extensions/agent-system/src/i18n.js');
++const zhCn = read('src/scripts/extensions/agent-system/i18n/zh-cn.json');
++const zhTw = read('src/scripts/extensions/agent-system/i18n/zh-tw.json');
++
++test('RP Cast mobile surface has a dedicated dynamic viewport scroll boundary', () => {
++    assert.match(ui, /ttas_adult_tension_cast_mobile_ux/);
++    assert.match(ui, /overflow-y:\s*auto/);
++    assert.match(ui, /-webkit-overflow-scrolling:\s*touch/);
++    assert.match(ui, /safe-area-inset-bottom/);
++    assert.match(ui, /window\.visualViewport/);
++    assert.match(ui, /removeEventListener\('resize', update\)/);
++    assert.match(ui, /removeEventListener\('scroll', update\)/);
++});
++
++test('RP Cast candidates are compact accessible accordions with current-chat search', () => {
++    assert.match(ui, /ttas-cast-candidate-toggle/);
++    assert.match(ui, /aria-expanded/);
++    assert.match(ui, /expandedCharacterId/);
++    assert.match(ui, /searchRpCharacters/);
++    assert.match(ui, /candidateSearchText/);
++    assert.match(ui, /listMaterializationDraftCandidates\(\{ stableChatId: chatId \}\)/);
++    assert.doesNotMatch(ui, /localStorage/);
++    assert.doesNotMatch(ui, /sessionStorage/);
++});
++
++test('unsaved Character Card edits require explicit discard and stale commit errors do not navigate away', () => {
++    assert.match(ui, /const baseline = JSON\.stringify\(definition\)/);
++    assert.match(ui, /discardDraftChangesConfirm/);
++    assert.match(ui, /setLeaveGuard\(canLeaveDraft\)/);
++    assert.doesNotMatch(ui, /message\.includes\('DRAFT_STALE'\)\)\s+await renderList/);
++});
++
++test('no-chat and stable-identity failures are separate states', () => {
++    assert.match(ui, /kind: 'none'/);
++    assert.match(ui, /kind: 'identity_error'/);
++    assert.match(ui, /activeChatIdentityError/);
++    assert.match(ui, /active chat identity resolution failed/);
++});
++
++test('known RP display enums and Character Card field labels are localized without changing canonical values', () => {
++    for (const token of [
++        'incidental', 'recurring', 'supporting', 'main',
++        'ai', 'user', 'shared',
++        'offscreen', 'inactive', 'missing', 'departed', 'retired', 'dead',
++        'session_character', 'world_character',
++        'source_advanced', 'ready_to_materialize',
++        'card_missing', 'target_missing', 'corrupted',
++        'STABLE_PROFILE', 'AUTHOR_CANON',
++    ]) assert.match(ui, new RegExp(token));
++    assert.match(ui, /characterCardFieldPostHistoryInstructions/);
++    assert.match(ui, /characterCardFieldTags/);
++});
++
++test('new RP Cast UX strings exist in default, simplified Chinese, and traditional Chinese catalogs', () => {
++    for (const key of [
++        'activeChatIdentityError',
++        'discardDraftChangesConfirm',
++        'searchRpCharacters',
++        'characterCardFieldDescription',
++        'rpRoleIncidental',
++        'rpScopeSessionCharacter',
++        'rpSourceStableProfile',
++    ]) {
++        assert.match(i18n, new RegExp(`${key}:`));
++        assert.match(zhCn, new RegExp(`agent_system\\.${key}`));
++        assert.match(zhTw, new RegExp(`agent_system\\.${key}`));
++    }
++});
