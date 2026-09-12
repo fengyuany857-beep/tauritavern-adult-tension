@@ -1,0 +1,52 @@
+diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
+--- a/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
++++ b/src-tauri/crates/tauritavern/src/app/composition/services/mod.rs
+@@ -18,6 +18,7 @@ use tt_application::services::background_service::BackgroundService;
+ use tt_application::services::character_service::CharacterService;
++use tt_application::services::character_card_draft_materialization_service::CharacterCardDraftMaterializationService;
+ use tt_application::services::character_card_materialization_orchestrator::CharacterCardMaterializationOrchestrator;
+ use tt_application::services::character_card_return_durable_authority::CharacterCardReturnDurableAuthorityRepository;
+ use tt_application::services::character_card_return_selected_state::CharacterCardReturnSelectedStateResolver;
+@@ -166,6 +167,20 @@ pub(super) async fn build(
+         agent_services.agent_workspace_lifecycle_service.clone(),
+         chat_history_coordinator.clone(),
+     ));
++    let selected_character_card_draft_state = CharacterCardReturnSelectedStateResolver::new(
++        repositories.agent_run_repository.clone(),
++        repositories.chat_repository.clone(),
++        repositories.group_chat_repository.clone(),
++    );
++    let character_card_draft_materialization_service = Arc::new(
++        CharacterCardDraftMaterializationService::new(
++            selected_character_card_draft_state,
++            repositories
++                .character_card_return_persistent_state_repository
++                .clone(),
++            repositories.character_card_materialization_repository.clone(),
++            character_service.clone(),
++        ),
++    );
+     let chat_service = Arc::new(ChatService::new(
+         repositories.chat_repository.clone(),
+         repositories.character_repository.clone(),
+@@ -206,6 +221,7 @@ pub(super) async fn build(
+ 
+     Ok(AppServices {
+         character_service,
++        character_card_draft_materialization_service,
+         chat_service,
+         group_chat_service,
+         chat_history_coordinator,
+diff --git a/src-tauri/crates/tauritavern/src/app/state.rs b/src-tauri/crates/tauritavern/src/app/state.rs
+--- a/src-tauri/crates/tauritavern/src/app/state.rs
++++ b/src-tauri/crates/tauritavern/src/app/state.rs
+@@ -13,6 +13,7 @@ use tt_application::services::background_service::BackgroundService;
+ use tt_application::services::character_service::CharacterService;
++use tt_application::services::character_card_draft_materialization_service::CharacterCardDraftMaterializationService;
+ use tt_application::services::character_card_materialization_orchestrator::CharacterCardMaterializationOrchestrator;
+ use tt_application::services::chat_completion_service::ChatCompletionService;
+@@ -99,6 +100,7 @@ pub(crate) struct AppServices {
+     pub(crate) character_service: Arc<CharacterService>,
++    pub(crate) character_card_draft_materialization_service: Arc<CharacterCardDraftMaterializationService>,
+     pub(crate) chat_service: Arc<ChatService>,
+     pub(crate) group_chat_service: Arc<GroupChatService>,
