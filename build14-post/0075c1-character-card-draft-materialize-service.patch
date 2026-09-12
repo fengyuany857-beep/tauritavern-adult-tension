@@ -16,7 +16,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_m
 +#[serde(rename_all = "camelCase")]
 +pub struct CharacterCardDraftCommitResult {
 +    pub character: CharacterDto,
-+    pub binding: CharacterCardBinding,
++    pub binding: tt_domain::models::character_card_materialization::CharacterCardBinding,
 +}
 +
  pub struct CharacterCardDraftMaterializationService {
@@ -42,7 +42,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_m
 +            commit_guard: Mutex::new(()),
          }
      }
-@@ -130,6 +147,98 @@ impl CharacterCardDraftMaterializationService {
+@@ -130,6 +147,102 @@ impl CharacterCardDraftMaterializationService {
              warnings,
          })
      }
@@ -86,31 +86,42 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_m
 +            &current.scope_kind,
 +            BindingScopeKind::SessionCharacter
 +        )
-+        .then(|| SessionId(current.cas.session_id.clone()));
-+        let binding = CharacterCardBinding {
-+            schema_version: CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
-+            binding_id: current.cas.proposed_binding_id.clone(),
-+            target: CharacterCardBindingTarget {
-+                scope_kind: current.scope_kind,
-+                world_id: WorldId(current.cas.world_id.clone()),
-+                character_id: CharacterId(current.cas.character_id.clone()),
-+                source_session_id,
-+            },
-+            contexts: vec![CharacterCardBindingContext {
-+                session_id: SessionId(current.cas.session_id.clone()),
-+                // Return-context branchId is the stable host-chat identity;
-+                // actual RP activeBranchId remains separately pinned by CAS.
-+                branch_id: BranchId(current.cas.stable_chat_id.clone()),
-+                last_seen_profile_revision: Some(current.cas.source_profile_revision),
-+            }],
-+            card_storage_identity: storage_identity.clone(),
-+            card_revision: 1,
-+            profile_revision_at_last_sync: Some(current.cas.source_profile_revision),
-+            generation: 1,
-+            status: BindingStatus::Active,
-+            created_at: now.clone(),
-+            updated_at: now,
-+        };
++        .then(|| {
++            tt_domain::models::rp_architecture::SessionId(current.cas.session_id.clone())
++        });
++        let binding =
++            tt_domain::models::character_card_materialization::CharacterCardBinding {
++                schema_version: tt_domain::models::character_card_materialization::CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
++                binding_id: current.cas.proposed_binding_id.clone(),
++                target: tt_domain::models::character_card_materialization::CharacterCardBindingTarget {
++                    scope_kind: current.scope_kind,
++                    world_id: tt_domain::models::rp_architecture::WorldId(
++                        current.cas.world_id.clone(),
++                    ),
++                    character_id: CharacterId(current.cas.character_id.clone()),
++                    source_session_id,
++                },
++                contexts: vec![
++                    tt_domain::models::character_card_materialization::CharacterCardBindingContext {
++                        session_id: tt_domain::models::rp_architecture::SessionId(
++                            current.cas.session_id.clone(),
++                        ),
++                        // Return-context branchId is the stable host-chat identity;
++                        // actual RP activeBranchId remains separately pinned by CAS.
++                        branch_id: tt_domain::models::rp_architecture::BranchId(
++                            current.cas.stable_chat_id.clone(),
++                        ),
++                        last_seen_profile_revision: Some(current.cas.source_profile_revision),
++                    },
++                ],
++                card_storage_identity: storage_identity.clone(),
++                card_revision: 1,
++                profile_revision_at_last_sync: Some(current.cas.source_profile_revision),
++                generation: 1,
++                status: tt_domain::models::character_card_materialization::BindingStatus::Active,
++                created_at: now.clone(),
++                updated_at: now,
++            };
 +
 +        if let Err(validation_error) = binding.validate() {
 +            let rollback = self
