@@ -1,0 +1,88 @@
+diff --git a/src/tauri/main/api/character-cards.js b/src/tauri/main/api/character-cards.js
+--- a/src/tauri/main/api/character-cards.js
++++ b/src/tauri/main/api/character-cards.js
+@@ -138,6 +138,74 @@ function createCharacterCardsApi({
+         });
+     }
+ 
++    /** @param {{ stableChatId: string; characterId: string }} input */
++    async function resumeMaterializationDraft({ stableChatId, characterId }) {
++        return safeInvoke('resume_character_card_draft', {
++            stable_chat_id: requireNonEmptyString(stableChatId, 'Character Card draft stable chat id'),
++            character_id: requireNonEmptyString(characterId, 'Character Card draft character id'),
++        });
++    }
++
++    /**
++     * @param {{ cas: TauriTavernCharacterCardDraftCas; draftId: string; expectedDraftRevision: number; definition: Record<string, unknown> }} input
++     */
++    async function saveMaterializationDraft({ cas, draftId, expectedDraftRevision, definition }) {
++        if (!cas || typeof cas !== 'object' || Array.isArray(cas)) {
++            throw new Error('Character Card draft CAS is required');
++        }
++        if (!Number.isSafeInteger(expectedDraftRevision) || expectedDraftRevision < 1) {
++            throw new Error('Character Card expected draft revision must be a positive integer');
++        }
++        if (!definition || typeof definition !== 'object' || Array.isArray(definition)) {
++            throw new Error('Character Card draft definition is required');
++        }
++        return safeInvoke('save_character_card_draft', {
++            request: {
++                cas,
++                draftId: requireNonEmptyString(draftId, 'Character Card draft id'),
++                expectedDraftRevision,
++                definition,
++            },
++        });
++    }
++
++    /** @param {{ stableChatId: string; characterId: string }} input */
++    async function regenerateMaterializationDraft({ stableChatId, characterId }) {
++        return safeInvoke('regenerate_character_card_draft', {
++            stable_chat_id: requireNonEmptyString(stableChatId, 'Character Card draft stable chat id'),
++            character_id: requireNonEmptyString(characterId, 'Character Card draft character id'),
++        });
++    }
++
++    /**
++     * @param {{ stableChatId: string; characterId: string; draftId: string; expectedDraftRevision: number }} input
++     */
++    async function archiveMaterializationDraft({ stableChatId, characterId, draftId, expectedDraftRevision }) {
++        if (!Number.isSafeInteger(expectedDraftRevision) || expectedDraftRevision < 1) {
++            throw new Error('Character Card expected draft revision must be a positive integer');
++        }
++        return safeInvoke('archive_character_card_draft', {
++            request: {
++                stableChatId: requireNonEmptyString(stableChatId, 'Character Card draft stable chat id'),
++                characterId: requireNonEmptyString(characterId, 'Character Card draft character id'),
++                draftId: requireNonEmptyString(draftId, 'Character Card draft id'),
++                expectedDraftRevision,
++            },
++        });
++    }
++
+     /**
+      * @param {{ stableChatId: string; characterId: string }} input
+@@ -250,6 +318,10 @@ function createCharacterCardsApi({
+         isNativePickerAvailable,
+         pickFiles,
+         listMaterializationDraftCandidates,
++        resumeMaterializationDraft,
++        saveMaterializationDraft,
++        regenerateMaterializationDraft,
++        archiveMaterializationDraft,
+         previewMaterializationDraft,
+         commitMaterializationDraft,
+diff --git a/src/tauri/main/kernel/invokes/tauri-commands.js b/src/tauri/main/kernel/invokes/tauri-commands.js
+--- a/src/tauri/main/kernel/invokes/tauri-commands.js
++++ b/src/tauri/main/kernel/invokes/tauri-commands.js
+@@ -100,7 +100,11 @@ export {};
+  *   | 'ios_pick_skill_import_archive'
+  *   | 'ios_share_file'
+  *   | 'ios_share_export_data_archive'
++ *   | 'archive_character_card_draft'
+  *   | 'list_character_card_draft_candidates'
++ *   | 'regenerate_character_card_draft'
++ *   | 'resume_character_card_draft'
++ *   | 'save_character_card_draft'
+  *   | 'list_character_chat_store_keys'
