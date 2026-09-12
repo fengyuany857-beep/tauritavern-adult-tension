@@ -1,0 +1,235 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs b/src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs
+index c341d50..f5da192 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs
+@@ -134,6 +134,7 @@ For every advancing roleplay turn:
+ 2. Call the model-facing tool rp_state before drafting for current runtime state. Use rp_recall only when older accepted continuity materially affects the beat. Use chat_search/chat_read_messages only when exact old dialogue or wording is required. Activated World Info is already injected into the initial Agent prompt; call worldinfo_read_activated only to inspect activation/source details, not as a routine reread.
+ 2. Call the model-facing tool rp_state before drafting for current runtime state. Use rp_recall for older accepted continuity. Use chat_search/chat_read_messages only when exact old dialogue or wording is required. Activated World Info is already injected into the initial Agent prompt; call worldinfo_read_activated only to inspect activation/source details, not as a routine reread.
+ Narrative routing is conditional and presentation-only. For a story-advancing turn that may start, continue, change, or end fictional-adult intimate content, or is a neutral continuation of an immediately accepted adult-domain beat, use skill_search on adult-tension-narrative with ATN-GATE. If Narrative is missing, unreadable, inactive, or the turn is ordinary RP, keep the old adult-tension behavior and do not read the full Narrative Skill. Derive INACTIVE, ELIGIBLE, ACTIVE, or AFTERMATH per turn; INACTIVE and ELIGIBLE keep base prose, ACTIVE targeted-reads ATN-PLAN, validates current Runtime authority, executes exactly one successful rp.stage_turn, then targeted-reads ATN-RENDER and renders only that staged beat, and AFTERMATH uses ATN-AFTERMATH without re-staging committed consequences. The order is rp.state -> plan -> rp.stage_turn -> render.
++Before any ACTIVE rp.stage_turn call, follow the RP_STAGE_TURN_MODEL_CONTRACT_V1 tool schema exactly. The only NPC update field is npc_updates (not npcs), whose entries use id plus only the declared update fields. Read rp.state.active_grants and reference an existing grant by its exact id; do not invent grant ids or use an authority grant mutation unless the current explicit user turn authorizes a new grant and its participants are the effective scene participants. For facts, use event_derived only with an exact accepted or same-call staged event id, existing only with an exact active accepted fact id, and never fabricate turn/beat references; positive knowledge likewise needs declared provenance. If the validator rejects a payload, repair it from the exact error, the original rp.state, and the tool schema rather than guessing a different shape. The runtime allows at most 3 stage attempts and at most one successful stage; render only the successfully staged beat, and after exhaustion fail closed without rendering unstaged prose.
+ Bind this router to adult-tension-narrative-owner-matrix-v1. Native RP Runtime and adult-tension retain eligibility, safety, permission/grants, boundaries, player sovereignty, Canon, continuity, character truth, sexuality_profile, sexuality_development, voice mode, POV, knowledge provenance, transaction semantics, and the default adult directness baseline. Narrative owns only beat physical/spatial planning, scene-local psychophysical continuity, pacing/response granularity, sensory focal selection, prose rhythm, anti-slop cleanup, and aftermath presentation timing; directness is composed and Narrative never replaces an older owner.
+ active_voice_mode controls character dialogue and expression. Narrative directness cannot force a character out of the current voice mode, and surface/reserved voice does not automatically make established narrator facts unclear. Each coherent beat has one primary sensory focal subject/viewpoint; other characters may have externally observable reactions, while private sensation or inner access still requires the Runtime POV/knowledge boundary. Scene-local psychophysical progression creates no persistent narrative state, does not write sexuality_profile or sexuality_development, and cannot satisfy the old cross-turn evidence threshold for persistent development.
+ The default remains no automatic fade, summary, or fast-forward merely because content is adult. If the user explicitly requests fade, summary, less detail, fast-forward, or a wider temporal scope, presentation may be abbreviated within current Runtime authority; this never expands permission, creates unstaged behavior, chooses for the player, rewrites committed facts, or skips a Runtime-determined result. Old Runtime owns aftermath facts; Narrative controls only their presentation timing and must not duplicate a staged or committed consequence.
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs
+index 6647afe..3d456a4 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs
+@@ -40,7 +40,7 @@ pub(in crate::services::agent_tools) fn rp_stage_turn_descriptor() -> ToolDescri
+     ToolDescriptor {
+         id: ToolId::builtin(RP_STAGE_TURN).expect("builtin tool name must be valid"),
+         title: Some("RP Stage Turn".to_string()),
+-        description: Some("Stage the structured consequences of exactly one roleplay beat into this run's branch-local persistent RP state. This does not directly edit chat. Use once after deciding the beat and before workspace.commit. Fixed Canon cannot be overwritten. Positive NPC knowledge requires explicit provenance. Every fact also requires source provenance: inference may remain a character interpretation but cannot become objective COMMITTED Canon. When the user says a prior accepted story turn never happened, retract that turn with retract_turns + retraction_reason so its derived continuity is removed instead of merely marking an event cancelled. Current boundaries/grants/safety live only in the runtime authority section and must be grounded in the explicit current user turn; continuity facts cannot create them. Player feelings/intentions/internal state are rejected. Cast Registry, profile evidence, memory lifecycle and canonization proposals are also staged here; Profile enrichment never changes character_id, role/control ownership, or World Canon by itself.".to_string()),
++        description: Some("RP_STAGE_TURN_MODEL_CONTRACT_V1. Stage the structured consequences of exactly one roleplay beat into this run's branch-local persistent RP state; this does not directly edit chat. Read rp.state first, then submit one payload using only the declared schema fields; beat_summary is required and unknown fields are rejected. The field is npc_updates, never npcs, with items shaped as {id, knowledge_refs?, emotion?, goal?, autonomy?, relationship?, trust?}. Do not invent authority: current permission and active grants come from rp.state.active_grants. Use authority.grants_withdraw only with an exact currently granted id. Omit authority.grants_add unless the current explicit user turn authorizes a new runtime grant; if adding one, use a new bounded id and participants that exactly match the effective scene participants. Do not manufacture grant ids as narrative labels. Every fact needs source.kind. Use event_derived only with an exact id of an event accepted in rp.state or explicitly staged in this same call; use existing only with an exact active accepted fact id. Never invent turn/beat references. Positive knowledge also needs its declared source and any fact_id must be an accepted or explicitly id'd staged fact. Player feelings/intentions/internal state are rejected. Submit only consequences that actually occur in this one beat. If validation fails, repair the same payload from the exact validator message, the original rp.state, and this schema; do not replace fields with guesses. Keep at most 3 stage attempts and at most 1 successful stage. Render only after a successful stage; if all attempts fail, stop without rendering un-staged prose. Fixed Canon, permissions, boundaries, safety, character truth, continuity, and transaction authority remain runtime-owned.".to_string()),
+         input_schema: json!({
+             "type": "object",
+             "additionalProperties": false,
+@@ -50,15 +50,15 @@ pub(in crate::services::agent_tools) fn rp_stage_turn_descriptor() -> ToolDescri
+                 "retract_turns": { "type": ["array", "null"], "items": { "type": "integer", "minimum": 1 }, "maxItems": 16, "description": "Pure correction only: prior accepted story turn numbers that the current explicit user says never happened. Requires advances_story=false. The earliest listed turn becomes the rollback ancestor: later derived continuity is invalidated and runtime scene/location/clock/participants/NPC/Living World projection is restored from its pre-turn checkpoint. Current safety/boundaries/grants are not resurrected from historical checkpoints." },
+                 "retraction_reason": { "type": ["string", "null"], "description": "Required when retract_turns is non-empty. Concise user-grounded reason for the historical correction." },
+                 "clock": { "type": ["string", "null"], "description": "Current story/world clock label when it actually changes." },
+-                "scene": { "type": ["string", "null"] },
+-                "location": { "type": ["string", "null"] },
+-                "participants": { "type": ["array", "null"], "items": { "type": "string" }, "maxItems": 64 },
++                "scene": { "type": ["string", "null"], "description": "Effective scene label. A scene/location/participant change withdraws prior current grants." },
++                "location": { "type": ["string", "null"], "description": "Effective location label when it actually changes." },
++                "participants": { "type": ["array", "null"], "items": { "type": "string" }, "maxItems": 64, "description": "Effective scene participants. Grant participants must be members of this list." },
+                 "npc_updates": {
+                     "type": ["array", "null"], "maxItems": 32,
+                     "items": {
+                         "type": "object", "additionalProperties": false,
+                         "properties": {
+-                            "id": { "type": "string" },
++                            "id": { "type": "string", "description": "Runtime NPC/character id from current state or the current beat; this key is npc_updates, not npcs." },
+                             "knowledge_refs": { "type": ["array", "null"], "items": { "type": "string" }, "maxItems": 32, "description": "Accepted fact ids this NPC runtime update relies on. Newly introduced NPCs may reference accepted continuity facts only when matching knowledge rows with explicit provenance are staged in the same call." },
+                             "emotion": { "type": ["string", "null"] },
+                             "goal": { "type": ["string", "null"] },
+@@ -139,7 +139,7 @@ pub(in crate::services::agent_tools) fn rp_stage_turn_descriptor() -> ToolDescri
+                     "items": {
+                         "type": "object", "additionalProperties": false,
+                         "properties": {
+-                            "id": { "type": ["string", "null"] },
++                            "id": { "type": ["string", "null"], "description": "Optional explicit event id. event_derived facts may reference only this id or an accepted event id from rp.state." },
+                             "summary": { "type": "string" },
+                             "status": { "type": ["string", "null"], "enum": ["pending", "resolved", "cancelled", null] }
+                         },
+@@ -164,7 +164,7 @@ pub(in crate::services::agent_tools) fn rp_stage_turn_descriptor() -> ToolDescri
+                                 "description": "Required for every staged fact. Canon-admissible kinds are user_asserted, observed, event_derived, existing. inferred is allowed only with plane=CHARACTER and classification=INTERPRETATION and never gains objective Canon authority.",
+                                 "properties": {
+                                     "kind": { "type": "string", "enum": ["user_asserted", "observed", "event_derived", "existing", "inferred"] },
+-                                    "reference": { "type": ["string", "null"], "description": "Supporting evidence label/id. Required for event_derived and existing." }
++                                "reference": { "type": ["string", "null"], "description": "Exact supporting evidence id. For event_derived use an accepted/staged event id; for existing use an active accepted fact id. Do not invent turn/beat ids." }
+                                 },
+                                 "required": ["kind"]
+                             }
+@@ -187,7 +187,7 @@ pub(in crate::services::agent_tools) fn rp_stage_turn_descriptor() -> ToolDescri
+                                 "description": "Required for every positive knowledge state. Historical continuity is not automatically known by an NPC.",
+                                 "properties": {
+                                     "kind": { "type": "string", "enum": ["user_asserted", "observed", "told_by", "public", "inferred", "existing"] },
+-                                    "reference": { "type": ["string", "null"], "description": "Evidence/source label. Required for told_by; useful for observed/user_asserted/public evidence." }
++                                    "reference": { "type": ["string", "null"], "description": "Evidence/source label or exact runtime reference. A fact_id must reference an accepted/staged fact; told_by requires a real source in the beat." }
+                                 },
+                                 "required": ["kind"]
+                             }
+@@ -241,6 +241,7 @@ pub(in crate::services::agent_tools) fn rp_stage_turn_descriptor() -> ToolDescri
+                         "boundaries_revoke": { "type": ["array", "null"], "maxItems": 24, "items": {"type":"string"} },
+                         "grants_add": {
+                             "type": ["array", "null"], "maxItems": 24,
++                            "description": "Only for a genuinely user-authorized new runtime grant. Never invent a grant id or use a narrative label; participants must be in effective participants.",
+                             "items": {
+                                 "type": "object", "additionalProperties": false,
+                                 "properties": {
+@@ -251,7 +252,7 @@ pub(in crate::services::agent_tools) fn rp_stage_turn_descriptor() -> ToolDescri
+                                 "required": ["id", "participants", "scope"]
+                             }
+                         },
+-                        "grants_withdraw": { "type": ["array", "null"], "maxItems": 24, "items": {"type":"string"} }
++                        "grants_withdraw": { "type": ["array", "null"], "maxItems": 24, "items": {"type":"string"}, "description": "Exact ids from rp.state.active_grants only; unknown or already withdrawn ids are rejected." }
+                     }
+                 },
+                 "living_world": {
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+index 4a3821f..9665c9c 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -2629,4 +2629,99 @@ mod tests {
+         assert_eq!(hits[0].pointer("/record/id").and_then(Value::as_str), Some("memory-1"));
+     }
+ 
++    #[test]
++    fn model_stage_payload_rejects_npcs_alias_and_accepts_npc_updates() {
++        let rejected = serde_json::from_value::<StageTurnArgs>(json!({
++            "beat_summary": "one beat",
++            "npcs": []
++        }));
++        assert!(rejected.is_err(), "the undeclared npcs alias must remain rejected");
++
++        let accepted = serde_json::from_value::<StageTurnArgs>(json!({
++            "beat_summary": "one beat",
++            "npc_updates": [{"id": "adult-a", "emotion": "attentive"}]
++        }));
++        assert!(accepted.is_ok(), "npc_updates is the declared model-facing field");
++    }
++
++    #[test]
++    fn model_stage_payload_with_scene_participants_and_provenance_is_valid() {
++        let value = serde_json::from_value::<StageTurnArgs>(json!({
++            "beat_summary": "Two adults share one accepted beat in the apartment.",
++            "advances_story": true,
++            "scene": "accepted adult scene",
++            "location": "apartment",
++            "participants": ["player", "adult-a", "adult-b"],
++            "npc_updates": [
++                {"id": "adult-a", "emotion": "focused"},
++                {"id": "adult-b", "emotion": "focused"}
++            ],
++            "events": [{"id": "event-apartment-beat", "summary": "The accepted beat occurs.", "status": "resolved"}],
++            "facts": [{
++                "subject": "accepted beat",
++                "predicate": "occurred",
++                "value": true,
++                "source": {"kind": "event_derived", "reference": "event-apartment-beat"}
++            }]
++        })).expect("declared stage payload should deserialize");
++        let state = RpState {
++            scene_id: Some("scene-before".to_string()),
++            scene: Some("previous scene".to_string()),
++            location: Some("previous location".to_string()),
++            participants: vec!["player".to_string(), "adult-a".to_string(), "adult-b".to_string()],
++            grants: vec![RpGrant {
++                id: "grant-existing".to_string(),
++                scene_id: "scene-before".to_string(),
++                participants: vec!["player".to_string(), "adult-a".to_string(), "adult-b".to_string()],
++                scope: vec!["accepted scope".to_string()],
++                status: "granted".to_string(),
++                granted_turn: 1,
++                withdrawn_turn: None,
++            }],
++            ..RpState::default()
++        };
++        validate_stage_input(&value).expect("schema-valid stage input should validate");
++        validate_stage_against_state(&state, &value).expect("scene and participant payload should validate");
++        validate_fact_provenance(&state, &value).expect("same-call event provenance should validate");
++        validate_knowledge_provenance(&state, &value).expect("payload without positive knowledge should validate");
++    }
++
++    #[test]
++    fn grant_and_event_references_must_be_real_runtime_ids() {
++        let state = RpState {
++            scene_id: Some("scene-1".to_string()),
++            participants: vec!["player".to_string(), "adult-a".to_string()],
++            grants: vec![RpGrant {
++                id: "grant-existing".to_string(),
++                scene_id: "scene-1".to_string(),
++                participants: vec!["player".to_string(), "adult-a".to_string()],
++                scope: vec!["accepted scope".to_string()],
++                status: "granted".to_string(),
++                granted_turn: 1,
++                withdrawn_turn: None,
++            }],
++            events: vec![RpEvent {
++                id: "event-accepted".to_string(),
++                summary: "accepted event".to_string(),
++                status: "resolved".to_string(),
++                turn: 1,
++            }],
++            ..RpState::default()
++        };
++        let mut withdraw = authority_only();
++        withdraw.authority.as_mut().unwrap().grants_withdraw = Some(vec!["grant-existing".to_string()]);
++        validate_stage_against_state(&state, &withdraw).expect("an exact active grant id is valid");
++        withdraw.authority.as_mut().unwrap().grants_withdraw = Some(vec!["grant-invented".to_string()]);
++        assert!(validate_stage_against_state(&state, &withdraw).is_err(), "unknown grant ids must fail closed");
++
++        let mut bad_fact = input("occurred", "accepted beat");
++        bad_fact.facts.as_mut().unwrap()[0].source = Some(KnowledgeSourceInput {
++            kind: "event_derived".to_string(),
++            reference: Some("turn-2-beat-invented".to_string()),
++        });
++        assert!(validate_fact_provenance(&state, &bad_fact).is_err(), "unknown event references must fail closed");
++        bad_fact.facts.as_mut().unwrap()[0].source.as_mut().unwrap().reference = Some("event-accepted".to_string());
++        validate_fact_provenance(&state, &bad_fact).expect("accepted event ids are valid provenance");
++    }
++
+ }
+diff --git a/tests/rp-stage-turn-active-hotfix.test.mjs b/tests/rp-stage-turn-active-hotfix.test.mjs
+new file mode 100644
+index 0000000..d2b8b23
+--- /dev/null
++++ b/tests/rp-stage-turn-active-hotfix.test.mjs
+@@ -0,0 +1,36 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++
++const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
++const descriptor = read('src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs');
++const state = read('src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs');
++const profile = read('src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs');
++
++test('rp.stage_turn model contract names the strict schema and rejects the npcs alias', () => {
++    assert.match(descriptor, /RP_STAGE_TURN_MODEL_CONTRACT_V1/);
++    assert.match(descriptor, /field is npc_updates, never npcs/);
++    assert.match(descriptor, /additionalProperties": false/);
++    assert.match(descriptor, /event_derived only with an exact id/);
++    assert.match(descriptor, /existing only with an exact active accepted fact id/);
++    assert.match(state, /#\[serde\(rename_all = "snake_case", deny_unknown_fields\)\]\s*struct StageTurnArgs/);
++});
++
++test('stage repair is schema-guided, bounded, single-success, and fail-closed before render', () => {
++    assert.match(profile, /RP_STAGE_TURN_MODEL_CONTRACT_V1/);
++    assert.match(profile, /repair it from the exact error, the original rp\.state, and the tool schema/);
++    assert.match(profile, /at most 3 stage attempts and at most one successful stage/);
++    assert.match(profile, /render only the successfully staged beat/);
++    assert.match(profile, /after exhaustion fail closed without rendering unstaged prose/);
++    assert.match(profile, /rp\.state -> plan -> rp\.stage_turn -> render/);
++    assert.match(profile, /max_calls_per_tool\.insert\("rp\.stage_turn"\.to_string\(\), 3\)/);
++});
++
++test('authority and provenance remain Runtime-owned rather than model-invented', () => {
++    assert.match(descriptor, /rp\.state\.active_grants/);
++    assert.match(descriptor, /Do not manufacture grant ids/);
++    assert.match(descriptor, /Never invent turn\/beat references/);
++    assert.match(state, /fn validate_fact_provenance/);
++    assert.match(state, /fn validate_knowledge_provenance/);
++    assert.match(state, /fn validate_stage_against_state/);
++});
