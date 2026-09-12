@@ -2,6 +2,11 @@
 19:[1m[91merror[E0063][0m[1m: missing fields `expected_after_binding_hash`, `expected_after_card_hash`, `expected_after_png_hash` and 1 other field in initializer of `CharacterCardTransactionJournal`[0m
 25:[1m[91merror[E0308][0m[1m: mismatched types[0m
 28:[1m[94m 501[0m [1m[94m|[0m         serde_json::from_str(&text).map_err(|error| ApplicationError::ValidationError(format!(
+41:[1mSome errors have detailed explanations: E0063, E0308.[0m
+42:[1mFor more information about an error, try `rustc --explain E0063`.[0m
+43:[1m[91merror[0m: could not compile `tt-application` (lib) due to 2 previous errors
+44:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+45: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
 
@@ -44,3 +49,8 @@
 [1m[94m2699[0m [1m[94m|[0m pub fn from_str<'a, T>(s: &'a str) -> Result<T>
      [1m[94m|[0m        [1m[92m^^^^^^^^[0m
 
+[1mSome errors have detailed explanations: E0063, E0308.[0m
+[1mFor more information about an error, try `rustc --explain E0063`.[0m
+[1m[91merror[0m: could not compile `tt-application` (lib) due to 2 previous errors
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+ ELIFECYCLE  Command failed with exit code 101.
