@@ -1,0 +1,506 @@
+diff --git a/src-tauri/crates/tt-application/src/services/mod.rs b/src-tauri/crates/tt-application/src/services/mod.rs
+--- a/src-tauri/crates/tt-application/src/services/mod.rs
++++ b/src-tauri/crates/tt-application/src/services/mod.rs
+@@ -17,6 +17,7 @@ pub mod background_service;
+ pub mod bundled_template_service;
++pub mod character_card_draft_materialization_service;
+ pub mod character_card_materialization_service;
+ pub mod character_card_materialization_orchestrator;
+ pub mod character_card_return_durable_authority;
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+@@ -0,0 +1,403 @@
++use std::collections::{BTreeMap, BTreeSet};
++use std::sync::Arc;
++
++use chrono::Utc;
++use serde::{Deserialize, Serialize};
++use serde_json::Value;
++use sha2::{Digest, Sha256};
++use tt_domain::errors::DomainError;
++use tt_domain::models::agent::WorkspacePath;
++use tt_domain::models::character_card_materialization::{
++    BindingScopeKind, CharacterCardDraft, DraftSourceKind,
++};
++use tt_domain::models::rp_architecture::{
++    CharacterEntity, CharacterId, CharacterIdentity, CharacterOrigin, CharacterOriginKind,
++    CharacterProfile, ControlOwner, ControlPolicy, LifecycleStatus, NarrativeRole,
++    RP_ARCHITECTURE_SCHEMA_VERSION, SessionIdentity,
++};
++use tt_ports::repositories::character_card_materialization_repository::CharacterCardMaterializationRepository;
++use tt_ports::repositories::character_card_return_persistent_state_repository::CharacterCardReturnPersistentStateRepository;
++use uuid::Uuid;
++
++use super::character_card_materialization_service::build_conservative_draft;
++use super::character_card_return_selected_state::{
++    CharacterCardReturnSelectedState, CharacterCardReturnSelectedStateResolver,
++};
++
++const RP_STATE_PATH: &str = "persist/rp/state.json";
++const SUPPORTED_RP_STATE_SCHEMA_VERSION: u32 = 1;
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CharacterCardDraftCas {
++    pub stable_chat_id: String,
++    pub state_id: String,
++    pub world_id: String,
++    pub session_id: String,
++    pub active_branch_id: String,
++    pub character_id: String,
++    pub source_profile_revision: u64,
++    pub proposed_binding_id: String,
++}
++
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardDraftPreview {
++    pub draft: CharacterCardDraft,
++    pub cas: CharacterCardDraftCas,
++    pub scope_kind: BindingScopeKind,
++    pub warnings: Vec<String>,
++}
++
++pub struct CharacterCardDraftMaterializationService {
++    selected: CharacterCardReturnSelectedStateResolver,
++    persistent: Arc<dyn CharacterCardReturnPersistentStateRepository>,
++    materialization: Arc<dyn CharacterCardMaterializationRepository>,
++}
++
++impl CharacterCardDraftMaterializationService {
++    pub fn new(
++        selected: CharacterCardReturnSelectedStateResolver,
++        persistent: Arc<dyn CharacterCardReturnPersistentStateRepository>,
++        materialization: Arc<dyn CharacterCardMaterializationRepository>,
++    ) -> Self {
++        Self {
++            selected,
++            persistent,
++            materialization,
++        }
++    }
++
++    pub async fn preview(
++        &self,
++        stable_chat_id: &str,
++        character_id: &str,
++    ) -> Result<CharacterCardDraftPreview, DomainError> {
++        let stable_chat_id = stable_chat_id.trim();
++        let character_id = character_id.trim();
++        if stable_chat_id.is_empty() || character_id.is_empty() {
++            return Err(DomainError::InvalidData(
++                "character_card_draft.stable_chat_id_and_character_id_required".to_string(),
++            ));
++        }
++
++        let selected = self.selected.resolve_stable_chat_id(stable_chat_id).await?;
++        let durable = self.read_selected_state(&selected).await?;
++        let state = parse_durable_state(&durable.text)?;
++        let session = state.session.as_ref().ok_or_else(|| {
++            DomainError::NotFound("character_card_draft.session_missing".to_string())
++        })?;
++        let source = state.cast_registry.get(character_id).ok_or_else(|| {
++            DomainError::NotFound(format!(
++                "character_card_draft.character_missing: {character_id}"
++            ))
++        })?;
++        if source.character_id != character_id {
++            return Err(DomainError::Conflict(
++                "character_card_draft.character_identity_mismatch".to_string(),
++            ));
++        }
++
++        let (character, scope_kind, mut warnings) = project_character(source, session)?;
++        let proposed_binding_id = deterministic_binding_id(&character, session);
++        if self
++            .materialization
++            .read_binding(&proposed_binding_id)
++            .await?
++            .is_some()
++        {
++            return Err(DomainError::Conflict(format!(
++                "character_card_draft.already_materialized: {proposed_binding_id}"
++            )));
++        }
++
++        let mut draft = build_conservative_draft(
++            &character,
++            Uuid::new_v4().to_string(),
++            None,
++            Utc::now().to_rfc3339(),
++        )
++        .map_err(DomainError::InvalidData)?;
++        apply_author_canon_provenance(&mut draft, source);
++        if !source.inferred_profile.is_empty() {
++            warnings.push(format!(
++                "{} inferred profile field(s) were intentionally excluded from the conservative draft",
++                source.inferred_profile.len()
++            ));
++        }
++
++        Ok(CharacterCardDraftPreview {
++            cas: CharacterCardDraftCas {
++                stable_chat_id: selected.stable_chat_id,
++                state_id: selected.state_id,
++                world_id: session.world_id.0.clone(),
++                session_id: session.session_id.0.clone(),
++                active_branch_id: session.active_branch_id.0.clone(),
++                character_id: character_id.to_string(),
++                source_profile_revision: source.profile_revision,
++                proposed_binding_id,
++            },
++            draft,
++            scope_kind,
++            warnings,
++        })
++    }
++
++    async fn read_selected_state(
++        &self,
++        selected: &CharacterCardReturnSelectedState,
++    ) -> Result<tt_ports::repositories::character_card_return_persistent_state_repository::CharacterCardReturnPersistentText, DomainError> {
++        let path = WorkspacePath::parse(RP_STATE_PATH)?;
++        let durable = self
++            .persistent
++            .read_persistent_text(&selected.workspace_id, &selected.state_id, &path)
++            .await?;
++        if durable.workspace_id != selected.workspace_id
++            || durable.state_id != selected.state_id
++            || durable.stable_chat_id != selected.stable_chat_id
++            || durable.created_from_run_id != selected.producing_run.id
++        {
++            return Err(DomainError::Conflict(
++                "character_card_draft.durable_state_selected_identity_mismatch".to_string(),
++            ));
++        }
++        Ok(durable)
++    }
++}
++
++#[derive(Debug, Deserialize)]
++#[serde(rename_all = "camelCase")]
++struct DurableDraftState {
++    schema_version: u32,
++    session: Option<SessionIdentity>,
++    #[serde(default)]
++    cast_registry: BTreeMap<String, DurableDraftCharacter>,
++}
++
++#[derive(Debug, Deserialize)]
++#[serde(rename_all = "camelCase")]
++struct DurableDraftCharacter {
++    character_id: String,
++    display_name: String,
++    #[serde(default)]
++    aliases: Vec<String>,
++    narrative_role: String,
++    control_owner: String,
++    lifecycle_status: String,
++    origin: String,
++    first_seen_turn: u64,
++    #[serde(default)]
++    promoted_at_turn: Option<u64>,
++    profile_revision: u64,
++    #[serde(default)]
++    author_canon: BTreeMap<String, Value>,
++    #[serde(default)]
++    stable_profile: BTreeMap<String, DurableStableTrait>,
++    #[serde(default)]
++    inferred_profile: BTreeMap<String, Value>,
++}
++
++#[derive(Debug, Deserialize)]
++#[serde(rename_all = "camelCase")]
++struct DurableStableTrait {
++    statement: String,
++    status: String,
++}
++
++fn parse_durable_state(text: &str) -> Result<DurableDraftState, DomainError> {
++    let state: DurableDraftState = serde_json::from_str(text).map_err(|error| {
++        DomainError::InvalidData(format!(
++            "character_card_draft.durable_rp_state_invalid_json: {error}"
++        ))
++    })?;
++    if state.schema_version != SUPPORTED_RP_STATE_SCHEMA_VERSION {
++        return Err(DomainError::InvalidData(format!(
++            "character_card_draft.unsupported_rp_state_schema: {}",
++            state.schema_version
++        )));
++    }
++    Ok(state)
++}
++
++fn project_character(
++    source: &DurableDraftCharacter,
++    session: &SessionIdentity,
++) -> Result<(CharacterEntity, BindingScopeKind, Vec<String>), DomainError> {
++    let mut profile = CharacterProfile {
++        identity: CharacterIdentity {
++            canonical_name: Some(source.display_name.clone()),
++            display_name: Some(source.display_name.clone()),
++            aliases: source.aliases.clone(),
++        },
++        ..Default::default()
++    };
++    apply_author_canon(&mut profile, &source.author_canon);
++
++    let mut warnings = Vec::new();
++    for (key, value) in &source.stable_profile {
++        if value.status != "stable" {
++            warnings.push(format!(
++                "stable profile key `{key}` has status `{}` and was excluded",
++                value.status
++            ));
++            continue;
++        }
++        if !apply_stable_trait(&mut profile, key, &value.statement) {
++            warnings.push(format!(
++                "stable profile key `{key}` has no conservative Character Card mapping and was excluded"
++            ));
++        }
++    }
++    dedupe_profile_lists(&mut profile);
++
++    let (origin, scope_kind) = match source.origin.as_str() {
++        "session_created" => (
++            CharacterOrigin {
++                kind: CharacterOriginKind::SessionCreated,
++                world_ref: None,
++                source_session_id: Some(session.session_id.clone()),
++            },
++            BindingScopeKind::SessionCharacter,
++        ),
++        "world_canon" => (
++            CharacterOrigin {
++                kind: CharacterOriginKind::WorldCanon,
++                world_ref: Some(session.world_id.0.clone()),
++                source_session_id: None,
++            },
++            BindingScopeKind::WorldCharacter,
++        ),
++        other => {
++            return Err(DomainError::InvalidData(format!(
++                "character_card_draft.unsupported_character_origin: {other}"
++            )));
++        }
++    };
++
++    Ok((
++        CharacterEntity {
++            schema_version: RP_ARCHITECTURE_SCHEMA_VERSION,
++            character_id: CharacterId(source.character_id.clone()),
++            origin,
++            narrative_role: parse_narrative_role(&source.narrative_role)?,
++            control_owner: parse_control_owner(&source.control_owner)?,
++            control_policy: ControlPolicy::Normal,
++            lifecycle_status: parse_lifecycle_status(&source.lifecycle_status)?,
++            first_seen_turn: source.first_seen_turn,
++            promoted_at_turn: source.promoted_at_turn,
++            profile_revision: source.profile_revision,
++            profile,
++        },
++        scope_kind,
++        warnings,
++    ))
++}
++
++fn apply_author_canon(profile: &mut CharacterProfile, author: &BTreeMap<String, Value>) {
++    if let Some(value) = object_field(author, &["appearance"]) {
++        profile.appearance = value.clone();
++    }
++    if let Some(value) = object_field(author, &["speechVoice", "speech_voice"]) {
++        profile.speech_voice = value.clone();
++    }
++    profile.personality_invariants = string_list_field(
++        author,
++        &["personalityInvariants", "personality_invariants"],
++    );
++    profile.values = string_list_field(author, &["values"]);
++    profile.long_term_motivations = string_list_field(
++        author,
++        &["longTermMotivations", "long_term_motivations"],
++    );
++    profile.capabilities = string_list_field(author, &["capabilities"]);
++    profile.limitations = string_list_field(author, &["limitations"]);
++    profile.backstory = string_list_field(author, &["backstory"]);
++}
++
++fn object_field<'a>(
++    values: &'a BTreeMap<String, Value>,
++    keys: &[&str],
++) -> Option<&'a BTreeMap<String, Value>> {
++    keys.iter()
++        .filter_map(|key| values.get(*key))
++        .find_map(|value| value.as_object())
++        .map(|object| object.iter().map(|(k, v)| (k.clone(), v.clone())).collect::<BTreeMap<_, _>>())
++        .map(Box::new)
++        .map(Box::leak)
++        .map(|value| &*value)
++}
++
++fn string_list_field(values: &BTreeMap<String, Value>, keys: &[&str]) -> Vec<String> {
++    for key in keys {
++        let Some(value) = values.get(*key) else { continue; };
++        if let Some(text) = value.as_str() {
++            let text = text.trim();
++            return (!text.is_empty()).then(|| vec![text.to_string()]).unwrap_or_default();
++        }
++        if let Some(items) = value.as_array() {
++            return items
++                .iter()
++                .filter_map(Value::as_str)
++                .map(str::trim)
++                .filter(|value| !value.is_empty())
++                .map(ToOwned::to_owned)
++                .collect();
++        }
++    }
++    Vec::new()
++}
++
++fn apply_stable_trait(profile: &mut CharacterProfile, key: &str, statement: &str) -> bool {
++    let statement = statement.trim();
++    if statement.is_empty() {
++        return false;
++    }
++    let normalized = key.to_ascii_lowercase();
++    if let Some(field) = normalized.strip_prefix("appearance.") {
++        profile
++            .appearance
++            .entry(field.to_string())
++            .or_insert_with(|| Value::String(statement.to_string()));
++        return true;
++    }
++    if normalized == "personality" || normalized.starts_with("personality.") {
++        profile.personality_invariants.push(statement.to_string());
++        return true;
++    }
++    if normalized == "value" || normalized == "values" || normalized.starts_with("value.") {
++        profile.values.push(statement.to_string());
++        return true;
++    }
++    if let Some(field) = normalized
++        .strip_prefix("speech_voice.")
++        .or_else(|| normalized.strip_prefix("speech."))
++    {
++        profile
++            .speech_voice
++            .entry(field.to_string())
++            .or_insert_with(|| Value::String(statement.to_string()));
++        return true;
++    }
++    if normalized == "motivation" || normalized.starts_with("motivation.") {
++        profile.long_term_motivations.push(statement.to_string());
++        return true;
++    }
++    if normalized == "capability" || normalized.starts_with("capability.") {
++        profile.capabilities.push(statement.to_string());
++        return true;
++    }
++    if normalized == "limitation" || normalized.starts_with("limitation.") {
++        profile.limitations.push(statement.to_string());
++        return true;
++    }
++    if normalized == "backstory" || normalized.starts_with("backstory.") {
++        profile.backstory.push(statement.to_string());
++        return true;
++    }
++    false
++}
++
++fn dedupe_profile_lists(profile: &mut CharacterProfile) {
++    for values in [
++        &mut profile.personality_invariants,
++        &mut profile.values,
++        &mut profile.long_term_motivations,
++        &mut profile.capabilities,
++        &mut profile.limitations,
++        &mut profile.backstory,
++    ] {
++        let mut seen = BTreeSet::new();
++        values.retain(|value| seen.insert(value.clone()));
++    }
++}
++
++fn apply_author_canon_provenance(draft: &mut CharacterCardDraft, source: &DurableDraftCharacter) {
++    if source.author_canon.contains_key("appearance") || source.author_canon.contains_key("backstory")
++        || source.author_canon.contains_key("capabilities") || source.author_canon.contains_key("limitations")
++    {
++        draft
++            .field_provenance
++            .entry("data.description".to_string())
++            .or_default()
++            .push(DraftSourceKind::AuthorCanon);
++    }
++    if source.author_canon.keys().any(|key| matches!(key.as_str(),
++        "personalityInvariants" | "personality_invariants" | "values" |
++        "longTermMotivations" | "long_term_motivations" | "speechVoice" | "speech_voice"))
++    {
++        draft
++            .field_provenance
++            .entry("data.personality".to_string())
++            .or_default()
++            .push(DraftSourceKind::AuthorCanon);
++    }
++}
++
++fn deterministic_binding_id(character: &CharacterEntity, session: &SessionIdentity) -> String {
++    let scope = match character.origin.kind {
++        CharacterOriginKind::SessionCreated => "session",
++        CharacterOriginKind::WorldCanon => "world",
++    };
++    let source_session = character
++        .origin
++        .source_session_id
++        .as_ref()
++        .map(|value| value.0.as_str())
++        .unwrap_or("");
++    let seed = format!(
++        "{scope}\0{}\0{}\0{source_session}",
++        session.world_id.0, character.character_id.0
++    );
++    let digest = Sha256::digest(seed.as_bytes());
++    format!("materialized-{digest:x}")
++}
++
++fn parse_narrative_role(value: &str) -> Result<NarrativeRole, DomainError> {
++    match value {
++        "incidental" => Ok(NarrativeRole::Incidental),
++        "recurring" => Ok(NarrativeRole::Recurring),
++        "supporting" => Ok(NarrativeRole::Supporting),
++        "main" => Ok(NarrativeRole::Main),
++        other => Err(DomainError::InvalidData(format!(
++            "character_card_draft.unsupported_narrative_role: {other}"
++        ))),
++    }
++}
++
++fn parse_control_owner(value: &str) -> Result<ControlOwner, DomainError> {
++    match value {
++        "ai" => Ok(ControlOwner::Ai),
++        "user" => Ok(ControlOwner::User),
++        "shared" => Ok(ControlOwner::Shared),
++        other => Err(DomainError::InvalidData(format!(
++            "character_card_draft.unsupported_control_owner: {other}"
++        ))),
++    }
++}
++
++fn parse_lifecycle_status(value: &str) -> Result<LifecycleStatus, DomainError> {
++    match value {
++        "active" => Ok(LifecycleStatus::Active),
++        "offscreen" => Ok(LifecycleStatus::Offscreen),
++        "inactive" => Ok(LifecycleStatus::Inactive),
++        "missing" => Ok(LifecycleStatus::Missing),
++        "departed" => Ok(LifecycleStatus::Departed),
++        "retired" => Ok(LifecycleStatus::Retired),
++        "dead" => Ok(LifecycleStatus::Dead),
++        "archived" => Ok(LifecycleStatus::Archived),
++        other => Err(DomainError::InvalidData(format!(
++            "character_card_draft.unsupported_lifecycle_status: {other}"
++        ))),
++    }
++}
