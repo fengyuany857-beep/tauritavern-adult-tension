@@ -1,0 +1,92 @@
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
+@@ -311,6 +311,76 @@ pub async fn list_character_card_draft_candidates(
+         ))
+ }
+ 
++#[tauri::command]
++pub async fn resume_character_card_draft(
++    stable_chat_id: String,
++    character_id: String,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<
++    Option<tt_application::services::character_card_draft_materialization_service::CharacterCardDraftPreview>,
++    CommandError,
++> {
++    log_command("resume_character_card_draft");
++    app_state
++        .services
++        .character_card_draft_materialization_service
++        .resume(&stable_chat_id, &character_id)
++        .await
++        .map_err(map_command_error("Failed to resume Character Card draft"))
++}
++
++#[tauri::command]
++pub async fn save_character_card_draft(
++    request: tt_application::services::character_card_draft_materialization_service::CharacterCardDraftSaveRequest,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<
++    tt_application::services::character_card_draft_materialization_service::CharacterCardDraftPreview,
++    CommandError,
++> {
++    log_command("save_character_card_draft");
++    app_state
++        .services
++        .character_card_draft_materialization_service
++        .save(request)
++        .await
++        .map_err(map_command_error("Failed to save Character Card draft"))
++}
++
++#[tauri::command]
++pub async fn regenerate_character_card_draft(
++    stable_chat_id: String,
++    character_id: String,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<
++    tt_application::services::character_card_draft_materialization_service::CharacterCardDraftPreview,
++    CommandError,
++> {
++    log_command("regenerate_character_card_draft");
++    app_state
++        .services
++        .character_card_draft_materialization_service
++        .regenerate(&stable_chat_id, &character_id)
++        .await
++        .map_err(map_command_error("Failed to regenerate Character Card draft"))
++}
++
++#[tauri::command]
++pub async fn archive_character_card_draft(
++    request: tt_application::services::character_card_draft_materialization_service::CharacterCardDraftArchiveRequest,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<
++    tt_application::services::character_card_draft_materialization_service::CharacterCardDraftPreview,
++    CommandError,
++> {
++    log_command("archive_character_card_draft");
++    app_state
++        .services
++        .character_card_draft_materialization_service
++        .archive(request)
++        .await
++        .map_err(map_command_error("Failed to archive Character Card draft"))
++}
++
+ #[tauri::command]
+ pub async fn preview_character_card_draft(
+     stable_chat_id: String,
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
+@@ -27,6 +27,10 @@ pub fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static {
+         super::character_commands::export_character,
+         super::character_commands::export_character_content,
+         super::character_commands::list_character_card_draft_candidates,
++        super::character_commands::resume_character_card_draft,
++        super::character_commands::save_character_card_draft,
++        super::character_commands::regenerate_character_card_draft,
++        super::character_commands::archive_character_card_draft,
+         super::character_commands::preview_character_card_draft,
