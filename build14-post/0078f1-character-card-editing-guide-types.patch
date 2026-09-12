@@ -1,0 +1,11 @@
+diff --git a/src/scripts/tauri/character-card-return-ui.js b/src/scripts/tauri/character-card-return-ui.js
+--- a/src/scripts/tauri/character-card-return-ui.js
++++ b/src/scripts/tauri/character-card-return-ui.js
+@@ -352,6 +352,7 @@ function currentCharacterDisplayName() {
+     return 'character';
+ }
+ 
++/** @param {string} displayName */
+ function editingGuideText(displayName) {
+     const exportedAt = new Date().toISOString();
+     return `------------------------------------------------------------
