@@ -23,7 +23,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_m
      selected: CharacterCardReturnSelectedStateResolver,
      persistent: Arc<dyn CharacterCardReturnPersistentStateRepository>,
      materialization: Arc<dyn CharacterCardMaterializationRepository>,
-+    character_service: Arc<CharacterService>,
++    character_service: Arc<super::character_service::CharacterService>,
 +    commit_guard: Mutex<()>,
  }
  
@@ -32,7 +32,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_m
          selected: CharacterCardReturnSelectedStateResolver,
          persistent: Arc<dyn CharacterCardReturnPersistentStateRepository>,
          materialization: Arc<dyn CharacterCardMaterializationRepository>,
-+        character_service: Arc<CharacterService>,
++        character_service: Arc<super::character_service::CharacterService>,
      ) -> Self {
          Self {
              selected,
@@ -91,7 +91,7 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_m
 +            schema_version: CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
 +            binding_id: current.cas.proposed_binding_id.clone(),
 +            target: CharacterCardBindingTarget {
-+                scope_kind: current.scope_kind.clone(),
++                scope_kind: current.scope_kind,
 +                world_id: WorldId(current.cas.world_id.clone()),
 +                character_id: CharacterId(current.cas.character_id.clone()),
 +                source_session_id,
