@@ -24,10 +24,3 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_m
      RP_ARCHITECTURE_SCHEMA_VERSION, SessionIdentity,
  };
 +use tt_domain::models::rp_architecture::{BranchId, SessionId, WorldId};
- use tt_ports::repositories::character_card_materialization_repository::CharacterCardMaterializationRepository;
- use tt_ports::repositories::character_card_return_persistent_state_repository::CharacterCardReturnPersistentStateRepository;
- use uuid::Uuid;
-@@ -22,6 +30,7 @@ use super::character_card_return_selected_state::{
-     CharacterCardReturnSelectedState, CharacterCardReturnSelectedStateResolver,
- };
-+use super::character_service::CharacterService;
