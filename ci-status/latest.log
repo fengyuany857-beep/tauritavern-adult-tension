@@ -1,4 +1,9 @@
 # Diagnostic matches
+19:[1m[91merror[E0277][0m[1m: the trait bound `Array<u8, UInt<UInt<UInt<UInt<..., ...>, ...>, ...>, ...>>: LowerHex` is not satisfied[0m
+38:[1mFor more information about this error, try `rustc --explain E0277`.[0m
+39:[1m[91merror[0m: could not compile `tt-application` (lib) due to 1 previous error
+40:[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+41: ELIFECYCLE  Command failed with exit code 101.
 
 # Tail
 
@@ -19,3 +24,26 @@
 [1m[92m   Compiling[0m tt-adapter-storage-userdata v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-storage-userdata)
 [1m[92m   Compiling[0m tt-adapter-archive v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-adapter-archive)
 [1m[92m   Compiling[0m tt-application v0.1.0 (/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/crates/tt-application)
+[1m[91merror[E0277][0m[1m: the trait bound `Array<u8, UInt<UInt<UInt<UInt<..., ...>, ...>, ...>, ...>>: LowerHex` is not satisfied[0m
+   [1m[94m--> [0mcrates/tt-application/src/services/character_card_draft_materialization_service.rs:585:27
+    [1m[94m|[0m
+[1m[94m585[0m [1m[94m|[0m     format!("materialized-{digest:x}")
+    [1m[94m|[0m                           [1m[91m^^^^^^^^^^[0m [1m[91mthe trait `LowerHex` is not implemented for `Array<u8, UInt<UInt<UInt<UInt<UInt<..., ...>, ...>, ...>, ...>, ...>>`[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: the following other types implement trait `LowerHex`:
+              &T
+              &mut T
+              Braced
+              BytesMut
+              Hyphenated
+              Saturating<T>
+              Simple
+              Urn
+            and 31 others
+    [1m[94m= [0m[1mnote[0m: the full name for the type has been written to '/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/src-tauri/target/debug/deps/tt_application-d86a7a0eb0c5bcdb.long-type-5415232559713299110.txt'
+    [1m[94m= [0m[1mnote[0m: consider using `--verbose` to print the full type name to the console
+
+[1mFor more information about this error, try `rustc --explain E0277`.[0m
+[1m[91merror[0m: could not compile `tt-application` (lib) due to 1 previous error
+[1m[33mwarning[0m: build failed, waiting for other jobs to finish...
+ ELIFECYCLE  Command failed with exit code 101.
