@@ -1,0 +1,340 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs
+index 3d456a4..d457c50 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs
+@@ -40,7 +40,7 @@ pub(in crate::services::agent_tools) fn rp_stage_turn_descriptor() -> ToolDescri
+     ToolDescriptor {
+         id: ToolId::builtin(RP_STAGE_TURN).expect("builtin tool name must be valid"),
+         title: Some("RP Stage Turn".to_string()),
+-        description: Some("RP_STAGE_TURN_MODEL_CONTRACT_V1. Stage the structured consequences of exactly one roleplay beat into this run's branch-local persistent RP state; this does not directly edit chat. Read rp.state first, then submit one payload using only the declared schema fields; beat_summary is required and unknown fields are rejected. The field is npc_updates, never npcs, with items shaped as {id, knowledge_refs?, emotion?, goal?, autonomy?, relationship?, trust?}. Do not invent authority: current permission and active grants come from rp.state.active_grants. Use authority.grants_withdraw only with an exact currently granted id. Omit authority.grants_add unless the current explicit user turn authorizes a new runtime grant; if adding one, use a new bounded id and participants that exactly match the effective scene participants. Do not manufacture grant ids as narrative labels. Every fact needs source.kind. Use event_derived only with an exact id of an event accepted in rp.state or explicitly staged in this same call; use existing only with an exact active accepted fact id. Never invent turn/beat references. Positive knowledge also needs its declared source and any fact_id must be an accepted or explicitly id'd staged fact. Player feelings/intentions/internal state are rejected. Submit only consequences that actually occur in this one beat. If validation fails, repair the same payload from the exact validator message, the original rp.state, and this schema; do not replace fields with guesses. Keep at most 3 stage attempts and at most 1 successful stage. Render only after a successful stage; if all attempts fail, stop without rendering un-staged prose. Fixed Canon, permissions, boundaries, safety, character truth, continuity, and transaction authority remain runtime-owned.".to_string()),
++        description: Some("RP_STAGE_TURN_MODEL_CONTRACT_V1. Stage the structured consequences of exactly one roleplay beat into this run's branch-local persistent RP state; this does not directly edit chat. Read rp.state first, then submit one payload using only the declared schema fields; beat_summary is required and unknown fields are rejected. The field is npc_updates, never npcs, with items shaped as {id, knowledge_refs?, emotion?, goal?, autonomy?, relationship?, trust?}. Do not invent authority: current permission and active grants come from rp.state.active_grants. Use authority.grants_withdraw only with an exact currently granted id. Omit authority.grants_add unless the current explicit user turn authorizes a new runtime grant; if adding one, use a new bounded id and participants that exactly match the effective scene participants. Do not manufacture grant ids as narrative labels. Every fact needs source.kind. Use event_derived only with an exact id of an event accepted in rp.state or explicitly staged in this same call; use existing only with an exact active accepted fact id. Never invent turn/beat references. Positive knowledge also needs its declared source and any fact_id must be an accepted or explicitly id'd staged fact. Player feelings/intentions/internal state are rejected. Submit only consequences that actually occur in this one beat. If validation fails, repair the same payload from the exact validator message, the original rp.state, and this schema; do not replace fields with guesses. Keep at most 3 stage attempts and at most 1 successful stage. Render only after a successful stage; if all attempts fail, stop without rendering un-staged prose. Fixed Canon, permissions, boundaries, safety, character truth, continuity, and transaction authority remain runtime-owned. History rewrite is not an ordinary append: first use the pure retract_turns correction, then stage an explicit replacement event and committed fact(s) whose supersedes fields name the old active fact ids. A grant changes current authority only and is never evidence that an event happened. Preserve old facts/events for audit while ensuring replacement supersedes them; any dependent knowledge must be replaced or removed from the effective projection, and every replacement reference must point to a real accepted or same-call staged id.".to_string()),
+         input_schema: json!({
+             "type": "object",
+             "additionalProperties": false,
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+index 8c37c49..2744956 100644
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -778,9 +778,18 @@ pub(in crate::services::agent_tools) async fn stage_turn(
+             AgentToolEffect::None,
+         ));
+     }
+-    apply_stage(&mut state, input, run.id.as_str())?;
++    if let Some(inactive) = inactive_superseded_fact_id(&state, input.facts.as_deref().unwrap_or(&[])) {
++        return Ok((
++            tool_error(call, "rp.supersedes_fact_inactive", &format!("supersedes references inactive fact id `{inactive}`; a replacement transaction cannot be replayed over an already superseded fact.")),
++            AgentToolEffect::None,
++        ));
++    }
++    // Apply the complete stage to a private clone so a later application error
++    // cannot leave a partial history rewrite in the branch-local state.
++    let mut staged_state = state.clone();
++    apply_stage(&mut staged_state, input, run.id.as_str())?;
+     let path = WorkspacePath::parse(RP_STATE_PATH)?;
+-    let text = serde_json::to_string_pretty(&state).map_err(|error| ApplicationError::InternalError(format!("rp.state_serialize_failed: {error}")))?;
++    let text = serde_json::to_string_pretty(&staged_state).map_err(|error| ApplicationError::InternalError(format!("rp.state_serialize_failed: {error}")))?;
+     if text.len() > MAX_STATE_BYTES {
+         return Ok((
+             tool_error(call, "rp.state_capacity_exceeded", "The branch-local RP state exceeded the 1 MB mobile safety bound. Consolidate/supersede repetitive continuity records instead of adding more detail."),
+@@ -788,10 +797,10 @@ pub(in crate::services::agent_tools) async fn stage_turn(
+         ));
+     }
+     let file = workspace_repository.write_text(run_id, &path, &text).await?;
+-    let binding_status = binding_status(&state, manifest.as_ref());
+-    let payload = state_payload(&run.stable_chat_id, &state, binding_status);
++    let binding_status = binding_status(&staged_state, manifest.as_ref());
++    let payload = state_payload(&run.stable_chat_id, &staged_state, binding_status);
+     Ok((
+-        success(call, format!("Staged RP turn {} at runtime revision {}. State remains branch-local until workspace.finish commits this run's persistent projection.", state.turn, state.runtime_revision), payload),
++        success(call, format!("Staged RP turn {} at runtime revision {}. State remains branch-local until workspace.finish commits this run's persistent projection.", staged_state.turn, staged_state.runtime_revision), payload),
+         AgentToolEffect::WorkspaceFileWritten {
+             file,
+             mode: tt_domain::models::agent::WorkspaceFileWriteMode::Replace,
+@@ -870,6 +879,13 @@ fn validate_stage_input(input: &StageTurnArgs) -> Result<(), String> {
+     } else if input.retraction_reason.as_deref().is_some_and(|value| !value.trim().is_empty()) {
+         return Err("retraction_reason requires at least one retract_turns entry".to_string());
+     }
++    let has_fact_replacement = input.facts.as_deref().unwrap_or(&[]).iter().any(|fact| fact.supersedes.is_some());
++    if has_fact_replacement {
++        let has_resolved_replacement_event = input.events.as_deref().unwrap_or(&[]).iter().any(|event| event.status.as_deref() == Some("resolved"));
++        if !has_resolved_replacement_event {
++            return Err("a fact replacement requires a resolved replacement event in the same stage; permission changes cannot stand in for happened history".to_string());
++        }
++    }
+     if input.advances_story == Some(false) {
+         let has_story_mutation = input.clock.is_some()
+             || input.scene.is_some()
+@@ -1194,11 +1210,9 @@ fn apply_stage(state: &mut RpState, input: StageTurnArgs, run_id: &str) -> Resul
+         upsert_event(&mut state.events, RpEvent { id, summary: event.summary, status: event.status.unwrap_or_else(|| "pending".to_string()), turn });
+     }
+     for (index, fact) in input.facts.unwrap_or_default().into_iter().enumerate() {
+-        if let Some(prior_id) = fact.supersedes.as_deref()
+-            && let Some(prior) = state.facts.iter_mut().find(|item| item.id == prior_id)
+-        {
+-            prior.truth_status = "SUPERSEDED".to_string();
+-            prior.invalid_at_turn = Some(turn);
++        let replacement_id = fact.id.clone().unwrap_or_else(|| format!("fact-{turn}-{index}"));
++        if let Some(prior_id) = fact.supersedes.as_deref() {
++            apply_fact_replacement_cascade(state, prior_id, &replacement_id, turn);
+         }
+         let classification = fact.classification.unwrap_or_else(|| "HISTORICAL".to_string());
+         let source = fact.source.map(|source| RpKnowledgeSource { kind: source.kind, reference: source.reference });
+@@ -1209,7 +1223,7 @@ fn apply_stage(state: &mut RpState, input: StageTurnArgs, run_id: &str) -> Resul
+             _ => "HISTORICAL_FACT",
+         }.to_string();
+         state.facts.push(RpFact {
+-            id: fact.id.unwrap_or_else(|| format!("fact-{turn}-{index}")),
++            id: replacement_id,
+             subject: fact.subject,
+             predicate: fact.predicate,
+             value: fact.value,
+@@ -1723,10 +1737,14 @@ fn active_memory_tier_counts(memories: &[RpMemoryRecord]) -> BTreeMap<String, us
+ 
+ fn recall_hits(state: &RpState, query: &str, limit: usize) -> Vec<Value> {
+     let mut records = Vec::<(u64, Value, String)>::new();
++    for event in state.events.iter().filter(|event| event_is_active(event)) {
++        records.push((event.turn, json!({"kind":"event","record":event}), format!("{} {} {}", event.id, event.summary, event.status)));
++    }
+     for fact in state.facts.iter().filter(|fact| fact_is_active(fact)) {
+         records.push((fact.recorded_at_turn, json!({"kind":"fact","record":fact}), format!("{} {} {}", fact.subject, fact.predicate, fact.value)));
+     }
+-    for k in &state.knowledge {
++    for index in active_knowledge_indices(state) {
++        let k = &state.knowledge[index];
+         records.push((k.turn, json!({"kind":"knowledge","record":k}), format!("{} {} {} {}", k.character_id, k.subject, k.predicate, k.state)));
+     }
+     for c in &state.commitments {
+@@ -1771,6 +1789,37 @@ fn fact_is_active(fact: &RpFact) -> bool {
+         && !matches!(fact.truth_status.as_str(), "SUPERSEDED" | "RETRACTED")
+ }
+ 
++fn event_is_active(event: &RpEvent) -> bool {
++    event.status != "cancelled"
++}
++
++fn active_knowledge_indices(state: &RpState) -> HashSet<usize> {
++    let mut latest_by_proposition = BTreeMap::<(String, String, String), usize>::new();
++    for (index, knowledge) in state.knowledge.iter().enumerate() {
++        latest_by_proposition.insert(
++            (compact(&knowledge.character_id), compact(&knowledge.subject), compact(&knowledge.predicate)),
++            index,
++        );
++    }
++    latest_by_proposition
++        .into_values()
++        .filter(|index| {
++            let knowledge = &state.knowledge[*index];
++            let fact_is_valid = knowledge
++                .fact_id
++                .as_deref()
++                .is_none_or(|fact_id| state.facts.iter().any(|fact| fact.id == fact_id && fact_is_active(fact)));
++            let event_is_valid = knowledge
++                .source
++                .as_ref()
++                .filter(|source| source.kind == "event_derived")
++                .and_then(|source| source.reference.as_deref())
++                .is_none_or(|event_id| state.events.iter().any(|event| event.id == event_id && event_is_active(event)));
++            fact_is_valid && event_is_valid
++        })
++        .collect()
++}
++
+ fn capture_runtime_checkpoint(state: &mut RpState, before_turn: u64) {
+     let checkpoint = RpRuntimeCheckpoint {
+         before_turn,
+@@ -2095,6 +2144,49 @@ fn missing_superseded_fact_id<'a>(state: &RpState, facts: &'a [FactInput]) -> Op
+         .find(|id| !state.facts.iter().any(|item| item.id == *id))
+ }
+ 
++fn inactive_superseded_fact_id<'a>(state: &RpState, facts: &'a [FactInput]) -> Option<&'a str> {
++    facts
++        .iter()
++        .filter_map(|fact| fact.supersedes.as_deref())
++        .find(|id| state.facts.iter().any(|item| item.id == *id && !fact_is_active(item)))
++}
++
++fn apply_fact_replacement_cascade(state: &mut RpState, prior_id: &str, _replacement_id: &str, turn: u64) {
++    let mut invalidated_fact_ids = HashSet::new();
++    if let Some(prior) = state.facts.iter_mut().find(|item| item.id == prior_id && fact_is_active(item)) {
++        prior.truth_status = "SUPERSEDED".to_string();
++        prior.invalid_at_turn = Some(turn);
++        invalidated_fact_ids.insert(prior.id.clone());
++    }
++    if invalidated_fact_ids.is_empty() {
++        return;
++    }
++
++    // A replacement keeps the old records for audit, but removes their
++    // causal edges from the effective history projection.
++    let invalidated_event_ids = state
++        .facts
++        .iter()
++        .filter(|fact| invalidated_fact_ids.contains(&fact.id))
++        .filter_map(|fact| fact.source.as_ref())
++        .filter(|source| source.kind == "event_derived")
++        .filter_map(|source| source.reference.clone())
++        .collect::<HashSet<_>>();
++    for event in state.events.iter_mut().filter(|event| invalidated_event_ids.contains(&event.id)) {
++        event.status = "cancelled".to_string();
++    }
++    state.knowledge.retain(|knowledge| {
++        let fact_edge_is_stale = knowledge.fact_id.as_deref().is_some_and(|fact_id| invalidated_fact_ids.contains(fact_id));
++        let event_edge_is_stale = knowledge
++            .source
++            .as_ref()
++            .filter(|source| source.kind == "event_derived")
++            .and_then(|source| source.reference.as_deref())
++            .is_some_and(|event_id| invalidated_event_ids.contains(event_id));
++        !fact_edge_is_stale && !event_edge_is_stale
++    });
++}
++
+ fn validate_continuity_predicate(_subject: &str, predicate: &str) -> Result<(), String> {
+     let pred_key = compact(predicate);
+     if is_player_internal_predicate(&pred_key) {
+@@ -2256,6 +2348,101 @@ mod tests {
+         validate_fact_provenance(&state, &bad_fact).expect("accepted event ids are valid provenance");
+     }
+ 
++    #[test]
++    fn history_rewrite_cascades_retraction_into_effective_truth_and_replacement() {
++        let old_event_id = "ev_kiss_hug".to_string();
++        let old_fact_id = "fact_kiss_hug_happened".to_string();
++        let old_scope_fact_id = "fact-2-1".to_string();
++        let replacement_event_id = "ev_further_intimacy_rewrite".to_string();
++        let mut state = RpState {
++            turn: 5,
++            runtime_revision: 5,
++            scene_id: Some("scene-apartment".to_string()),
++            scene: Some("Jiang and Lin adult scene".to_string()),
++            location: Some("apartment".to_string()),
++            participants: vec!["Jiang".to_string(), "Lin".to_string()],
++            boundaries: vec![RpBoundary {
++                id: "bnd_no_beyond_kiss_hug".to_string(), topic: "no further intimacy".to_string(),
++                status: "active".to_string(), created_turn: 1, revoked_turn: None,
++            }],
++            grants: vec![RpGrant {
++                id: "grant_kiss_hug_jiang_lin".to_string(), scene_id: "scene-apartment".to_string(),
++                participants: vec!["Jiang".to_string(), "Lin".to_string()], scope: vec!["kiss and hug".to_string()],
++                status: "granted".to_string(), granted_turn: 1, withdrawn_turn: None,
++            }],
++            events: vec![RpEvent { id: old_event_id.clone(), summary: "Only kissing and hugging happened; nothing further occurred.".to_string(), status: "resolved".to_string(), turn: 1 }],
++            facts: vec![
++                RpFact {
++                    id: old_fact_id.clone(), subject: "Jiang and Lin that evening".to_string(), predicate: "activity_within_scope".to_string(),
++                    value: json!("Only kissing and hugging happened; nothing further occurred."), plane: "OBJECTIVE".to_string(), classification: "HISTORICAL".to_string(),
++                    truth_status: "HISTORICAL_FACT".to_string(), admission_state: "COMMITTED".to_string(), canon_authority: true,
++                    source: Some(RpKnowledgeSource { kind: "event_derived".to_string(), reference: Some(old_event_id.clone()) }), valid_from_turn: 1, invalid_at_turn: None, recorded_at_turn: 1,
++                },
++                RpFact {
++                    id: old_scope_fact_id.clone(), subject: "Jiang and Lin that evening".to_string(), predicate: "evening_intimacy".to_string(),
++                    value: json!("No further physical intimacy occurred."), plane: "OBJECTIVE".to_string(), classification: "HISTORICAL".to_string(),
++                    truth_status: "HISTORICAL_FACT".to_string(), admission_state: "COMMITTED".to_string(), canon_authority: true,
++                    source: Some(RpKnowledgeSource { kind: "event_derived".to_string(), reference: Some(old_event_id.clone()) }), valid_from_turn: 2, invalid_at_turn: None, recorded_at_turn: 2,
++                },
++                RpFact {
++                    id: "fact-unchanged-adult-age".to_string(), subject: "Jiang".to_string(), predicate: "age_status".to_string(), value: json!("adult"),
++                    plane: "OBJECTIVE".to_string(), classification: "HISTORICAL".to_string(), truth_status: "HISTORICAL_FACT".to_string(), admission_state: "COMMITTED".to_string(), canon_authority: true,
++                    source: Some(RpKnowledgeSource { kind: "user_asserted".to_string(), reference: Some("character setup".to_string()) }), valid_from_turn: 1, invalid_at_turn: None, recorded_at_turn: 1,
++                },
++            ],
++            knowledge: vec![
++                RpKnowledge { character_id: "Jiang".to_string(), subject: "Jiang and Lin that evening".to_string(), predicate: "activity_within_scope".to_string(), state: "knows".to_string(), fact_id: Some(old_fact_id.clone()), source: Some(RpKnowledgeSource { kind: "event_derived".to_string(), reference: Some(old_event_id.clone()) }), turn: 2 },
++                RpKnowledge { character_id: "Lin".to_string(), subject: "Jiang and Lin that evening".to_string(), predicate: "evening_intimacy".to_string(), state: "knows".to_string(), fact_id: Some(old_scope_fact_id.clone()), source: Some(RpKnowledgeSource { kind: "event_derived".to_string(), reference: Some(old_event_id.clone()) }), turn: 2 },
++            ],
++            runtime_history: vec![
++                RpRuntimeCheckpoint { before_turn: 3, clock: None, scene_id: Some("scene-apartment".to_string()), scene: Some("Jiang and Lin adult scene".to_string()), location: Some("apartment".to_string()), participants: vec!["Jiang".to_string(), "Lin".to_string()], npcs: BTreeMap::new(), living_world: RpLivingWorld::default() },
++                RpRuntimeCheckpoint { before_turn: 5, clock: None, scene_id: Some("scene-apartment".to_string()), scene: Some("Jiang and Lin adult scene".to_string()), location: Some("apartment".to_string()), participants: vec!["Jiang".to_string(), "Lin".to_string()], npcs: BTreeMap::new(), living_world: RpLivingWorld::default() },
++            ],
++            ..RpState::default()
++        };
++
++        apply_retractions(&mut state, &[3, 5], "user rewrote the accepted history", 5).expect("turn retraction records the correction");
++        assert_eq!(state.retractions.len(), 2);
++        assert!(state.facts.iter().any(|fact| fact.id == old_fact_id && fact_is_active(fact)), "older causal facts remain until replacement identifies them");
++
++        let replacement = StageTurnArgs {
++            beat_summary: "The user-authorized replacement history records that further intimacy occurred.".to_string(), advances_story: Some(true),
++            retract_turns: None, retraction_reason: None, clock: None, scene: None, location: None, participants: None, npc_updates: None, cast_updates: None,
++            profile_evidence: None, memory_updates: None, canonization_proposals: None,
++            events: Some(vec![EventInput { id: Some(replacement_event_id.clone()), summary: "Further intimacy occurred that evening.".to_string(), status: Some("resolved".to_string()) }]),
++            facts: Some(vec![
++                FactInput { id: Some("fact-further-intimacy".to_string()), subject: "Jiang and Lin that evening".to_string(), predicate: "activity_within_scope".to_string(), value: json!("Further intimacy occurred."), supersedes: Some(old_fact_id.clone()), knowledge_refs: None, plane: Some("OBJECTIVE".to_string()), classification: Some("HISTORICAL".to_string()), source: Some(KnowledgeSourceInput { kind: "event_derived".to_string(), reference: Some(replacement_event_id.clone()) }) },
++                FactInput { id: Some("fact-further-intimacy-scope".to_string()), subject: "Jiang and Lin that evening".to_string(), predicate: "evening_intimacy".to_string(), value: json!("Further physical intimacy occurred."), supersedes: Some(old_scope_fact_id.clone()), knowledge_refs: None, plane: Some("OBJECTIVE".to_string()), classification: Some("HISTORICAL".to_string()), source: Some(KnowledgeSourceInput { kind: "event_derived".to_string(), reference: Some(replacement_event_id.clone()) }) },
++            ]),
++            knowledge: Some(vec![
++                KnowledgeInput { character_id: "Jiang".to_string(), subject: "Jiang and Lin that evening".to_string(), predicate: "activity_within_scope".to_string(), state: "knows".to_string(), fact_id: Some("fact-further-intimacy".to_string()), source: Some(KnowledgeSourceInput { kind: "user_asserted".to_string(), reference: Some(replacement_event_id.clone()) }) },
++                KnowledgeInput { character_id: "Lin".to_string(), subject: "Jiang and Lin that evening".to_string(), predicate: "evening_intimacy".to_string(), state: "knows".to_string(), fact_id: Some("fact-further-intimacy-scope".to_string()), source: Some(KnowledgeSourceInput { kind: "user_asserted".to_string(), reference: Some(replacement_event_id.clone()) }) },
++            ]),
++            commitments: None, threads: None, living_world: None, authority: None,
++        };
++        validate_stage_input(&replacement).expect("replacement payload follows the existing schema");
++        validate_fact_provenance(&state, &replacement).expect("replacement event provenance is real");
++        validate_knowledge_provenance(&state, &replacement).expect("replacement knowledge provenance is real");
++        apply_stage(&mut state, replacement.clone(), "rewrite-run").expect("replacement applies atomically to the staged clone");
++
++        assert_eq!(state.events.iter().find(|event| event.id == old_event_id).unwrap().status, "cancelled");
++        assert!(!state.facts.iter().find(|fact| fact.id == old_fact_id).map(fact_is_active).unwrap());
++        assert!(!state.facts.iter().find(|fact| fact.id == old_scope_fact_id).map(fact_is_active).unwrap());
++        assert!(state.facts.iter().any(|fact| fact.id == "fact-further-intimacy" && fact_is_active(fact)));
++        assert!(state.facts.iter().any(|fact| fact.id == "fact-further-intimacy-scope" && fact_is_active(fact)));
++        assert!(state.knowledge.iter().all(|knowledge| ![old_fact_id.as_str(), old_scope_fact_id.as_str()].contains(&knowledge.fact_id.as_deref().unwrap_or_default())));
++        assert!(state.knowledge.iter().any(|knowledge| knowledge.fact_id.as_deref() == Some("fact-further-intimacy")));
++        assert!(state.facts.iter().any(|fact| fact.id == "fact-unchanged-adult-age" && fact_is_active(fact)));
++        assert!(state.grants.iter().any(|grant| grant.id == "grant_kiss_hug_jiang_lin" && grant.status == "granted"));
++        let recalled_old = recall_hits(&state, "nothing further occurred", 20);
++        assert!(recalled_old.iter().all(|hit| hit.get("kind").and_then(Value::as_str) != Some("fact")));
++        assert!(recall_hits(&state, "further intimacy occurred", 20).iter().any(|hit| hit.get("kind").and_then(Value::as_str) == Some("fact")));
++        assert!(inactive_superseded_fact_id(&state, replacement.facts.as_deref().unwrap()).is_some(), "replaying the same replacement is rejected instead of creating another truth");
++        let reloaded: RpState = serde_json::from_str(&serde_json::to_string(&state).unwrap()).unwrap();
++        assert!(reloaded.facts.iter().any(|fact| fact.id == "fact-further-intimacy" && fact_is_active(fact)), "the replacement survives state serialization/reload");
++        assert!(reloaded.facts.iter().any(|fact| fact.id == old_fact_id && fact.truth_status == "SUPERSEDED"), "the superseded audit record survives reload");
++    }
++
+ 
+     fn input(predicate: &str, subject: &str) -> StageTurnArgs {
+         StageTurnArgs { beat_summary:"one beat".to_string(), advances_story:None, retract_turns:None, retraction_reason:None, clock:None, scene:None, location:None, participants:None, npc_updates:None, cast_updates:None, profile_evidence:None, memory_updates:None, canonization_proposals:None, events:None, facts:Some(vec![FactInput{id:None,subject:subject.to_string(),predicate:predicate.to_string(),value:json!(true),supersedes:None,knowledge_refs:None,plane:None,classification:None,source:Some(KnowledgeSourceInput{kind:"user_asserted".to_string(),reference:Some("test user assertion".to_string())})}]), knowledge:None, commitments:None, threads:None, living_world:None, authority:None }
+diff --git a/tests/history-rewrite-cascade.test.mjs b/tests/history-rewrite-cascade.test.mjs
+new file mode 100644
+index 0000000..e933d8e
+--- /dev/null
++++ b/tests/history-rewrite-cascade.test.mjs
+@@ -0,0 +1,38 @@
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import path from 'node:path';
++import test from 'node:test';
++
++const root = path.resolve(import.meta.dirname, '..');
++const state = fs.readFileSync(path.join(root, 'src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs'), 'utf8');
++const descriptor = fs.readFileSync(path.join(root, 'src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs'), 'utf8');
++const profile = fs.readFileSync(path.join(root, 'src-tauri/crates/tt-application/src/services/agent_profile_service/defaults.rs'), 'utf8');
++
++test('history rewrite uses existing retraction, supersedes, and replacement semantics', () => {
++    assert.match(state, /fn apply_fact_replacement_cascade/);
++    assert.match(state, /prior\.truth_status = "SUPERSEDED"/);
++    assert.match(state, /event\.status = "cancelled"/);
++    assert.match(state, /fact_edge_is_stale/);
++    assert.match(state, /event_edge_is_stale/);
++    assert.match(state, /fn active_knowledge_indices/);
++    assert.match(state, /state\.events\.iter\(\)\.filter\(\|event\| event_is_active\(event\)\)/);
++    assert.match(state, /let mut staged_state = state\.clone\(\)/);
++});
++
++test('history rewrite contract keeps authority separate from happened history', () => {
++    for (const text of [descriptor, profile]) {
++        assert.match(text, /History rewrite|history rewrite/);
++        assert.match(text, /supersedes/);
++        assert.match(text, /replacement event/);
++        assert.match(text, /grant.*(?:never|not).*evidence|grant.*proof/i);
++        assert.match(text, /real .*?(?:accepted|staged).*?(?:id|reference)/i);
++    }
++});
++
++test('stage hotfix contract remains present', () => {
++    assert.match(descriptor, /RP_STAGE_TURN_MODEL_CONTRACT_V1/);
++    assert.match(profile, /npc_updates \(not npcs\)/);
++    assert.match(profile, /at most 3 stage attempts/);
++    assert.match(profile, /at most one successful stage/);
++    assert.match(profile, /render only the successfully staged beat/);
++});
