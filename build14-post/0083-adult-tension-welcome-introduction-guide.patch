@@ -1,0 +1,160 @@
+diff --git a/src/scripts/templates/welcome.html b/src/scripts/templates/welcome.html
+--- a/src/scripts/templates/welcome.html
++++ b/src/scripts/templates/welcome.html
+@@ -81,3 +81,105 @@
+         </a>
+     </li>
+ </ul>
++
++<hr>
++<section id="adult-tension-introduction" class="adult-tension-welcome">
++    <h2>Adult Tension 魔改版</h2>
++    <p>
++        这是基于 TauriTavern 的增强版。下面列出的内容是当前构建中已经接入的功能，不是未来规划。
++        原版聊天、角色、预设、扩展和 API 连接功能仍然保留。
++    </p>
++
++    <h3>相比原版新增的功能</h3>
++    <ul>
++        <li>
++            <strong>Agent System Agent 系统：</strong>
++            支持独立 Agent Profile、独立模型连接、工具目录、工具调用循环、运行记录和本地就绪检查。
++            普通发送、触发、重新生成和新的 swipe 候选可以进入 Agent 流程；切换已有候选不会重复启动 Agent。
++        </li>
++        <li>
++            <strong>三层 RP 上下文：</strong>
++            把当前聊天、RP 持久状态和 World Info 分层处理，并限制上下文范围和工具预算，减少长对话中的无关注入。
++        </li>
++        <li>
++            <strong>World Info / Lore 增量重编译：</strong>
++            Lore 依赖发生变化时只重新计算受影响的部分，并在投影到人物或 RP 之前做安全复核，避免旧资料继续污染当前上下文。
++        </li>
++        <li>
++            <strong>RP Session 持久角色状态：</strong>
++            支持 Cast Registry、人物资料、关系、事件、记忆和叙事角色等结构化状态，并保留来源证据和修订号。
++        </li>
++        <li>
++            <strong>World Canon 安全边界：</strong>
++            新人物默认只属于当前 Session；只有用户明确确认指定的 canonization proposal，才允许写入 World Canon。
++            Agent 不会自行把推测内容变成世界设定。
++        </li>
++        <li>
++            <strong>角色卡制作与绑定：</strong>
++            可以从 RP 持久人物状态生成标准角色卡草稿，预览字段、保存到角色库并建立绑定；推测字段默认排除。
++        </li>
++        <li>
++            <strong>角色卡 Return / 回流：</strong>
++            可以检查角色卡来源、预览 Return Import Diff，再把明确选择的字段安全回流到 RP；不会越权修改世界 Canon、记忆、关系或控制权。
++        </li>
++        <li>
++            <strong>角色卡 Editing Guide：</strong>
++            在角色编辑页可以导出编辑说明，列出可编辑字段、绑定元数据和不能写入角色卡的内部状态。
++        </li>
++        <li>
++            <strong>持久化草稿与恢复：</strong>
++            角色卡草稿可以保存到设备、查看修订、重新生成或归档；应用重启后仍能检查绑定和恢复状态。
++        </li>
++        <li>
++            <strong>Skills 内置与启动自检：</strong>
++            Adult Tension 运行所需的三个 Runtime Skills 会随构建打包并在启动时检查；缺失时会提示并显示就绪状态，而不是静默运行。
++        </li>
++        <li>
++            <strong>安全与分发约束：</strong>
++            角色卡和便携导出不会写入 API key、token、cookie、iOS 沙盒路径、聊天 JSONL 路径或 Agent 内部状态；iOS 构建还包含自定义版本和更新管理标记。
++        </li>
++    </ul>
++
++    <h3>快速教程：第一次使用</h3>
++    <ol>
++        <li>
++            <strong>先连接模型。</strong>
++            点击上方的 <em>API Connections</em>，配置一个可用的聊天模型并完成连接。
++            Agent 的本地检查只确认配置，不会替你测试或消耗一次真实 LLM 请求。
++        </li>
++        <li>
++            <strong>打开 Agent System。</strong>
++            点击
++            <button class="menu_button menu_button_icon drawer-opener inline-flex" data-target="extensions-settings-button" type="button">
++                <i class="fa-solid fa-cubes"></i>
++                <span>Extensions</span>
++            </button>
++            ，在扩展设置中打开 Agent System，确认 Adult Tension 就绪状态显示为已就绪，并确认三个 Skills 均已安装。
++        </li>
++        <li>
++            <strong>选择 Profile 和模型。</strong>
++            在 Agent System 中选择 Adult Tension RP Profile，绑定要使用的模型连接；首次使用建议先保持默认工具预算和上下文设置。
++        </li>
++        <li>
++            <strong>开始一段 RP。</strong>
++            从角色管理中选择角色，回到聊天后发送明确的场景、行动或状态变化。Agent 会在需要时记录结构化人物、事件和记忆状态。
++        </li>
++        <li>
++            <strong>检查 RP 状态。</strong>
++            在 Agent System 的 RP / Cast 面板查看当前人物、叙事角色、生命周期和来源证据。不要把“推测”误认为已经确认的 Canon。
++        </li>
++        <li>
++            <strong>制作角色卡。</strong>
++            从 RP 人物面板选择“制作角色卡”，先查看草稿和警告，再保存到角色库并绑定。未确认的推测字段会默认排除。
++        </li>
++        <li>
++            <strong>修改角色卡并回流。</strong>
++            在角色编辑页使用 Editing Guide 了解字段；修改后使用 Return Character Card，逐项审阅 Diff，只确认你确实想回流的字段。
++        </li>
++        <li>
++            <strong>把新人物提升为世界设定。</strong>
++            只有在你明确确认指定 proposal id 后，才执行 Canonization。没有明确确认时，人物只留在当前 RP Session 中。
++        </li>
++    </ol>
++
++    <h3>使用时请记住</h3>
++    <ul>
++        <li>“本地就绪”只代表配置和资源预检查通过，不代表真实模型请求、真机桥接或所有原生能力已经验证。</li>
++        <li>不要把 API key、token、cookie、内部路径或 Agent 状态手工加入角色卡。</li>
++        <li>应用 RP 修改前先看预览和 Diff；出现身份、修订号或来源不一致时，应停止提交并重新生成草稿。</li>
++        <li>World Canon、角色卡和 RP Session 是不同作用域；不要用角色卡导入代替 Canon 确认。</li>
++    </ul>
++
++    <h3>推荐的最短上手路径</h3>
++    <p>
++        <strong>连接 API → 打开 Agent System → 确认 3/3 Skills → 选择 Adult Tension RP Profile → 开始聊天 → 查看 RP 状态 → 预览后制作角色卡。</strong>
++    </p>
++</section>
+diff --git a/tests/adult-tension-welcome-introduction-contract.test.mjs b/tests/adult-tension-welcome-introduction-contract.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/adult-tension-welcome-introduction-contract.test.mjs
+@@ -0,0 +1,30 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++
++const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
++const welcome = read('src/scripts/templates/welcome.html');
++
++test('Adult Tension welcome page documents the implemented extra features', () => {
++    assert.match(welcome, /id="adult-tension-introduction"/);
++    assert.match(welcome, /相比原版新增的功能/);
++    for (const feature of [
++        'Agent System Agent 系统',
++        '三层 RP 上下文',
++        'World Info \/ Lore 增量重编译',
++        'RP Session 持久角色状态',
++        'World Canon 安全边界',
++        '角色卡制作与绑定',
++        '角色卡 Return \/ 回流',
++        '角色卡 Editing Guide',
++        '持久化草稿与恢复',
++        'Skills 内置与启动自检',
++    ]) {
++        assert.match(welcome, new RegExp(feature));
++    }
++});
++
++test('Adult Tension welcome page includes a first-use tutorial and safety boundaries', () => {
++    assert.match(welcome, /快速教程：第一次使用/);
++    for (const step of ['先连接模型', '打开 Agent System', '选择 Profile 和模型', '制作角色卡', '修改角色卡并回流', '提升为世界设定']) {
++        assert.match(welcome, new RegExp(step));
++    }
++    assert.match(welcome, /不要把 API key、token、cookie/);
++    assert.match(welcome, /World Canon、角色卡和 RP Session 是不同作用域/);
++});
