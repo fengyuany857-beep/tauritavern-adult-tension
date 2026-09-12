@@ -1,0 +1,16 @@
+diff --git a/tests/character-card-draft-materialization-contract.test.mjs b/tests/character-card-draft-materialization-contract.test.mjs
+--- a/tests/character-card-draft-materialization-contract.test.mjs
++++ b/tests/character-card-draft-materialization-contract.test.mjs
+@@ -11,7 +11,11 @@ function read(relativePath) {
+ 
+ async function installHarness(safeInvoke) {
+     globalThis.window = { __TAURITAVERN__: { api: {} } };
+-    globalThis.navigator = { userAgent: 'Desktop' };
++    Object.defineProperty(globalThis, 'navigator', {
++        value: { userAgent: 'Desktop' },
++        configurable: true,
++        writable: true,
++    });
+     const module = await import(pathToFileURL(path.join(REPO_ROOT, 'src/tauri/main/api/character-cards.js')));
+     module.installCharacterCardsApi({
+         safeInvoke,
