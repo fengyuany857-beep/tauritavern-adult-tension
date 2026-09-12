@@ -1,0 +1,391 @@
+diff --git a/src-tauri/crates/tt-application/src/services/mod.rs b/src-tauri/crates/tt-application/src/services/mod.rs
+--- a/src-tauri/crates/tt-application/src/services/mod.rs
++++ b/src-tauri/crates/tt-application/src/services/mod.rs
+@@ -18,6 +18,7 @@ pub mod bundled_template_service;
+ pub mod character_card_draft_materialization_service;
+ pub mod character_card_materialization_service;
+ pub mod character_card_materialization_orchestrator;
++pub mod character_card_rp_apply_service;
+ pub mod character_card_return_durable_authority;
+ pub mod character_card_return_selected_state;
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs b/src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs
+new file mode 100644
+--- /dev/null
++++ b/src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs
+@@ -0,0 +1,333 @@
++use std::sync::Arc;
++
++use chrono::Utc;
++use serde::{Deserialize, Serialize};
++use serde_json::{Value, json};
++use sha2::{Digest, Sha256};
++use tokio::sync::Mutex;
++use tt_domain::errors::DomainError;
++use tt_domain::models::agent::{AgentRun, AgentRunStatus, WorkspacePath};
++use tt_domain::models::character_card_materialization::{
++    BindingStatus, CharacterCardBinding, CharacterCardTransactionJournal,
++    CharacterCardTransactionState, CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
++};
++use tt_ports::repositories::agent_run_repository::{AgentRunListQuery, AgentRunRepository};
++use tt_ports::repositories::character_card_materialization_repository::CharacterCardMaterializationRepository;
++use tt_ports::repositories::character_card_return_persistent_state_repository::CharacterCardReturnPersistentStateRepository;
++use tt_ports::repositories::workspace_repository::WorkspaceRepository;
++use uuid::Uuid;
++
++use crate::dto::character_dto::CharacterDto;
++use crate::errors::ApplicationError;
++
++use super::character_card_return_selected_state::{
++    CharacterCardReturnSelectedState, CharacterCardReturnSelectedStateResolver,
++};
++use super::character_service::CharacterService;
++
++const RP_STATE_PATH: &str = "persist/rp/state.json";
++const MAX_RUN_PROBE: usize = 64;
++const MAX_PROFILE_EVIDENCE: usize = 1024;
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CharacterCardRpApplyCas {
++    pub stable_chat_id: String,
++    pub selected_state_id: String,
++    pub binding_id: String,
++    pub binding_generation: u64,
++    pub card_revision: u64,
++    pub card_hash: String,
++    pub character_id: String,
++    pub profile_revision: u64,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardRpApplyMapping {
++    pub trait_key: String,
++    pub source_field: String,
++    pub proposed_statement: String,
++    pub current_statement: Option<String>,
++}
++
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardRpApplyPreview {
++    pub plan_token: String,
++    pub cas: CharacterCardRpApplyCas,
++    pub character_name: String,
++    pub mappings: Vec<CharacterCardRpApplyMapping>,
++    pub active_agent_run: bool,
++    pub blocked_reason: Option<String>,
++    pub warning: String,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CharacterCardRpApplySelection {
++    pub trait_key: String,
++    pub statement: String,
++}
++
++#[derive(Debug, Clone, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CharacterCardRpApplyPrepareRequest {
++    pub stable_chat_id: String,
++    pub binding_id: String,
++    pub plan_token: String,
++    pub selections: Vec<CharacterCardRpApplySelection>,
++    pub confirm: bool,
++}
++
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardRpApplyPrepared {
++    pub transaction_id: String,
++    pub stable_chat_id: String,
++    pub base_state_id: String,
++    pub prepared_state_id: String,
++    pub character_id: String,
++    pub profile_revision: u64,
++    pub change_count: usize,
++}
++
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardRpApplyAuthorization {
++    pub transaction_id: String,
++    pub stable_chat_id: String,
++    pub base_state_id: String,
++    pub prepared_state_id: String,
++}
++
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardRpApplyCommitResult {
++    pub transaction_id: String,
++    pub binding_id: String,
++    pub state_id: String,
++    pub profile_revision: u64,
++}
++
++pub struct CharacterCardRpApplyService {
++    selected: CharacterCardReturnSelectedStateResolver,
++    persistent: Arc<dyn CharacterCardReturnPersistentStateRepository>,
++    materialization: Arc<dyn CharacterCardMaterializationRepository>,
++    characters: Arc<CharacterService>,
++    runs: Arc<dyn AgentRunRepository>,
++    workspaces: Arc<dyn WorkspaceRepository>,
++    commit_guard: Mutex<()>,
++}
++
++impl CharacterCardRpApplyService {
++    pub fn new(
++        selected: CharacterCardReturnSelectedStateResolver,
++        persistent: Arc<dyn CharacterCardReturnPersistentStateRepository>,
++        materialization: Arc<dyn CharacterCardMaterializationRepository>,
++        characters: Arc<CharacterService>,
++        runs: Arc<dyn AgentRunRepository>,
++        workspaces: Arc<dyn WorkspaceRepository>,
++    ) -> Self {
++        Self {
++            selected,
++            persistent,
++            materialization,
++            characters,
++            runs,
++            workspaces,
++            commit_guard: Mutex::new(()),
++        }
++    }
++
++    pub async fn preview(
++        &self,
++        stable_chat_id: &str,
++        binding_id: &str,
++    ) -> Result<CharacterCardRpApplyPreview, ApplicationError> {
++        let stable_chat_id = require_id(stable_chat_id, "stableChatId")?;
++        let binding_id = require_id(binding_id, "bindingId")?;
++        let binding = self.active_binding(binding_id).await?;
++        let selected = self
++            .selected
++            .resolve_stable_chat_id(stable_chat_id)
++            .await?;
++        let state = self.read_rp_state(&selected).await?;
++        validate_binding_target(&binding, &selected, &state)?;
++        let character_id = binding.target.character_id.0.clone();
++        let entity = state
++            .get("castRegistry")
++            .and_then(Value::as_object)
++            .and_then(|cast| cast.get(&character_id))
++            .and_then(Value::as_object)
++            .ok_or_else(|| ApplicationError::ValidationError(
++                "CARD_RP_TARGET_MISSING: bound character is not present in selected RP state".to_string(),
++            ))?;
++        let profile_revision = entity
++            .get("profileRevision")
++            .and_then(Value::as_u64)
++            .ok_or_else(|| ApplicationError::ValidationError(
++                "CARD_RP_STATE_INVALID: profileRevision is missing".to_string(),
++            ))?;
++        let card = self
++            .characters
++            .get_character(&binding.card_storage_identity)
++            .await?;
++        let card_hash = hash_card(&card)?;
++        let mappings = build_mappings(&card, entity);
++        let active_agent_run = self.has_active_run(stable_chat_id).await?;
++        let cas = CharacterCardRpApplyCas {
++            stable_chat_id: stable_chat_id.to_string(),
++            selected_state_id: selected.state_id,
++            binding_id: binding.binding_id.clone(),
++            binding_generation: binding.generation,
++            card_revision: binding.card_revision,
++            card_hash,
++            character_id,
++            profile_revision,
++        };
++        let plan_token = plan_token(&cas, &mappings)?;
++        Ok(CharacterCardRpApplyPreview {
++            plan_token,
++            cas,
++            character_name: card.name,
++            mappings,
++            active_agent_run,
++            blocked_reason: active_agent_run.then(|| "ACTIVE_AGENT_RUN".to_string()),
++            warning: "This applies selected Card fields to the current RP stable profile only. It does not update World Canon, memory, relations, events, control ownership, lifecycle, or narrative role.".to_string(),
++        })
++    }
++
++    async fn active_binding(
++        &self,
++        binding_id: &str,
++    ) -> Result<CharacterCardBinding, ApplicationError> {
++        let binding = self
++            .materialization
++            .read_binding(binding_id)
++            .await?
++            .ok_or_else(|| ApplicationError::ValidationError(
++                "CARD_RP_BINDING_MISSING: Character Card binding does not exist".to_string(),
++            ))?;
++        binding.validate().map_err(ApplicationError::ValidationError)?;
++        if binding.status != BindingStatus::Active {
++            return Err(ApplicationError::ValidationError(format!(
++                "CARD_RP_BINDING_INACTIVE: binding status is {:?}",
++                binding.status
++            )));
++        }
++        Ok(binding)
++    }
++
++    async fn read_rp_state(
++        &self,
++        selected: &CharacterCardReturnSelectedState,
++    ) -> Result<Value, ApplicationError> {
++        let path = WorkspacePath::parse(RP_STATE_PATH)?;
++        let text = self
++            .persistent
++            .read_persistent_text(&selected.workspace_id, &selected.state_id, &path)
++            .await?;
++        serde_json::from_str(&text).map_err(|error| ApplicationError::ValidationError(format!(
++            "CARD_RP_STATE_INVALID: selected RP state is not valid JSON: {error}"
++        )))
++    }
++
++    async fn has_active_run(&self, stable_chat_id: &str) -> Result<bool, ApplicationError> {
++        let runs = self
++            .runs
++            .list_runs(AgentRunListQuery {
++                chat_ref: None,
++                stable_chat_id: Some(stable_chat_id.to_string()),
++                statuses: None,
++                before: None,
++                limit: MAX_RUN_PROBE,
++            })
++            .await?;
++        Ok(runs.into_iter().any(|run| !run.status.is_terminal()))
++    }
++}
++
++fn require_id<'a>(value: &'a str, field: &str) -> Result<&'a str, ApplicationError> {
++    let value = value.trim();
++    if value.is_empty() {
++        return Err(ApplicationError::ValidationError(format!(
++            "CARD_RP_REQUEST_INVALID: {field} is required"
++        )));
++    }
++    Ok(value)
++}
++
++fn validate_binding_target(
++    binding: &CharacterCardBinding,
++    selected: &CharacterCardReturnSelectedState,
++    state: &Value,
++) -> Result<(), ApplicationError> {
++    if !binding.contexts.iter().any(|context| context.branch_id.0 == selected.stable_chat_id) {
++        return Err(ApplicationError::ValidationError(
++            "CARD_RP_CONTEXT_MISMATCH: binding is not associated with the selected stable chat".to_string(),
++        ));
++    }
++    let world_id = state
++        .get("session")
++        .and_then(|session| session.get("worldId"))
++        .and_then(Value::as_str)
++        .unwrap_or_default();
++    if world_id != binding.target.world_id.0 {
++        return Err(ApplicationError::ValidationError(
++            "CARD_RP_WORLD_MISMATCH: binding target world does not match selected RP state".to_string(),
++        ));
++    }
++    Ok(())
++}
++
++fn build_mappings(
++    card: &CharacterDto,
++    entity: &serde_json::Map<String, Value>,
++) -> Vec<CharacterCardRpApplyMapping> {
++    let mut mappings = Vec::new();
++    push_mapping(
++        &mut mappings,
++        entity,
++        "personality_invariants",
++        "personality",
++        &card.personality,
++    );
++    push_mapping(
++        &mut mappings,
++        entity,
++        "appearance_and_background",
++        "description",
++        &card.description,
++    );
++    mappings
++}
++
++fn push_mapping(
++    output: &mut Vec<CharacterCardRpApplyMapping>,
++    entity: &serde_json::Map<String, Value>,
++    trait_key: &str,
++    source_field: &str,
++    proposed: &str,
++) {
++    let proposed = proposed.trim();
++    if proposed.is_empty() {
++        return;
++    }
++    let current_statement = entity
++        .get("stableProfile")
++        .and_then(Value::as_object)
++        .and_then(|profile| profile.get(trait_key))
++        .and_then(Value::as_object)
++        .and_then(|value| value.get("statement"))
++        .and_then(Value::as_str)
++        .map(str::to_string);
++    output.push(CharacterCardRpApplyMapping {
++        trait_key: trait_key.to_string(),
++        source_field: source_field.to_string(),
++        proposed_statement: proposed.to_string(),
++        current_statement,
++    });
++}
++
++fn hash_card(card: &CharacterDto) -> Result<String, ApplicationError> {
++    let bytes = if let Some(json_data) = card.json_data.as_deref() {
++        json_data.as_bytes().to_vec()
++    } else {
++        serde_json::to_vec(&json!({
++            "name": card.name,
++            "description": card.description,
++            "personality": card.personality,
++            "scenario": card.scenario,
++            "first_mes": card.first_mes,
++            "mes_example": card.mes_example,
++            "tags": card.tags,
++            "creator_notes": card.creator_notes,
++            "alternate_greetings": card.alternate_greetings,
++            "system_prompt": card.system_prompt,
++            "post_history_instructions": card.post_history_instructions,
++            "extensions": card.extensions,
++            "character_book": card.character_book,
++        }))
++        .map_err(|error| ApplicationError::ValidationError(format!(
++            "CARD_RP_CARD_INVALID: failed to serialize Card for CAS: {error}"
++        )))?
++    };
++    Ok(hex_sha256(&bytes))
++}
++
++fn plan_token(
++    cas: &CharacterCardRpApplyCas,
++    mappings: &[CharacterCardRpApplyMapping],
++) -> Result<String, ApplicationError> {
++    let bytes = serde_json::to_vec(&(cas, mappings)).map_err(|error| {
++        ApplicationError::ValidationError(format!(
++            "CARD_RP_PLAN_INVALID: failed to serialize plan CAS: {error}"
++        ))
++    })?;
++    Ok(format!("card-rp-plan-{}", hex_sha256(&bytes)))
++}
++
++fn hex_sha256(bytes: &[u8]) -> String {
++    Sha256::digest(bytes)
++        .iter()
++        .map(|byte| format!("{byte:02x}"))
++        .collect()
++}
