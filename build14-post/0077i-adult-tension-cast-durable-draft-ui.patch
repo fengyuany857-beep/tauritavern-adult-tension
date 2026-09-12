@@ -1,17 +1,33 @@
-diff --git a/src/scripts/extensions/agent-system/src/adult-tension-cast.js b/src/scripts/extensions/agent-system/src/adult-tension-cast.js
---- a/src/scripts/extensions/agent-system/src/adult-tension-cast.js
-+++ b/src/scripts/extensions/agent-system/src/adult-tension-cast.js
-@@ -2,7 +2,7 @@ import { getActiveChatSnapshot } from '../../../../tauri/main/adapters/st/active-chat-ref.js';
- import { resolveStableChatId } from '../../../../tauri/main/api/agent-chat-identity.js';
- import { isAdultTensionDistribution } from './adult-tension-readiness.js';
--import { errorText } from './host-api.js';
+diff --git a/src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js b/src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js
+new file mode 100644
+--- /dev/null
++++ b/src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js
+@@ -0,0 +1,356 @@
++import { getActiveChatSnapshot } from '../../../../tauri/main/adapters/st/active-chat-ref.js';
++import { resolveStableChatId } from '../../../../tauri/main/api/agent-chat-identity.js';
++import { isAdultTensionDistribution } from './adult-tension-readiness.js';
 +import { confirmAction, errorText } from './host-api.js';
- import { translateAgentSystem as tr } from './i18n.js';
-@@ -22,7 +22,14 @@ let activeDialog = null;
- 
- function api() {
-     const value = window.__TAURITAVERN__?.api?.characterCards;
--    for (const method of ['listMaterializationDraftCandidates', 'previewMaterializationDraft', 'commitMaterializationDraft']) {
++import { translateAgentSystem as tr } from './i18n.js';
++
++const BUTTON_ID = 'ttas_adult_tension_cast';
++const DRAFT_FIELDS = Object.freeze([
++    ['name', 'Name', false],
++    ['description', 'Description', true],
++    ['personality', 'Personality', true],
++    ['scenario', 'Scenario', true],
++    ['first_mes', 'First Message', true],
++    ['mes_example', 'Message Example', true],
++    ['creator_notes', 'Creator Notes', true],
++    ['system_prompt', 'System Prompt', true],
++    ['post_history_instructions', 'Post-history Instructions', true],
++    ['creator', 'Creator', false],
++    ['character_version', 'Character Version', false],
++]);
++
++let activeDialog = null;
++
++function api() {
++    const value = window.__TAURITAVERN__?.api?.characterCards;
 +    for (const method of [
 +        'listMaterializationDraftCandidates',
 +        'resumeMaterializationDraft',
@@ -21,19 +37,365 @@ diff --git a/src/scripts/extensions/agent-system/src/adult-tension-cast.js b/src
 +        'previewMaterializationDraft',
 +        'commitMaterializationDraft',
 +    ]) {
-         if (typeof value?.[method] !== 'function') throw new Error(tr('characterCardDraftApiUnavailable'));
-     }
-@@ -103,7 +110,7 @@ function candidateCard(candidate, openDraft) {
-     return card;
- }
- 
--function renderDraft(root, candidate, preview, renderList) {
++        if (typeof value?.[method] !== 'function') {
++            throw new Error(tr('characterCardDraftApiUnavailable'));
++        }
++    }
++    return value;
++}
++
++function element(tag, text = '', className = '') {
++    const node = document.createElement(tag);
++    if (text) node.textContent = text;
++    if (className) node.className = className;
++    return node;
++}
++
++function stack(node, gap = '.7rem') {
++    Object.assign(node.style, { display: 'flex', flexDirection: 'column', gap });
++    return node;
++}
++
++function meta(parent, label, value) {
++    const row = element('div');
++    Object.assign(row.style, {
++        display: 'grid',
++        gridTemplateColumns: 'minmax(7rem,.34fr) minmax(0,1fr)',
++        gap: '.65rem',
++    });
++    row.append(element('strong', label), element('span', String(value ?? '')));
++    parent.append(row);
++}
++
++function draftDefinition(preview) {
++    const definition = structuredClone(preview?.draft?.definition);
++    if (!definition || typeof definition !== 'object' || Array.isArray(definition)
++        || !definition.data || typeof definition.data !== 'object' || Array.isArray(definition.data)) {
++        throw new Error(tr('characterCardDraftInvalid'));
++    }
++    return definition;
++}
++
++function sourceText(preview, key) {
++    const source = preview?.draft?.fieldProvenance?.[`data.${key}`];
++    return Array.isArray(source) ? source.join(', ') : '';
++}
++
++function candidateCard(candidate, openDraft) {
++    const card = stack(element('section'), '.5rem');
++    Object.assign(card.style, {
++        border: '1px solid var(--SmartThemeBorderColor)',
++        borderRadius: '8px',
++        padding: '.8rem',
++    });
++    const title = element('div');
++    Object.assign(title.style, { display: 'flex', justifyContent: 'space-between', gap: '.7rem' });
++    title.append(
++        element('strong', candidate?.displayName || candidate?.characterId || tr('unknownCharacter')),
++        element('span', candidate?.materialized ? tr('boundCard') : tr('draftAvailable')),
++    );
++    card.append(title);
++    meta(card, tr('narrativeRole'), candidate?.narrativeRole);
++    meta(card, tr('controlOwner'), candidate?.controlOwner);
++    meta(card, tr('lifecycleStatus'), candidate?.lifecycleStatus);
++    meta(card, tr('scope'), candidate?.scopeKind);
++    meta(card, tr('profileRevision'), candidate?.profileRevision);
++
++    const traits = Array.isArray(candidate?.stableTraits) ? candidate.stableTraits : [];
++    if (traits.length) {
++        const details = element('details');
++        details.append(element('summary', `${tr('stableTraits')} (${traits.length})`));
++        const body = stack(element('div'), '.35rem');
++        body.style.marginTop = '.5rem';
++        for (const trait of traits) {
++            body.append(element('div', `${trait?.key || ''}: ${trait?.statement || ''}${trait?.status && trait.status !== 'stable' ? ` [${trait.status}]` : ''}`));
++        }
++        details.append(body);
++        card.append(details);
++    }
++    const canon = Array.isArray(candidate?.authorCanonFields) ? candidate.authorCanonFields : [];
++    if (canon.length) meta(card, tr('authorCanonFields'), canon.join(', '));
++    if (Number(candidate?.inferredFieldCount || 0) > 0) {
++        const note = element('small', tr('inferredFieldsExcluded', { count: candidate.inferredFieldCount }));
++        note.style.opacity = '.75';
++        card.append(note);
++    }
++
++    const action = element('button', '', 'menu_button menu_button_icon');
++    action.type = 'button';
++    action.disabled = Boolean(candidate?.materialized);
++    action.innerHTML = '<i class="fa-solid fa-address-card"></i>';
++    action.append(document.createTextNode(` ${candidate?.materialized ? tr('cardAlreadyMaterialized') : tr('materializeCharacterCard')}`));
++    action.addEventListener('click', () => openDraft(candidate));
++    card.append(action);
++    return card;
++}
++
 +function renderDraft(root, candidate, chatId, preview, renderList) {
-     root.replaceChildren();
-@@ -124,6 +131,9 @@ function renderDraft(root, candidate, chatId, preview, renderList) {
-     meta(authority, tr('controlOwner'), candidate.controlOwner);
-     meta(authority, tr('profileRevision'), preview?.cas?.sourceProfileRevision);
++    root.replaceChildren();
++    const header = element('div');
++    Object.assign(header.style, { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '.7rem' });
++    const title = element('h2', `${tr('characterCardDraft')}: ${candidate.displayName}`);
++    title.style.margin = '0';
++    const back = element('button', tr('backToCharacters'), 'menu_button');
++    back.type = 'button';
++    back.addEventListener('click', renderList);
++    header.append(title, back);
++    root.append(header);
++
++    const authority = stack(element('section'), '.3rem');
++    Object.assign(authority.style, {
++        border: '1px solid var(--SmartThemeBorderColor)',
++        borderRadius: '8px',
++        padding: '.7rem',
++    });
++    meta(authority, tr('narrativeRole'), candidate.narrativeRole);
++    meta(authority, tr('scope'), preview?.scopeKind);
++    meta(authority, tr('controlOwner'), candidate.controlOwner);
++    meta(authority, tr('profileRevision'), preview?.cas?.sourceProfileRevision);
 +    meta(authority, tr('draftRevision'), preview?.draft?.draftRevision);
 +    meta(authority, tr('draftState'), preview?.draft?.state);
 +    meta(authority, tr('draftPersistence'), preview?.persisted ? tr('durableDraft') : tr('unsavedDraft'));
-     root.append(authority);
++    root.append(authority);
++
++    const warnings = Array.isArray(preview?.warnings) ? preview.warnings : [];
++    if (warnings.length) {
++        const box = stack(element('section'), '.25rem');
++        Object.assign(box.style, {
++            border: '1px solid var(--warning-color,currentColor)',
++            borderRadius: '8px',
++            padding: '.7rem',
++        });
++        box.append(element('strong', tr('draftWarnings')));
++        const list = element('ul');
++        for (const warning of warnings) list.append(element('li', String(warning)));
++        box.append(list);
++        root.append(box);
++    }
++
++    const definition = draftDefinition(preview);
++    const data = definition.data;
++    const form = stack(element('div'));
++    for (const [key, labelText, multiline] of DRAFT_FIELDS) {
++        const label = stack(element('label'), '.2rem');
++        const heading = element('span');
++        heading.append(element('strong', labelText));
++        const source = sourceText(preview, key);
++        if (source) {
++            const provenance = element('small', ` · ${tr('draftSource')}: ${source}`);
++            provenance.style.opacity = '.7';
++            heading.append(provenance);
++        }
++        const input = element(multiline ? 'textarea' : 'input', '', 'text_pole');
++        if (multiline) input.rows = key === 'description' || key === 'personality' ? 7 : 4;
++        input.value = String(data[key] ?? '');
++        input.addEventListener('input', () => { data[key] = input.value; });
++        label.append(heading, input);
++        form.append(label);
++    }
++    const tagsLabel = stack(element('label'), '.2rem');
++    tagsLabel.append(element('strong', 'Tags'));
++    const tags = element('input', '', 'text_pole');
++    tags.value = Array.isArray(data.tags) ? data.tags.join(', ') : '';
++    tags.addEventListener('input', () => {
++        data.tags = tags.value.split(',').map(value => value.trim()).filter(Boolean);
++    });
++    tagsLabel.append(tags);
++    form.append(tagsLabel);
++    root.append(form);
++
++    const sourceAdvanced = preview?.draft?.state === 'source_advanced';
++    if (sourceAdvanced) {
++        const stale = element('div', tr('sourceAdvancedDraft'));
++        stale.style.fontWeight = '600';
++        root.append(stale);
++    }
++
++    const lifecycle = element('div');
++    Object.assign(lifecycle.style, { display: 'flex', flexWrap: 'wrap', gap: '.5rem' });
++    const saveDraft = element('button', tr('saveDraft'), 'menu_button');
++    saveDraft.type = 'button';
++    saveDraft.disabled = sourceAdvanced;
++    saveDraft.addEventListener('click', async () => {
++        saveDraft.disabled = true;
++        try {
++            const saved = await api().saveMaterializationDraft({
++                cas: preview.cas,
++                draftId: preview.draft.draftId,
++                expectedDraftRevision: preview.draft.draftRevision,
++                definition,
++            });
++            window.toastr?.success?.(tr('draftSaved'));
++            renderDraft(root, candidate, chatId, saved, renderList);
++        } catch (error) {
++            window.toastr?.error?.(errorText(error));
++        } finally {
++            saveDraft.disabled = sourceAdvanced;
++        }
++    });
++
++    const regenerate = element('button', tr('regenerateDraft'), 'menu_button');
++    regenerate.type = 'button';
++    regenerate.addEventListener('click', async () => {
++        if (!await confirmAction(tr('regenerateDraftConfirm'))) return;
++        regenerate.disabled = true;
++        try {
++            const regenerated = await api().regenerateMaterializationDraft({
++                stableChatId: chatId,
++                characterId: candidate.characterId,
++            });
++            renderDraft(root, candidate, chatId, regenerated, renderList);
++        } catch (error) {
++            window.toastr?.error?.(errorText(error));
++        } finally {
++            regenerate.disabled = false;
++        }
++    });
++    lifecycle.append(saveDraft, regenerate);
++
++    if (preview?.persisted) {
++        const archive = element('button', tr('archiveDraft'), 'menu_button');
++        archive.type = 'button';
++        archive.addEventListener('click', async () => {
++            if (!await confirmAction(tr('archiveDraftConfirm'))) return;
++            await api().archiveMaterializationDraft({
++                stableChatId: chatId,
++                characterId: candidate.characterId,
++                draftId: preview.draft.draftId,
++                expectedDraftRevision: preview.draft.draftRevision,
++            });
++            window.toastr?.success?.(tr('draftArchived'));
++            await renderList();
++        });
++        lifecycle.append(archive);
++    }
++    root.append(lifecycle);
++
++    const commit = element('button', '', 'menu_button menu_button_icon');
++    commit.type = 'button';
++    commit.disabled = sourceAdvanced;
++    commit.innerHTML = '<i class="fa-solid fa-floppy-disk"></i>';
++    commit.append(document.createTextNode(` ${tr('saveCharacterCardAndBind')}`));
++    commit.addEventListener('click', async () => {
++        if (!String(data.name || '').trim()) {
++            window.toastr?.warning?.(tr('characterCardNameRequired'));
++            return;
++        }
++        commit.disabled = true;
++        back.disabled = true;
++        try {
++            const result = await api().commitMaterializationDraft({ cas: preview.cas, definition });
++            window.toastr?.success?.(tr('characterCardMaterialized', { name: result?.character?.name || data.name }));
++            await renderList();
++        } catch (error) {
++            const message = errorText(error);
++            console.error('[AdultTensionCast] materialization failed', error);
++            window.toastr?.error?.(message);
++            if (message.includes('DRAFT_STALE')) await renderList();
++        } finally {
++            commit.disabled = sourceAdvanced;
++            back.disabled = false;
++        }
++    });
++    root.append(commit);
++}
++
++async function stableChatId() {
++    const activeChat = getActiveChatSnapshot();
++    if (!activeChat?.ref) throw new Error(tr('activeChatRequired'));
++    return resolveStableChatId(activeChat.ref);
++}
++
++async function openCastDialog() {
++    if (activeDialog?.open) return activeDialog.focus();
++    if (typeof HTMLDialogElement === 'undefined') throw new Error(tr('agentSystemElementUnsupported'));
++    const dialog = document.createElement('dialog');
++    if (typeof dialog.showModal !== 'function') throw new Error(tr('agentSystemDialogUnsupported'));
++    dialog.className = 'ttas-dialog ttas-cast-dialog';
++    dialog.setAttribute('data-tt-mobile-surface', 'fullscreen-window');
++    const root = stack(element('div', '', 'ttas-popup-mount'));
++    dialog.append(root);
++    document.body.append(dialog);
++    activeDialog = dialog;
++    dialog.addEventListener('close', () => {
++        dialog.remove();
++        if (activeDialog === dialog) activeDialog = null;
++    }, { once: true });
++    dialog.addEventListener('cancel', event => {
++        event.preventDefault();
++        dialog.close();
++    });
++
++    const renderList = async () => {
++        root.replaceChildren();
++        const header = element('div');
++        Object.assign(header.style, { display: 'flex', justifyContent: 'space-between', alignItems: 'center' });
++        const title = element('h2', tr('rpCharacters'));
++        title.style.margin = '0';
++        const close = element('button', tr('close'), 'menu_button');
++        close.type = 'button';
++        close.addEventListener('click', () => dialog.close());
++        header.append(title, close);
++        root.append(header, element('p', tr('rpCharactersHint')));
++        const loading = element('div', tr('loading'));
++        root.append(loading);
++        try {
++            const chatId = await stableChatId();
++            const result = await api().listMaterializationDraftCandidates({ stableChatId: chatId });
++            loading.remove();
++            const candidates = Array.isArray(result?.candidates) ? result.candidates : [];
++            if (!candidates.length) {
++                root.append(element('div', tr('noRpCharacters')));
++                return;
++            }
++            for (const candidate of candidates) {
++                root.append(candidateCard(candidate, async selected => {
++                    try {
++                        const resumed = await api().resumeMaterializationDraft({
++                            stableChatId: chatId,
++                            characterId: selected.characterId,
++                        });
++                        const preview = resumed ?? await api().previewMaterializationDraft({
++                            stableChatId: chatId,
++                            characterId: selected.characterId,
++                        });
++                        renderDraft(root, selected, chatId, preview, renderList);
++                    } catch (error) {
++                        console.error('[AdultTensionCast] preview failed', error);
++                        window.toastr?.error?.(errorText(error));
++                    }
++                }));
++            }
++        } catch (error) {
++            loading.remove();
++            root.append(element('div', errorText(error)));
++            console.error('[AdultTensionCast] list failed', error);
++        }
++    };
++
++    dialog.showModal();
++    await renderList();
++}
++
++export async function mountAdultTensionCastEntry() {
++    if (!await isAdultTensionDistribution() || document.getElementById(BUTTON_ID)) return;
++    const form = document.getElementById('rightSendForm');
++    const send = document.getElementById('send_but');
++    if (!(form instanceof HTMLElement) || !(send instanceof HTMLElement)) {
++        throw new Error(tr('sendFormNotFound'));
++    }
++    const button = element('button', '', 'ttas-agent-send-toggle interactable');
++    button.id = BUTTON_ID;
++    button.type = 'button';
++    button.innerHTML = '<i class="fa-solid fa-users"></i>';
++    button.title = tr('rpCharacters');
++    button.setAttribute('aria-label', tr('rpCharacters'));
++    form.insertBefore(button, send);
++    const sync = () => button.classList.toggle('displayNone', send.classList.contains('displayNone'));
++    new MutationObserver(sync).observe(send, { attributes: true, attributeFilter: ['class'] });
++    sync();
++    button.addEventListener('click', () => openCastDialog().catch(error => {
++        console.error('[AdultTensionCast]', error);
++        window.toastr?.error?.(errorText(error));
++    }));
++}
