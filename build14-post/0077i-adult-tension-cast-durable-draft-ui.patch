@@ -1,0 +1,132 @@
+diff --git a/src/scripts/extensions/agent-system/src/adult-tension-cast.js b/src/scripts/extensions/agent-system/src/adult-tension-cast.js
+--- a/src/scripts/extensions/agent-system/src/adult-tension-cast.js
++++ b/src/scripts/extensions/agent-system/src/adult-tension-cast.js
+@@ -2,7 +2,7 @@ import { getActiveChatSnapshot } from '../../../../tauri/main/adapters/st/active-chat-ref.js';
+ import { resolveStableChatId } from '../../../../tauri/main/api/agent-chat-identity.js';
+ import { isAdultTensionDistribution } from './adult-tension-readiness.js';
+-import { errorText } from './host-api.js';
++import { confirmAction, errorText } from './host-api.js';
+ import { translateAgentSystem as tr } from './i18n.js';
+@@ -22,7 +22,14 @@ let activeDialog = null;
+ 
+ function api() {
+     const value = window.__TAURITAVERN__?.api?.characterCards;
+-    for (const method of ['listMaterializationDraftCandidates', 'previewMaterializationDraft', 'commitMaterializationDraft']) {
++    for (const method of [
++        'listMaterializationDraftCandidates',
++        'resumeMaterializationDraft',
++        'saveMaterializationDraft',
++        'regenerateMaterializationDraft',
++        'archiveMaterializationDraft',
++        'previewMaterializationDraft',
++        'commitMaterializationDraft',
++    ]) {
+         if (typeof value?.[method] !== 'function') throw new Error(tr('characterCardDraftApiUnavailable'));
+     }
+@@ -103,7 +110,7 @@ function candidateCard(candidate, openDraft) {
+     return card;
+ }
+ 
+-function renderDraft(root, candidate, preview, renderList) {
++function renderDraft(root, candidate, chatId, preview, renderList) {
+     root.replaceChildren();
+@@ -124,6 +131,9 @@ function renderDraft(root, candidate, preview, renderList) {
+     meta(authority, tr('controlOwner'), candidate.controlOwner);
+     meta(authority, tr('profileRevision'), preview?.cas?.sourceProfileRevision);
++    meta(authority, tr('draftRevision'), preview?.draft?.draftRevision);
++    meta(authority, tr('draftState'), preview?.draft?.state);
++    meta(authority, tr('draftPersistence'), preview?.persisted ? tr('durableDraft') : tr('unsavedDraft'));
+     root.append(authority);
+@@ -170,6 +180,70 @@ function renderDraft(root, candidate, preview, renderList) {
+     form.append(tagsLabel);
+     root.append(form);
+ 
++    const sourceAdvanced = preview?.draft?.state === 'source_advanced';
++    if (sourceAdvanced) {
++        const stale = element('div', tr('sourceAdvancedDraft'));
++        stale.style.fontWeight = '600';
++        root.append(stale);
++    }
++
++    const lifecycle = element('div');
++    Object.assign(lifecycle.style, { display: 'flex', flexWrap: 'wrap', gap: '.5rem' });
++    const saveDraft = element('button', tr('saveDraft'), 'menu_button');
++    saveDraft.type = 'button';
++    saveDraft.disabled = sourceAdvanced;
++    saveDraft.addEventListener('click', async () => {
++        saveDraft.disabled = true;
++        try {
++            const saved = await api().saveMaterializationDraft({
++                cas: preview.cas,
++                draftId: preview.draft.draftId,
++                expectedDraftRevision: preview.draft.draftRevision,
++                definition,
++            });
++            window.toastr?.success?.(tr('draftSaved'));
++            renderDraft(root, candidate, chatId, saved, renderList);
++        } catch (error) {
++            window.toastr?.error?.(errorText(error));
++        } finally {
++            saveDraft.disabled = sourceAdvanced;
++        }
++    });
++
++    const regenerate = element('button', tr('regenerateDraft'), 'menu_button');
++    regenerate.type = 'button';
++    regenerate.addEventListener('click', async () => {
++        if (!await confirmAction(tr('regenerateDraftConfirm'))) return;
++        regenerate.disabled = true;
++        try {
++            const regenerated = await api().regenerateMaterializationDraft({
++                stableChatId: chatId,
++                characterId: candidate.characterId,
++            });
++            renderDraft(root, candidate, chatId, regenerated, renderList);
++        } catch (error) {
++            window.toastr?.error?.(errorText(error));
++        } finally {
++            regenerate.disabled = false;
++        }
++    });
++    lifecycle.append(saveDraft, regenerate);
++
++    if (preview?.persisted) {
++        const archive = element('button', tr('archiveDraft'), 'menu_button');
++        archive.type = 'button';
++        archive.addEventListener('click', async () => {
++            if (!await confirmAction(tr('archiveDraftConfirm'))) return;
++            await api().archiveMaterializationDraft({
++                stableChatId: chatId,
++                characterId: candidate.characterId,
++                draftId: preview.draft.draftId,
++                expectedDraftRevision: preview.draft.draftRevision,
++            });
++            window.toastr?.success?.(tr('draftArchived'));
++            await renderList();
++        });
++        lifecycle.append(archive);
++    }
++    root.append(lifecycle);
++
+     const commit = element('button', '', 'menu_button menu_button_icon');
+     commit.type = 'button';
++    commit.disabled = sourceAdvanced;
+@@ -200,7 +274,7 @@ function renderDraft(root, candidate, preview, renderList) {
+         } finally {
+-            commit.disabled = false;
++            commit.disabled = sourceAdvanced;
+             back.disabled = false;
+         }
+@@ -247,8 +321,12 @@ async function openCastDialog() {
+             for (const candidate of candidates) {
+                 root.append(candidateCard(candidate, async selected => {
+                     try {
+-                        const preview = await api().previewMaterializationDraft({ stableChatId: chatId, characterId: selected.characterId });
+-                        renderDraft(root, selected, preview, renderList);
++                        const resumed = await api().resumeMaterializationDraft({
++                            stableChatId: chatId,
++                            characterId: selected.characterId,
++                        });
++                        const preview = resumed ?? await api().previewMaterializationDraft({ stableChatId: chatId, characterId: selected.characterId });
++                        renderDraft(root, selected, chatId, preview, renderList);
+                     } catch (error) {
