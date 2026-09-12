@@ -1,0 +1,119 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+@@ -660,3 +660,132 @@ fn string_array(
+         })
+         .collect()
+ }
++
++fn validate_draft_id(value: &str) -> Result<(), ApplicationError> {
++    let value = value.trim();
++    if value.is_empty()
++        || value.len() > 128
++        || !value
++            .bytes()
++            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
++    {
++        return Err(ApplicationError::ValidationError(
++            "character_card_draft.invalid_draft_id".to_string(),
++        ));
++    }
++    Ok(())
++}
++
++fn record_from_preview(
++    preview: &CharacterCardDraftPreview,
++    draft: CharacterCardDraft,
++) -> tt_domain::models::character_card_materialization::CharacterCardDraftRecord {
++    tt_domain::models::character_card_materialization::CharacterCardDraftRecord {
++        schema_version: tt_domain::models::character_card_materialization::CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
++        authority: tt_domain::models::character_card_materialization::CharacterCardDraftAuthority {
++            stable_chat_id: preview.cas.stable_chat_id.clone(),
++            state_id: preview.cas.state_id.clone(),
++            world_id: tt_domain::models::rp_architecture::WorldId(preview.cas.world_id.clone()),
++            session_id: tt_domain::models::rp_architecture::SessionId(preview.cas.session_id.clone()),
++            active_branch_id: tt_domain::models::rp_architecture::BranchId(
++                preview.cas.active_branch_id.clone(),
++            ),
++            proposed_binding_id: preview.cas.proposed_binding_id.clone(),
++        },
++        scope_kind: preview.scope_kind,
++        draft,
++        warnings: preview.warnings.clone(),
++    }
++}
++
++fn cas_from_record(
++    record: &tt_domain::models::character_card_materialization::CharacterCardDraftRecord,
++) -> CharacterCardDraftCas {
++    CharacterCardDraftCas {
++        stable_chat_id: record.authority.stable_chat_id.clone(),
++        state_id: record.authority.state_id.clone(),
++        world_id: record.authority.world_id.0.clone(),
++        session_id: record.authority.session_id.0.clone(),
++        active_branch_id: record.authority.active_branch_id.0.clone(),
++        character_id: record.draft.character_id.0.clone(),
++        source_profile_revision: record.draft.source_profile_revision,
++        proposed_binding_id: record.authority.proposed_binding_id.clone(),
++    }
++}
++
++fn preview_from_record(
++    record: tt_domain::models::character_card_materialization::CharacterCardDraftRecord,
++) -> CharacterCardDraftPreview {
++    let cas = cas_from_record(&record);
++    CharacterCardDraftPreview {
++        draft: record.draft,
++        cas,
++        scope_kind: record.scope_kind,
++        warnings: record.warnings,
++        persisted: true,
++    }
++}
++
++fn latest_active_draft(
++    records: &[tt_domain::models::character_card_materialization::CharacterCardDraftRecord],
++    stable_chat_id: &str,
++    character_id: &str,
++) -> Option<tt_domain::models::character_card_materialization::CharacterCardDraftRecord> {
++    records
++        .iter()
++        .filter(|record| {
++            record.authority.stable_chat_id == stable_chat_id
++                && record.draft.character_id.0 == character_id
++                && record.draft.state
++                    != tt_domain::models::character_card_materialization::DraftState::Archived
++        })
++        .max_by(|left, right| {
++            left.draft
++                .updated_at
++                .cmp(&right.draft.updated_at)
++                .then_with(|| left.draft.draft_revision.cmp(&right.draft.draft_revision))
++                .then_with(|| left.draft.draft_id.cmp(&right.draft.draft_id))
++        })
++        .cloned()
++}
++
++fn apply_user_edit_provenance(draft: &mut CharacterCardDraft, generated: &Value) {
++    let generated_data = generated.get("data").and_then(Value::as_object);
++    let edited_data = draft.definition.get("data").and_then(Value::as_object);
++    let (Some(generated_data), Some(edited_data)) = (generated_data, edited_data) else {
++        return;
++    };
++
++    let mut keys = BTreeSet::new();
++    keys.extend(generated_data.keys().cloned());
++    keys.extend(edited_data.keys().cloned());
++    for key in keys {
++        if generated_data.get(&key) == edited_data.get(&key) {
++            continue;
++        }
++        let sources = draft
++            .field_provenance
++            .entry(format!("data.{key}"))
++            .or_default();
++        if !sources.contains(&DraftSourceKind::UserEdited) {
++            sources.push(DraftSourceKind::UserEdited);
++        }
++    }
++}
