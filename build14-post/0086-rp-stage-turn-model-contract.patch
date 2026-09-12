@@ -88,12 +88,12 @@ index 6647afe..3d456a4 100644
                  },
                  "living_world": {
 diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
-index 4a3821f..9665c9c 100644
+index 4a3821f..8c37c49 100644
 --- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
 +++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
-@@ -2629,4 +2629,99 @@ mod tests {
-         assert_eq!(hits[0].pointer("/record/id").and_then(Value::as_str), Some("memory-1"));
-     }
+@@ -2161,6 +2161,102 @@ fn success<T: Serialize>(call: &ToolInvocation, content: String, payload: T) ->
+ mod tests {
+     use super::*;
  
 +    #[test]
 +    fn model_stage_payload_rejects_npcs_alias_and_accepts_npc_updates() {
@@ -190,7 +190,10 @@ index 4a3821f..9665c9c 100644
 +        validate_fact_provenance(&state, &bad_fact).expect("accepted event ids are valid provenance");
 +    }
 +
- }
++
+     fn input(predicate: &str, subject: &str) -> StageTurnArgs {
+         StageTurnArgs { beat_summary:"one beat".to_string(), advances_story:None, retract_turns:None, retraction_reason:None, clock:None, scene:None, location:None, participants:None, npc_updates:None, cast_updates:None, profile_evidence:None, memory_updates:None, canonization_proposals:None, events:None, facts:Some(vec![FactInput{id:None,subject:subject.to_string(),predicate:predicate.to_string(),value:json!(true),supersedes:None,knowledge_refs:None,plane:None,classification:None,source:Some(KnowledgeSourceInput{kind:"user_asserted".to_string(),reference:Some("test user assertion".to_string())})}]), knowledge:None, commitments:None, threads:None, living_world:None, authority:None }
+     }
 diff --git a/tests/rp-stage-turn-active-hotfix.test.mjs b/tests/rp-stage-turn-active-hotfix.test.mjs
 new file mode 100644
 index 0000000..d2b8b23
