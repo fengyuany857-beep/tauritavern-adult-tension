@@ -1,0 +1,27 @@
+diff --git a/src/types.d.ts b/src/types.d.ts
+--- a/src/types.d.ts
++++ b/src/types.d.ts
+@@ -925,6 +925,15 @@ type TauriTavernCharacterCardDraftStableTrait = {
+     status: string;
+ };
+ 
++type TauriTavernCharacterCardBoundSummary = {
++    bindingId: string;
++    cardStorageIdentity: string;
++    cardRevision: number;
++    profileRevisionAtLastSync: number | null;
++    generation: number;
++    status: 'active' | 'card_missing' | 'detached' | 'target_missing' | 'corrupted' | 'archived' | string;
++};
++
+ type TauriTavernCharacterCardDraftCandidate = {
+     characterId: string;
+     displayName: string;
+@@ -938,6 +947,7 @@ type TauriTavernCharacterCardDraftCandidate = {
+     proposedBindingId: string;
+     cardState: 'draft_available' | 'bound_card' | string;
+     materialized: boolean;
++    binding: TauriTavernCharacterCardBoundSummary | null;
+     stableTraits: TauriTavernCharacterCardDraftStableTrait[];
+     authorCanonFields: string[];
+     inferredFieldCount: number;
