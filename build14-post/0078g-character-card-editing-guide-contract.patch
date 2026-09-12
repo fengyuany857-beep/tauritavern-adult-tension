@@ -1,0 +1,65 @@
+diff --git a/tests/character-card-editing-guide-contract.test.mjs b/tests/character-card-editing-guide-contract.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/character-card-editing-guide-contract.test.mjs
+@@ -0,0 +1,70 @@
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import path from 'node:path';
++import test from 'node:test';
++import { fileURLToPath } from 'node:url';
++
++const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const source = fs.readFileSync(path.join(ROOT, 'src/scripts/tauri/character-card-return-ui.js'), 'utf8');
++
++function extract(name) {
++    const match = source.match(new RegExp(`(?:async\\s+)?function ${name}\\([^)]*\\) \\{[\\s\\S]*?\\n\\}`));
++    assert.ok(match, `${name} not found`);
++    return match[0];
++}
++
++test('Editing Guide uses the existing runtime export bridge and a sidecar filename', () => {
++    assert.match(source, /import \{ downloadBlobWithRuntime \} from '\.\.\/file-export\.js'/);
++    assert.match(source, /tt_character_card_editing_guide_button/);
++    assert.match(source, /\.tauritavern-edit-guide\.txt/);
++    const flow = extract('exportEditingGuide');
++    assert.match(flow, /downloadBlobWithRuntime/);
++    assert.doesNotMatch(flow, /ios_share_file|__TAURI__|core\.invoke/);
++});
++
++test('Editing Guide documents Return Metadata without exporting RP authority', () => {
++    const guide = extract('editingGuideText');
++    assert.match(guide, /returnMetadata/);
++    for (const field of [
++        'bindingId',
++        'exportId',
++        'bindingGeneration',
++        'baseCardRevision',
++        'baseCardHash',
++        'originProof',
++    ]) assert.match(guide, new RegExp(field));
++    assert.match(guide, /第三方编辑器.*extensions/);
++    assert.match(guide, /JSON.*不支持.*注释/);
++    assert.match(guide, /API key \/ token \/ cookie/);
++    assert.match(guide, /iOS sandbox path|chat JSONL path/);
++});
++
++test('Editing Guide generator accepts display name only', () => {
++    assert.match(source, /function editingGuideText\(displayName\)/);
++    const guide = extract('editingGuideText');
++    assert.doesNotMatch(guide, /stableChatId|stateId|worldId|sessionId|branchId|characterId/);
++    assert.doesNotMatch(guide, /getActiveChatSnapshot|resolveStableChatId/);
++});
++
++test('Editing Guide button is restricted to the existing character editor', () => {
++    const mount = extract('mountEditingGuideButton');
++    assert.match(mount, /#avatar_controls \.form_create_bottom_buttons_block/);
++    assert.match(mount, /actiontype.*editcharacter/);
++});
++
++test('Editing Guide export cannot mutate Card, RP, Return, or Canon state', () => {
++    const flow = extract('exportEditingGuide');
++    assert.doesNotMatch(flow, /commitMaterializationDraft|commitReturnImport|previewReturnImport/);
++    assert.doesNotMatch(flow, /persist\/rp\/state\.json/);
++    assert.doesNotMatch(flow, /canon|world/i);
++});
