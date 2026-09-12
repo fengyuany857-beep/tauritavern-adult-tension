@@ -126,19 +126,10 @@
 1836:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 1842:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 1848:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1854:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+1860:test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 # Tail
-test services::data_archive_service::tests::service_resolves_completed_export_artifact ... ok
-test services::data_archive_service::tests::partial_import_cancel_initializes_reconciles_and_reports_local_mutation ... ok
-test services::data_archive_service::tests::start_export_protects_claimed_completed_artifact_from_stale_cleanup ... ok
-test services::data_archive_service::tests::start_export_cleans_partial_archive_on_failure ... ok
-test services::data_archive_service::tests::partial_import_failure_initializes_reconciles_and_reports_local_mutation ... ok
-test services::data_archive_service::tests::start_export_runs_executor_and_marks_completed ... ok
-test services::data_archive_service::tests::start_import_runs_executor_initializer_reconciler_and_cleanup ... ok
-test services::extension_service::tests::shared_gate_is_fail_fast_for_mutations_but_not_reads ... ok
-test services::host_resource_service::css_compat::tests::detects_layer_keyword_case_insensitive ... ok
-test services::host_resource_service::css_compat::tests::flattens_layer_blocks ... ok
-test services::host_resource_service::css_compat::tests::flattens_nested_layer_blocks ... ok
 test services::host_resource_service::css_compat::tests::ignores_layer_like_sequences_in_comments ... ok
 test services::host_resource_service::css_compat::tests::ignores_layer_like_sequences_in_strings ... ok
 test services::host_resource_service::css_compat::tests::strips_layer_statements ... ok
@@ -528,3 +519,14 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 [1m[92m   Doc-tests[0m tt_domain
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[1m[92m   Doc-tests[0m tt_ports
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
