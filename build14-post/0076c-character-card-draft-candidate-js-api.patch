@@ -1,0 +1,90 @@
+diff --git a/src/tauri/main/api/character-cards.js b/src/tauri/main/api/character-cards.js
+--- a/src/tauri/main/api/character-cards.js
++++ b/src/tauri/main/api/character-cards.js
+@@ -128,6 +128,16 @@ function createCharacterCardsApi({
+         return pickDesktopFiles(options);
+     }
+ 
++    /**
++     * @param {{ stableChatId: string }} input
++     * @returns {Promise<TauriTavernCharacterCardDraftCandidateList>}
++     */
++    async function listMaterializationDraftCandidates({ stableChatId }) {
++        return safeInvoke('list_character_card_draft_candidates', {
++            stable_chat_id: requireNonEmptyString(stableChatId, 'Character Card draft stable chat id'),
++        });
++    }
++
+     /**
+      * @param {{ stableChatId: string; characterId: string }} input
+      * @returns {Promise<TauriTavernCharacterCardDraftPreview>}
+@@ -230,6 +240,7 @@ function createCharacterCardsApi({
+     return {
+         isNativePickerAvailable,
+         pickFiles,
++        listMaterializationDraftCandidates,
+         previewMaterializationDraft,
+         commitMaterializationDraft,
+         previewReturnImport,
+diff --git a/src/tauri/main/kernel/invokes/tauri-commands.js b/src/tauri/main/kernel/invokes/tauri-commands.js
+--- a/src/tauri/main/kernel/invokes/tauri-commands.js
++++ b/src/tauri/main/kernel/invokes/tauri-commands.js
+@@ -100,6 +100,7 @@ export {};
+  *   | 'ios_pick_skill_import_archive'
+  *   | 'ios_share_file'
+  *   | 'ios_share_export_data_archive'
++ *   | 'list_character_card_draft_candidates'
+  *   | 'list_character_chat_store_keys'
+  *   | 'list_agent_profiles'
+  *   | 'list_agent_runs'
+diff --git a/src/types.d.ts b/src/types.d.ts
+--- a/src/types.d.ts
++++ b/src/types.d.ts
+@@ -920,6 +920,40 @@ type TauriTavernCharacterCardsPickOptions = {
+     title?: string;
+ };
+ 
++type TauriTavernCharacterCardDraftStableTrait = {
++    key: string;
++    statement: string;
++    status: string;
++};
++
++type TauriTavernCharacterCardDraftCandidate = {
++    characterId: string;
++    displayName: string;
++    narrativeRole: string;
++    controlOwner: string;
++    lifecycleStatus: string;
++    origin: string;
++    profileRevision: number;
++    scopeKind: 'session_character' | 'world_character';
++    proposedBindingId: string;
++    cardState: 'draft_available' | 'bound_card' | string;
++    materialized: boolean;
++    stableTraits: TauriTavernCharacterCardDraftStableTrait[];
++    authorCanonFields: string[];
++    inferredFieldCount: number;
++};
++
++type TauriTavernCharacterCardDraftCandidateList = {
++    stableChatId: string;
++    stateId: string;
++    worldId: string;
++    sessionId: string;
++    activeBranchId: string;
++    candidates: TauriTavernCharacterCardDraftCandidate[];
++};
++
+ type TauriTavernCharacterCardDraftCas = {
+     stableChatId: string;
+     stateId: string;
+@@ -1053,6 +1087,9 @@ type TauriTavernCharacterCardsApi = {
+     isNativePickerAvailable: () => boolean;
+     pickFiles: (options?: TauriTavernCharacterCardsPickOptions) => Promise<File[] | null>;
++    listMaterializationDraftCandidates: (input: {
++        stableChatId: string;
++    }) => Promise<TauriTavernCharacterCardDraftCandidateList>;
+     previewMaterializationDraft: (input: {
+         stableChatId: string;
+         characterId: string;
