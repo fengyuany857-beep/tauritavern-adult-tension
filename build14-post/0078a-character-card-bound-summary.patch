@@ -1,0 +1,79 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+@@ -62,6 +62,19 @@ pub struct CharacterCardDraftStableTraitSummary {
+     pub status: String,
+ }
+ 
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardBoundSummary {
++    pub binding_id: String,
++    pub card_storage_identity: String,
++    pub card_revision: u64,
++    pub profile_revision_at_last_sync: Option<u64>,
++    pub generation: u64,
++    pub status: tt_domain::models::character_card_materialization::BindingStatus,
++}
++
+ #[derive(Debug, Clone, Serialize)]
+ #[serde(rename_all = "camelCase")]
+ pub struct CharacterCardDraftCandidate {
+@@ -76,6 +89,7 @@ pub struct CharacterCardDraftCandidate {
+     pub proposed_binding_id: String,
+     pub card_state: String,
+     pub materialized: bool,
++    pub binding: Option<CharacterCardBoundSummary>,
+     pub stable_traits: Vec<CharacterCardDraftStableTraitSummary>,
+     pub author_canon_fields: Vec<String>,
+     pub inferred_field_count: usize,
+@@ -220,11 +234,29 @@ impl CharacterCardDraftMaterializationService {
+         for source in state.cast_registry.values() {
+             let (character, scope_kind, _) = project_character(source, session)?;
+             let proposed_binding_id = deterministic_binding_id(&character, session);
+-            let materialized = self
++            let binding_record = self
+                 .materialization
+                 .read_binding(&proposed_binding_id)
+-                .await?
+-                .is_some();
++                .await?;
++            let materialized = binding_record.as_ref().is_some_and(|binding| {
++                binding.status
++                    == tt_domain::models::character_card_materialization::BindingStatus::Active
++            });
++            let card_state = match binding_record.as_ref().map(|binding| binding.status) {
++                Some(tt_domain::models::character_card_materialization::BindingStatus::Active) => "bound_card",
++                Some(tt_domain::models::character_card_materialization::BindingStatus::CardMissing) => "card_missing",
++                Some(tt_domain::models::character_card_materialization::BindingStatus::Detached) => "detached",
++                Some(tt_domain::models::character_card_materialization::BindingStatus::TargetMissing) => "target_missing",
++                Some(tt_domain::models::character_card_materialization::BindingStatus::Corrupted) => "corrupted",
++                Some(tt_domain::models::character_card_materialization::BindingStatus::Archived) => "archived",
++                None => "draft_available",
++            };
++            let binding = binding_record.map(|binding| CharacterCardBoundSummary {
++                binding_id: binding.binding_id,
++                card_storage_identity: binding.card_storage_identity,
++                card_revision: binding.card_revision,
++                profile_revision_at_last_sync: binding.profile_revision_at_last_sync,
++                generation: binding.generation,
++                status: binding.status,
++            });
+             let stable_traits = source
+                 .stable_profile
+                 .iter()
+@@ -247,11 +279,10 @@ impl CharacterCardDraftMaterializationService {
+                 profile_revision: source.profile_revision,
+                 scope_kind,
+                 proposed_binding_id,
+-                card_state: if materialized {
+-                    "bound_card".to_string()
+-                } else {
+-                    "draft_available".to_string()
+-                },
++                card_state: card_state.to_string(),
+                 materialized,
++                binding,
+                 stable_traits,
+                 author_canon_fields: source.author_canon.keys().cloned().collect(),
+                 inferred_field_count: source.inferred_profile.len(),
