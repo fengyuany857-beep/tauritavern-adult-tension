@@ -6,9 +6,9 @@
   "control_repo_source_sha": "a5e2b5f3af7b27e40af705b2e8fdb70ebc35c0f8",
   "workflow_trigger_sha": "a5e2b5f3af7b27e40af705b2e8fdb70ebc35c0f8",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
-  "stage": "Built app Bundle ID identity",
-  "state": "PASS",
+  "stage": "Embed four Runtime Skills into iOS app bundle",
+  "state": "RUNNING",
   "exit_code": 0,
-  "updated_at": "2026-09-12T18:19:35Z",
+  "updated_at": "2026-09-12T18:19:36Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-38-a1"
 }
