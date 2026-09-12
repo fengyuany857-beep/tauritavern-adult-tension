@@ -1,3 +1,14 @@
 # Diagnostic matches
+5:[guardrails] FAILED
+9: ELIFECYCLE  Command failed with exit code 1.
 
 # Tail
+
+> tauritavern@2.2.0 check:frontend /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> node scripts/check-frontend-guardrails.mjs
+
+[guardrails] FAILED
+Line budget violations:
+- src/tauri/main/api/agent-chat-commit-bridge.js: 519 lines (max 500)
+[guardrails] Tip: split logic into smaller modules (<= 500 lines) and keep kernel/services/routes boundaries clean.
+ ELIFECYCLE  Command failed with exit code 1.
