@@ -133,7 +133,7 @@ publish_status "Environment ready" "RUNNING" 0 ""
 run_stage "bundle-id-source" "Source Bundle ID identity" \
   "EXPECTED_BUNDLE_ID=com.tauritavern.client bash '${CONTROL_DIR}/ci/verify-ios-bundle-id.sh' source"
 run_stage "native-contracts" "Native RP and Agent contracts" \
-  "node --test tests/agent-rp-native-contract.test.mjs tests/agent-api-contract.test.mjs tests/personal-ios-unsigned-build.test.mjs tests/ios-runtime-acceptance-contract.test.mjs tests/adult-tension-open-box-contract.test.mjs"
+  "node --test tests/agent-rp-native-contract.test.mjs tests/agent-api-contract.test.mjs tests/personal-ios-unsigned-build.test.mjs tests/ios-runtime-acceptance-contract.test.mjs tests/adult-tension-open-box-contract.test.mjs tests/adult-tension-narrative-integration.test.mjs"
 run_stage "frontend-guardrails" "Frontend guardrails" "pnpm run check:frontend"
 run_stage "typescript" "TypeScript" "pnpm run check:types"
 run_stage "logging-boundaries" "Logging boundaries" "pnpm run check:logging-boundaries"
@@ -151,7 +151,7 @@ run_stage "ios-arm64" "Unsigned iPhone arm64 build" \
   "TAURITAVERN_CONTROL_SHA=${GITHUB_SHA} TAURITAVERN_BUILD_RUN_ID=${GITHUB_RUN_ID} TAURITAVERN_BUILD_RUN_NUMBER=${GITHUB_RUN_NUMBER} TAURITAVERN_UPSTREAM_SHA=${UPSTREAM_SHA} TAURITAVERN_BUILD_BRANCH=repair/ios-agent-continuity-20260910 TAURITAVERN_BUILD_REVISION=${UPSTREAM_SHA}+ios-agent-continuity TAURITAVERN_IOS_POLICY_PROFILE=full ./scripts/ci/build-ios-unsigned.sh"
 run_stage "bundle-id-built" "Built app Bundle ID identity" \
   "EXPECTED_BUNDLE_ID=com.tauritavern.client bash '${CONTROL_DIR}/ci/verify-ios-bundle-id.sh' built"
-run_stage "embed-runtime-skills" "Embed three Runtime Skills into iOS app bundle" \
+run_stage "embed-runtime-skills" "Embed four Runtime Skills into iOS app bundle" \
   "SOURCE_DIR='${SOURCE_DIR}' bash '${CONTROL_DIR}/ci/embed-runtime-skills-ios.sh'"
 run_stage "bundle-id-final" "Final unsigned IPA Bundle ID identity" \
   "EXPECTED_BUNDLE_ID=com.tauritavern.client bash '${CONTROL_DIR}/ci/verify-ios-bundle-id.sh' final"
@@ -166,7 +166,7 @@ run_stage "build-provenance" "Build info provenance" \
 
 release_tag="selfsign-ios-${GITHUB_RUN_NUMBER}-a${GITHUB_RUN_ATTEMPT}"
 release_url="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${release_tag}"
-run_stage "release" "Publish self-sign IPA with embedded auto-registering three-Skill bundle" \
+run_stage "release" "Publish self-sign IPA with embedded auto-registering four-Skill bundle" \
   "gh release create '${release_tag}' \
     dist/ios-unsigned/TauriTavern-unsigned.ipa \
     dist/ios-unsigned/TauriTavern.app.zip \
@@ -175,15 +175,16 @@ run_stage "release" "Publish self-sign IPA with embedded auto-registering three-
     dist/runtime-skills/adult-tension-cbfdc623.zip \
     dist/runtime-skills/adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip \
     dist/runtime-skills/adult-tension-tauritavern-adapter-build14.zip \
-    dist/runtime-skills/Adult-Tension-3-Skills.zip \
+    dist/runtime-skills/adult-tension-narrative-v0.3.1.zip \
+    dist/runtime-skills/Adult-Tension-4-Skills.zip \
     dist/runtime-skills/skills-manifest.json \
     dist/runtime-skills/SKILL-SHA256SUMS.txt \
     --repo '${GITHUB_REPOSITORY}' \
     --target '${GITHUB_SHA}' \
     --title 'TauriTavern Adult Tension iOS Self-sign ${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}' \
-    --notes 'Unsigned iPhone arm64 build with the matching three Adult Tension Runtime Skills embedded at the iOS Tauri resource path TauriTavern.app/assets/AdultTensionRuntimeSkills. Data continuity preflight classifies legacy data before DataDirectory initialization, snapshots legacy worlds before the continuity marker is created, and only then allows bundled Skill reconciliation. Agent System readiness resolves the current model through the host context so the independent production bundle no longer duplicates the main chat runtime. Final IPA Bundle ID, Runtime Skill hashes, secret-file absence, and build provenance are verified. Re-sign the IPA with your own iOS self-signing tool before installation.'"
+    --notes 'Unsigned iPhone arm64 build with the matching four Adult Tension Runtime Skills embedded at the iOS Tauri resource path TauriTavern.app/assets/AdultTensionRuntimeSkills. Data continuity preflight classifies legacy data before DataDirectory initialization, snapshots legacy worlds before the continuity marker is created, and only then allows bundled Skill reconciliation. Agent System readiness resolves the current model through the host context so the independent production bundle no longer duplicates the main chat runtime. Final IPA Bundle ID, Runtime Skill hashes, secret-file absence, and build provenance are verified. Re-sign the IPA with your own iOS self-signing tool before installation.'"
 
 printf '%s\n' "$release_url" > "$STATUS_DIR/latest-release.txt"
-publish_status "Complete: self-sign IPA + Agent fix + continuity + three Skills ready" "COMPLETE" 0 "$LOG_DIR/release.log"
+publish_status "Complete: self-sign IPA + Agent fix + continuity + four Skills ready" "COMPLETE" 0 "$LOG_DIR/release.log"
 
 echo "SELF_SIGN_RELEASE=$release_url"
