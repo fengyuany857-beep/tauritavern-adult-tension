@@ -1,0 +1,154 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+@@ -43,15 +43,32 @@ pub struct CharacterCardDraftPreview {
+     pub warnings: Vec<String>,
+ }
+ 
++#[derive(Debug, Clone, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CharacterCardDraftCommitRequest {
++    pub cas: CharacterCardDraftCas,
++    pub definition: Value,
++}
++
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardDraftCommitResult {
++    pub character: CharacterDto,
++    pub binding: CharacterCardBinding,
++}
++
+ pub struct CharacterCardDraftMaterializationService {
+     selected: CharacterCardReturnSelectedStateResolver,
+     persistent: Arc<dyn CharacterCardReturnPersistentStateRepository>,
+     materialization: Arc<dyn CharacterCardMaterializationRepository>,
++    character_service: Arc<CharacterService>,
++    commit_guard: Mutex<()>,
+ }
+ 
+ impl CharacterCardDraftMaterializationService {
+     pub fn new(
+         selected: CharacterCardReturnSelectedStateResolver,
+         persistent: Arc<dyn CharacterCardReturnPersistentStateRepository>,
+         materialization: Arc<dyn CharacterCardMaterializationRepository>,
++        character_service: Arc<CharacterService>,
+     ) -> Self {
+         Self {
+             selected,
+             persistent,
+             materialization,
++            character_service,
++            commit_guard: Mutex::new(()),
+         }
+     }
+@@ -130,6 +147,98 @@ impl CharacterCardDraftMaterializationService {
+             warnings,
+         })
+     }
++
++    pub async fn commit(
++        &self,
++        request: CharacterCardDraftCommitRequest,
++    ) -> Result<CharacterCardDraftCommitResult, ApplicationError> {
++        validate_commit_cas(&request.cas)?;
++        let _guard = self.commit_guard.lock().await;
++
++        // Re-enter the same durable-authority path under the commit lock so a
++        // swipe/regeneration, profile revision, world/session move, branch move,
++        // or newly-created binding makes the old draft fail closed.
++        let current = self
++            .preview(&request.cas.stable_chat_id, &request.cas.character_id)
++            .await?;
++        if current.cas != request.cas {
++            return Err(ApplicationError::ValidationError(
++                "character_card_draft.DRAFT_STALE: selected RP authority changed after preview; regenerate the draft before materializing"
++                    .to_string(),
++            ));
++        }
++
++        let create_dto = create_character_dto(&request.definition)?;
++        let created = self.character_service.create_character(create_dto).await?;
++        let storage_identity = created
++            .avatar
++            .strip_suffix(".png")
++            .unwrap_or(created.avatar.as_str())
++            .trim()
++            .to_string();
++        if storage_identity.is_empty() {
++            return Err(ApplicationError::InternalError(
++                "character_card_draft.materialized_storage_identity_missing".to_string(),
++            ));
++        }
++
++        let now = Utc::now().to_rfc3339();
++        let source_session_id = matches!(
++            &current.scope_kind,
++            BindingScopeKind::SessionCharacter
++        )
++        .then(|| SessionId(current.cas.session_id.clone()));
++        let binding = CharacterCardBinding {
++            schema_version: CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
++            binding_id: current.cas.proposed_binding_id.clone(),
++            target: CharacterCardBindingTarget {
++                scope_kind: current.scope_kind.clone(),
++                world_id: WorldId(current.cas.world_id.clone()),
++                character_id: CharacterId(current.cas.character_id.clone()),
++                source_session_id,
++            },
++            contexts: vec![CharacterCardBindingContext {
++                session_id: SessionId(current.cas.session_id.clone()),
++                // Return-context branchId is the stable host-chat identity;
++                // actual RP activeBranchId remains separately pinned by CAS.
++                branch_id: BranchId(current.cas.stable_chat_id.clone()),
++                last_seen_profile_revision: Some(current.cas.source_profile_revision),
++            }],
++            card_storage_identity: storage_identity.clone(),
++            card_revision: 1,
++            profile_revision_at_last_sync: Some(current.cas.source_profile_revision),
++            generation: 1,
++            status: BindingStatus::Active,
++            created_at: now.clone(),
++            updated_at: now,
++        };
++
++        if let Err(validation_error) = binding.validate() {
++            let rollback = self
++                .character_service
++                .delete_character(DeleteCharacterDto {
++                    name: storage_identity,
++                    delete_chats: false,
++                })
++                .await;
++            if let Err(rollback_error) = rollback {
++                return Err(ApplicationError::InternalError(format!(
++                    "character_card_draft.binding_validation_failed_and_card_rollback_failed: validation={validation_error}; rollback={rollback_error}"
++                )));
++            }
++            return Err(ApplicationError::ValidationError(validation_error));
++        }
++
++        if let Err(write_error) = self.materialization.write_binding(&binding).await {
++            let rollback = self
++                .character_service
++                .delete_character(DeleteCharacterDto {
++                    name: storage_identity,
++                    delete_chats: false,
++                })
++                .await;
++            if let Err(rollback_error) = rollback {
++                return Err(ApplicationError::InternalError(format!(
++                    "character_card_draft.binding_write_failed_and_card_rollback_failed: binding={write_error}; rollback={rollback_error}"
++                )));
++            }
++            return Err(write_error.into());
++        }
++
++        Ok(CharacterCardDraftCommitResult {
++            character: created,
++            binding,
++        })
++    }
+ 
+     async fn read_selected_state(
+         &self,
