@@ -7,8 +7,8 @@
   "workflow_trigger_sha": "6510a230685d7161c4e50ebbba939647ea9eca1c",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
   "stage": "Agent System minified production smoke",
-  "state": "RUNNING",
+  "state": "PASS",
   "exit_code": 0,
-  "updated_at": "2026-09-12T21:43:07Z",
+  "updated_at": "2026-09-12T21:43:10Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-38-a1"
 }
