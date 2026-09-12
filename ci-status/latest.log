@@ -1,3 +1,453 @@
 # Diagnostic matches
+117:✔ Embedded Agent Skill import isolates per-item preview and install failures (0.609083ms)
+178:✔ Agent error presenter surfaces userRetryable from run_failed payload (0.539042ms)
+179:✔ Agent error presenter translation keys exist in global locales (26.684458ms)
+180:✔ Run failure detail surfaces a retry action and userRetryable field when allowed (1.8625ms)
+184:✔ Partial success detail keeps error visible without retry action (3.533667ms)
+185:✔ Agent run controller awaits rollback before rejecting on drift run_failed (1.945125ms)
+186:✔ Agent run controller rejects rollback failures before presenting drift failure (1.206167ms)
+203:✔ Agent model target startup sync reports stale LLM connection invalidation failures (0.51725ms)
+204:✔ Agent model target update failure invalidates stale LLM connection (0.410333ms)
+237:✔ backend error bridge registers listener before draining pending errors (6.089667ms)
+238:✔ backend error bridge forwards runtime events after consumer is ready (2.974333ms)
+239:✔ backend error bridge fails fast when ready command fails (1.977084ms)
+243:✔ backend readiness propagates backend startup failure (0.659667ms)
+249:✔ background folder tile cover failures are reported at tile scope (1.73175ms)
+394:✔ chat payload commit aborts generator and ACK failures (1.367791ms)
+396:✔ chat payload commit surfaces abort failure with the original error (0.224791ms)
+411:✔ jsonl: jsonlStreamToPayload cancels reader on parse error during streaming (0.846417ms)
+443:✔ connected hook failure faults the epoch and reset releases the committed root (0.692042ms)
+444:✔ cleanup failure stays visible and prevents destructive reset progress (0.780625ms)
+496:✔ /api/extensions/data-migration/export/android/save keeps artifacts available on non-cancel save errors (0.392584ms)
+540:✔ manifest hook failures propagate while hook timeouts remain diagnostic (0.867708ms)
+545:✔ extension discovery propagates API failures (0.476959ms)
+546:✔ extension manifest failures stay scoped to one extension (0.518125ms)
+557:✔ Unhandled foreground Generate errors reuse the legacy unblock path (7.71225ms)
+559:✔ Unhandled error cleanup only targets foreground UI lifecycle leaks (1.035917ms)
+575:✔ InvokeService surfaces CommandError::Cancelled as a plain message (3.25925ms)
+591:✔ Itemized prompt public lifecycle functions reject directly on storage failures (0.972834ms)
+594:✔ task failures are reported without wedging future requests (0.691083ms)
+698:✔ iframe viewport contract bridge ignores cross-origin access failures (0.23025ms)
+707:✔ counts denied system permission requests and suppresses future reminders (0.267208ms)
+755:✔ provider metadata route errors stay visible to callers (0.377834ms)
+758:✔ vectors source toggle exposes remote model failures without clearing current state (0.670458ms)
+773:✔ continuity firewall covers compact cross-family current-authority forms (1.013667ms)
+777:✔ current runtime authority is persisted separately from continuity history (0.132792ms)
+780:✔ accepted continuity is fail-closed at mobile capacity rather than silently dropping truth (0.524375ms)
+788:✔ chat completion status route exposes structured upstream network failures (2.761416ms)
+812:✔ settled success and failure entries are removed (1.4645ms)
+847:✔ startup prefetch retries the real loader after a prefetch failure (1.425042ms)
+868:✔ TTS warning severity updates status without an error toast (1.615584ms)
+982:✔ translate routes surface command errors via statusText (1.029417ms)
+985:✔ tts route surfaces command errors via statusText (0.498292ms)
+989:✔ minimax tts route exposes backend errors as json without invalid statusText (0.36925ms)
+991:✔ minimax tts frontend can fall back from json errors to text errors (1.576375ms)
+999:✔ Android host staging failure discards the partial staged file (2.316666ms)
+1001:✔ ToolManager stores plaintext reasoning and failed tool invocations without dropping native metadata persistence (13.168917ms)
+1012:✔ /api/users/backup returns JSON errors for invalid requests (1.230542ms)
+1050:  AssertionError [ERR_ASSERTION]: zh-cn.json must match Agent System i18n keys
+1188:      'unknownError',
+1231:      'deniedSkills',                      'description',                           'disabledTool',
+1276: ELIFECYCLE  Command failed with exit code 1.
 
 # Tail
+  ✔ rejects primitives (boolean) (0.570417ms)
+  ✔ rejects class instances (0.709583ms)
+✔ updateTauriTavernSettings contract validation (8.148875ms)
+▶ openDialog contract validation
+  ✔ accepts valid plain object options (0.743375ms)
+  ✔ normalizes omitted options to empty object (1.004583ms)
+  ✔ normalizes undefined to empty object (0.196416ms)
+  ✔ rejects null (0.110125ms)
+  ✔ rejects arrays (0.112291ms)
+  ✔ rejects primitives (string) (0.313708ms)
+  ✔ rejects primitives (number) (0.108292ms)
+  ✔ rejects primitives (boolean) (1.609708ms)
+✔ openDialog contract validation (7.004666ms)
+▶ setDataRoot contract validation
+  ✔ accepts valid non-empty path string (0.256ms)
+  ✔ rejects empty string (0.076ms)
+  ✔ rejects whitespace-only string (0.054334ms)
+  ✔ rejects non-string values (0.062667ms)
+✔ setDataRoot contract validation (1.149666ms)
+✔ Tauri builds use the repository frontend build hook (6.75225ms)
+✔ pnpm Tauri entrypoints prepare frontend assets (1.223541ms)
+✔ pnpm Tauri wrapper builds clean frontend assets (1581.350542ms)
+✔ frontend build hook honors the explicit portable skip request (48.716958ms)
+✔ portable builds delegate frontend ownership to the Tauri hook (1.614208ms)
+✔ Canary release workflow does not build frontend assets twice (1.255417ms)
+✔ Canary release notes isolate Codex skills and keep a deterministic fallback (0.923625ms)
+✔ Tauri bundle PNG icons remain 8-bit RGBA (6.475667ms)
+✔ Android launcher PNG assets remain 8-bit RGBA (13.265583ms)
+✔ waitForTauriMainReady preserves default fallback behavior (1.446458ms)
+✔ waitForTauriMainReady can fail fast for the main startup path (1.667166ms)
+✔ TauriTavern Dev Logs wrapper owns the host ABI boundary (2.98125ms)
+✔ Rspack exposes a dedicated TauriTavern Dev Logs Vue entry (0.73375ms)
+✔ TauriTavern Dev Logs Vue app stays presentation-only (2.744917ms)
+✔ TauriTavern Dev Logs Vue app owns subscription cleanup (0.851292ms)
+✔ TauriTavern panel popup adapter keeps Popup semantics while opting into mobile fullscreen surface (4.717166ms)
+✔ major TauriTavern panels use the dedicated panel popup shell (1.399ms)
+✔ mobile geometry firewall owns the TauriTavern panel popup surface geometry (1.71075ms)
+✔ TauriTavern panel popup CSS owns only the compact internal layout (1.435917ms)
+✔ buildTauriTavernSettingsUpdate returns an empty patch for unchanged settings (3.717ms)
+✔ buildTauriTavernSettingsUpdate persists the chat virtualization switch (0.30325ms)
+✔ createTauriTavernSettingsState requires the canonical chat virtualization switch (0.309042ms)
+✔ createTauriTavernSettingsState requires the canonical Zstandard backup switch (0.11325ms)
+✔ buildTauriTavernSettingsUpdate preserves minimal nested patch semantics (0.222958ms)
+✔ buildTauriTavernSettingsUpdate persists dynamic wallpaper settings with theme settings (0.168083ms)
+✔ buildTauriTavernSettingsUpdate persists embedded runtime legacy migration (0.17825ms)
+✔ buildTauriTavernSettingsUpdate preserves minimal chat backup patch semantics (0.162958ms)
+✔ buildTauriTavernSettingsUpdate persists only the Zstandard backup switch (1.301792ms)
+✔ unchanged storage display does not rewrite a non-MiB-aligned byte limit (0.7305ms)
+✔ buildTauriTavernSettingsUpdate flags the destructive zero limit transition (0.529417ms)
+✔ buildTauriTavernSettingsUpdate accepts unlimited chat backup sentinels (0.391541ms)
+✔ buildTauriTavernSettingsUpdate rejects invalid chat backup limits (0.4895ms)
+✔ MiB and GiB chat backup inputs save the same byte limit (0.179042ms)
+✔ chat backup storage unit selector converts the displayed value without changing bytes (0.488208ms)
+✔ zstd backup hint updates when aggregate storage stats arrive later (0.272875ms)
+✔ TauriTavern Settings popup is a host wrapper around the Vue bundle (4.729333ms)
+✔ TauriTavern Settings wallpaper options use the no-render background refresh (0.747791ms)
+✔ TauriTavern Settings loads optional backup stats after opening the popup (1.062542ms)
+✔ Rspack exposes a dedicated TauriTavern Settings Vue entry (1.173917ms)
+✔ TauriTavern Settings Vue app stays presentation-only (1.919333ms)
+✔ TauriTavern Settings keeps mobile toggle rows inline (0.865875ms)
+✔ TauriTavern Sync popup wrapper owns host-only capabilities (4.229166ms)
+✔ TauriTavern Sync listeners keep event contract while delegating progress UI (0.677875ms)
+✔ TauriTavern Sync job event routing handles origin and status payloads (1.374792ms)
+✔ TauriTavern Sync automation status events refresh status only while toasts refresh panel data (1.858583ms)
+✔ TauriTavern Sync automation success toasts include next run time (3.264416ms)
+✔ TauriTavern Sync automation draft survives background refreshes (1.157708ms)
+✔ TauriTavern Sync automation status shows the newest success-like timestamp (93.132375ms)
+✔ Rspack exposes a dedicated TauriTavern Sync Vue entry (1.841125ms)
+✔ TauriTavern Sync bundled UI does not contain legacy LAN v1 affordances (1.47125ms)
+✔ TauriTavern Sync dataset selection migrates legacy localStorage key once (2.010916ms)
+✔ TauriTavern Sync dataset selection rejects invalid current key before legacy fallback (0.789667ms)
+✔ TauriTavern Sync dataset selection rejects invalid legacy key (0.25875ms)
+✔ TauriTavern Sync Vue app stays presentation-only (4.62275ms)
+✔ TauriTavern Sync sends the selected overwrite policy through every operation (0.888042ms)
+✔ TauriTavern Sync pure state helpers keep pair URI validation explicit (0.421667ms)
+✔ Stable and Canary preserve the ordinary IPA and build a separate TestFlight variant (2.141333ms)
+✔ standard mobile artifacts allow HTTP without relaxing the TestFlight IPA (0.598292ms)
+✔ Stable and Canary target only their existing public TestFlight groups (1.766458ms)
+✔ TestFlight notes keep Codex isolated, read-only, and non-blocking (0.383208ms)
+✔ Stable TestFlight notes use maintainer release notes as verified priorities (0.1725ms)
+✔ TestFlight notes keep the app voice lightly playful without weakening factual rules (0.079042ms)
+✔ TestFlight publishing uploads, localizes, and distributes the exact IPA (0.152792ms)
+✔ App Store Connect JWTs use ES256 and a twenty-minute lifetime (16.4775ms)
+✔ TestFlight group ownership uses the explicit App Store Connect linkage (0.888375ms)
+✔ TestFlight external states submit, wait, complete, or fail explicitly (0.938167ms)
+✔ resetScrollHeight avoids transient zero-height collapse (7.017792ms)
+✔ theme binding resolves chat, entity, then fallback and reports missing references (1.505042ms)
+✔ theme binding wiring uses canonical stores and context lifecycle events (7.447125ms)
+✔ power user startup applies persisted SmartTheme colors without relying on color picker events (4.033ms)
+✔ Token cache is partitioned per chat and avoids whole-load on init (5.163667ms)
+✔ token prefix policy deduplicates exact requests and serializes distinct native work (2.472917ms)
+✔ token prefix policy does not cache settled results (0.4205ms)
+✔ token prefix policy uses the complete DTO as its dedupe identity (0.3865ms)
+✔ ordinary chat passes through by identity (1.753375ms)
+✔ empty Assistant owns parallel first-class Tool results by call ID (0.302667ms)
+✔ Tool results may be physically separated from their Assistant by side-effect messages (0.173ms)
+✔ recursive first-class tool rounds retain model-turn order (0.134166ms)
+✔ adjacent legacy system floor is read-only projected into the preceding Assistant (0.149583ms)
+✔ standalone legacy floor synthesizes an empty provider Assistant (0.098334ms)
+✔ legacy JSON values normalize without mutating stored history (0.109042ms)
+✔ empty containers and non-protocol metadata do not block replay (0.139709ms)
+✔ canonical malformed, orphan, duplicate, and missing relations fail at the first exact chat path (0.451416ms)
+✔ IDs may be reused by completed later turns but not by overlapping pending turns (0.198291ms)
+✔ mixed canonical and legacy facts fail instead of choosing one silently (0.146917ms)
+✔ translate routes forward provider to backend (19.5725ms)
+✔ translate routes surface command errors via statusText (1.029417ms)
+✔ grok tts route delegates generation to backend command (27.921167ms)
+✔ grok voice list route delegates to backend command (0.665542ms)
+✔ tts route surfaces command errors via statusText (0.498292ms)
+✔ mimo tts route delegates generation to backend command (0.449959ms)
+✔ minimax tts route delegates generation to backend command (0.398916ms)
+✔ tts route preserves backend validation response bodies (0.38175ms)
+✔ minimax tts route exposes backend errors as json without invalid statusText (0.36925ms)
+✔ grok provider voice list contract avoids silent fallback (9.241458ms)
+✔ minimax tts frontend can fall back from json errors to text errors (1.576375ms)
+✔ tts host route stays a backend-command adapter (0.724625ms)
+✔ Android upload materialization uses host staging chunks instead of raw fs writes (7.145375ms)
+✔ iOS upload materialization uses host staging even when a scoped path is present (2.400791ms)
+✔ iOS data archive materialization rejects the generic Blob upload path (0.336042ms)
+✔ Desktop upload materialization keeps real file paths without staging copy (0.199458ms)
+✔ Desktop Blob upload fallback uses host staging instead of raw fs temp writes (1.839542ms)
+✔ Android data archive materialization rejects the generic Blob upload path (0.250625ms)
+✔ Android host staging failure discards the partial staged file (2.316666ms)
+✔ OpenAI tool reasoning sync preserves Tauri native reasoning lanes (5.470959ms)
+✔ ToolManager stores plaintext reasoning and failed tool invocations without dropping native metadata persistence (13.168917ms)
+✔ Theme bgcol sync uses upstream ThemeGenerator flow with explicit overwrite semantics (1.414292ms)
+✔ World Info and Persona sync expose upstream-visible DEF behavior while keeping local descriptors (2.20775ms)
+✔ Welcome screen F sync adds configurable recent chats without dropping Tauri local affordances (5.410959ms)
+✔ NanoGPT provider selector F sync uses upstream Select2 affordances (3.218125ms)
+﹣ Textgen provider constants stay aligned with the 1.18 upstream reference (1.529708ms) # sillytavern-1.18.0 symlink is not available
+✔ Caption F sync fails explicitly in native routes instead of exposing unsupported static model choices (43.986083ms)
+✔ F sync locale keys cover welcome settings and upstream provider placeholders (6.227583ms)
+✔ /api/users/backup streams the staged archive by default (43.706208ms)
+✔ /api/users/backup native mode saves the staged archive without a binary body (1.497541ms)
+✔ /api/users/backup fails instead of returning a pathless archive result (1.271083ms)
+✔ /api/users/backup returns JSON errors for invalid requests (1.230542ms)
+✔ world-info rename retargets auxiliary and primary character lorebook links (1.350708ms)
+✔ world-info lorebook buttons preserve upstream click and long-press semantics (0.564584ms)
+✔ character slash commands expose create and update avatar paths through edit-avatar (1.749916ms)
+✔ chat changes preload world info without preparing discarded entries (6.6865ms)
+✔ world info collection preserves prefetch and loaded-event behavior (2.898334ms)
+✔ deleteWorldInfo supports skipping linked character save (5.256667ms)
+✔ character deletion deletes linked worldbook without saving character (4.38575ms)
+✔ world info entry preparation preserves legacy objects and hash inputs (2.557291ms)
+✔ world info get-batch preserves exact spaced names (22.92525ms)
+✔ world info broker keeps exact names as cache keys (2.682083ms)
+✔ /api/worldinfo/sanitize-name delegates to the Rust world info naming contract (0.789333ms)
+✔ character create payload preserves exact primary lorebook name (0.591ms)
+✔ bootstrap wires World Info global selector select2 enforcer (3.971125ms)
+✔ world info activation sorting avoids repeated sortedEntries index lookups (4.415875ms)
+✔ World info batches only safe token-count prefixes (4.582541ms)
+✔ World info keeps probability, macro, budget, and activation ordering around token prefetch (3.671125ms)
+✔ World info token prefetch rejects behavior-sensitive entries (0.537458ms)
+✔ World info token prefetch keeps only the contiguous safe prefix in activation order (1.416458ms)
+✔ World info token prefetch keeps the native request bounded to 64 entries (0.346667ms)
+✔ World info token prefetch preserves budget decisions across sensitive entry boundaries (0.432625ms)
+✔ World info token prefetch preserves activation order across the 64-entry batch boundary (0.247916ms)
+✔ Batch token counts preserve individual OpenAI wrapper semantics (1.746167ms)
+✔ Prefix token estimates use compact native payload without exact-cache coupling (0.804125ms)
+✔ Z.AI GLM 5.2 is a static model choice with 1M context (5.2505ms)
+ℹ tests 954
+ℹ suites 0
+ℹ pass 950
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 3
+ℹ todo 0
+ℹ duration_ms 21134.533166
+
+✖ failing tests:
+
+test at tests/agent-system-i18n-contract.test.mjs:27:1
+✖ Agent System Chinese locale files cover every extension i18n key (9.042625ms)
+  AssertionError [ERR_ASSERTION]: zh-cn.json must match Agent System i18n keys
+  + actual - expected
+  ... Skipped lines
+  
+    [
+  -   'activeChatRequired',
+      'activeProfile',
+      'activeProfileResetToDefault',
+      'activeProfileShort',
+      'adultTensionReadiness',
+      'advancedJson',
+  ...
+      'applyJson',
+  -   'authorCanonFields',
+  -   'backToCharacters',
+      'background',
+      'binaryFiles',
+  -   'boundCard',
+      'callableHandoffTargetHint',
+      'callableHandoffTargetToggle',
+      'callableSubAgent',
+      'callableSubAgentHint',
+      'callableSubAgentToggle',
+  ...
+      'capabilityMatrix',
+  -   'cardAlreadyMaterialized',
+      'charRangeComplete',
+      'charRangeTruncated',
+      'characterButtonBarNotFound',
+  -   'characterCardDraft',
+  -   'characterCardDraftApiUnavailable',
+  -   'characterCardDraftInvalid',
+  -   'characterCardMaterialized',
+  -   'characterCardNameRequired',
+      'characterFormNotFound',
+      'characterJsonDataFieldUnavailable',
+      'characterSelectionRequired',
+      'close',
+      'collapseTimeline',
+  ...
+      'continue',
+  -   'controlOwner',
+      'controlTool',
+      'controlTools',
+      'copy',
+      'copyDisplayName',
+      'currentChatModel',
+  ...
+      'downloadSkillImport',
+  -   'draftAvailable',
+  -   'draftSource',
+  -   'draftWarnings',
+      'edit',
+      'editingProfile',
+      'embedAssetPanelLoading',
+      'embedProfile',
+      'embedSkill',
+  ...
+      'includeActivatedWorldInfo',
+  -   'inferredFieldsExcluded',
+      'initialChatHistoryMessages',
+      'initialChatHistoryMessagesHint',
+      'initialContext',
+      'install',
+      'invalidSkillFilePath',
+      'kind',
+  -   'lifecycleStatus',
+  -   'loading',
+      'loadingAgentSystem',
+      'loadingSkillExtension',
+      'loadingSkillFiles',
+      'mainAgent',
+      'mainAgentControl',
+  -   'materializeCharacterCard',
+      'maxCharsPerCall',
+      'maxCharsPerRun',
+      'maxConcurrentSubAgents',
+      'maxHandoffDepth',
+      'maxRounds',
+  ...
+      'name',
+  -   'narrativeRole',
+      'new',
+      'newAgentProfile',
+      'newSkillImport',
+      'noEmbeddableProfiles',
+      'noEmbeddedProfiles',
+  ...
+      'noPromptPreset',
+  -   'noRpCharacters',
+      'noSavedModelTargets',
+      'noSkillsInstalled',
+      'noSkillsMatch',
+      'noToolParameters',
+      'none',
+  ...
+      'profileIdRequired',
+  -   'profileRevision',
+      'profileSections',
+      'profileSummary',
+      'profileView',
+      'profiles',
+      'prompt',
+  ...
+      'retryIntervalMs',
+  -   'rpCharacters',
+  -   'rpCharactersHint',
+      'runHistory',
+      'runHistoryAllChats',
+      'runHistoryCharacterChat',
+      'runHistoryCommittedFloor',
+      'runHistoryCommittedNoFloor',
+  ...
+      'save',
+  -   'saveCharacterCardAndBind',
+      'savedChatCompletionPreset',
+      'savedModel',
+      'savedModelTarget',
+      'savedModelTargetNotFound',
+      'savedPreset',
+      'savedSkillFile',
+  -   'scope',
+      'scopeUnavailableCharacter',
+      'scopeUnavailablePreset',
+      'scopeUnavailableProfile',
+      'scriptsIncluded',
+      'searchSkills',
+  ...
+      'skipConflict',
+  -   'stableTraits',
+      'subAgent',
+      'subAgentAccess',
+      'subAgentDialogUnsupported',
+      'targetCharacter',
+      'targetPreset',
+  ...
+      'unableToAllocateProfileId',
+  -   'unknownCharacter',
+      'unknownError',
+      'updateEmbeddedAsset',
+      'value',
+      'viewSkill',
+      'visible',
+  
+      at TestContext.<anonymous> (file:///Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/tests/agent-system-i18n-contract.test.mjs:36:16)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [
+      'activeProfile',                     'activeProfileResetToDefault',           'activeProfileShort',
+      'adultTensionReadiness',             'advancedJson',                          'agentAssets',
+      'agentAssetsDialogUnsupported',      'agentAssetsElementUnsupported',         'agentCooperation',
+      'agentFacingDescription',            'agentFacingDescriptionHint',            'agentModeOff',
+      'agentModeOn',                       'agentProfileBuiltInDelete',             'agentProfileBuiltInEdit',
+      'agentProfileContractInvalid',       'agentProfileDiagnosticsUnavailable',    'agentProfileExportSaveFirst',
+      'agentProfileExternalChangePending', 'agentProfileExternalChangeSaveBlocked', 'agentProfileManualRepairRequired',
+      'agentProfileModelBindingInvalid',   'agentProfileModelBindingMissing',       'agentProfileNeedsRepair',
+      'agentProfileNotDirectRunnable',     'agentProfileNotFound',                  'agentProfilePresetMissing',
+      'agentProfilePresetUnsupported',     'agentProfilePreviewUnavailable',        'agentProfileSaved',
+      'agentRunActive',                    'agentSystem',                           'agentSystemDialogUnsupported',
+      'agentSystemElementUnsupported',     'agentSystemPrompt',                     'agentTimeline',
+      'allowAgentHandoff',                 'allowAgentHandoffHint',                 'allowedCallers',
+      'allowedCallersHint',                'applyJson',                             'background',
+      'binaryFiles',                       'callableHandoffTargetHint',             'callableHandoffTargetToggle',
+      'callableSubAgent',                  'callableSubAgentHint',                  'callableSubAgentToggle',
+      'canDelegate',                       'canDelegateAndHandoff',                 'canHandoff',
+      'cancel',                            'cannotDisplayBinarySkillFile',          'cannotEditTruncatedSkillFile',
+      'cannotEmbedBuiltinProfile',         'capabilityMatrix',                      'charRangeComplete',
+      'charRangeTruncated',                'characterButtonBarNotFound',            'characterFormNotFound',
+      'characterJsonDataFieldUnavailable', 'characterSelectionRequired',            'close',
+      'collapseTimeline',                  'confirm',                               'conflict',
+      'conflictDifferent',                 'conflictNew',                           'conflictSame',
+      'contextTools',                      'continue',                              'controlTool',
+      'controlTools',                      'copy',                                  'copyDisplayName',
+      'currentChatModel',                  'currentPromptPreset',                   'customToolDescription',
+      'customizedTool',                    'defaultDescription',                    'defaultWriter',
+      'defaultWriterDescription',          'delegateToSubAgents',                   'delegateToSubAgentsHint',
+      'delegationOff',                     'delete',                                'deleteAgentProfileConfirm',
+      'deleteCorruptAgentProfileConfirm',  'deleteScopedSkillConfirm',              'deleteSkillConfirm',
+      'deletedCorruptAgentProfile',        'deletedProfile',                        'deletedSkill',
+      'deniedSkills',                      'description',                           'disabledTool',
+      'displayName',                       'download',                              'downloadSkillImport',
+      'edit',
+      ... 418 more items
+    ],
+    expected: [
+      'activeChatRequired',               'activeProfile',                     'activeProfileResetToDefault',
+      'activeProfileShort',               'adultTensionReadiness',             'advancedJson',
+      'agentAssets',                      'agentAssetsDialogUnsupported',      'agentAssetsElementUnsupported',
+      'agentCooperation',                 'agentFacingDescription',            'agentFacingDescriptionHint',
+      'agentModeOff',                     'agentModeOn',                       'agentProfileBuiltInDelete',
+      'agentProfileBuiltInEdit',          'agentProfileContractInvalid',       'agentProfileDiagnosticsUnavailable',
+      'agentProfileExportSaveFirst',      'agentProfileExternalChangePending', 'agentProfileExternalChangeSaveBlocked',
+      'agentProfileManualRepairRequired', 'agentProfileModelBindingInvalid',   'agentProfileModelBindingMissing',
+      'agentProfileNeedsRepair',          'agentProfileNotDirectRunnable',     'agentProfileNotFound',
+      'agentProfilePresetMissing',        'agentProfilePresetUnsupported',     'agentProfilePreviewUnavailable',
+      'agentProfileSaved',                'agentRunActive',                    'agentSystem',
+      'agentSystemDialogUnsupported',     'agentSystemElementUnsupported',     'agentSystemPrompt',
+      'agentTimeline',                    'allowAgentHandoff',                 'allowAgentHandoffHint',
+      'allowedCallers',                   'allowedCallersHint',                'applyJson',
+      'authorCanonFields',                'backToCharacters',                  'background',
+      'binaryFiles',                      'boundCard',                         'callableHandoffTargetHint',
+      'callableHandoffTargetToggle',      'callableSubAgent',                  'callableSubAgentHint',
+      'callableSubAgentToggle',           'canDelegate',                       'canDelegateAndHandoff',
+      'canHandoff',                       'cancel',                            'cannotDisplayBinarySkillFile',
+      'cannotEditTruncatedSkillFile',     'cannotEmbedBuiltinProfile',         'capabilityMatrix',
+      'cardAlreadyMaterialized',          'charRangeComplete',                 'charRangeTruncated',
+      'characterButtonBarNotFound',       'characterCardDraft',                'characterCardDraftApiUnavailable',
+      'characterCardDraftInvalid',        'characterCardMaterialized',         'characterCardNameRequired',
+      'characterFormNotFound',            'characterJsonDataFieldUnavailable', 'characterSelectionRequired',
+      'close',                            'collapseTimeline',                  'confirm',
+      'conflict',                         'conflictDifferent',                 'conflictNew',
+      'conflictSame',                     'contextTools',                      'continue',
+      'controlOwner',                     'controlTool',                       'controlTools',
+      'copy',                             'copyDisplayName',                   'currentChatModel',
+      'currentPromptPreset',              'customToolDescription',             'customizedTool',
+      'defaultDescription',               'defaultWriter',                     'defaultWriterDescription',
+      'delegateToSubAgents',              'delegateToSubAgentsHint',           'delegationOff',
+      'delete',                           'deleteAgentProfileConfirm',         'deleteCorruptAgentProfileConfirm',
+      'deleteScopedSkillConfirm',
+      ... 445 more items
+    ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+ ELIFECYCLE  Command failed with exit code 1.
