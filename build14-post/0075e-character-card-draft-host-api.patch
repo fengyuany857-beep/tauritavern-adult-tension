@@ -1,0 +1,59 @@
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
+@@ -3,6 +3,10 @@ use std::sync::Arc;
+ use tauri::State;
++use tt_application::services::character_card_draft_materialization_service::{
++    CharacterCardDraftCommitRequest, CharacterCardDraftCommitResult,
++    CharacterCardDraftPreview,
++};
+ use tt_application::services::character_card_materialization_orchestrator::{
+     CharacterCardReturnCommitResult, CharacterCardReturnPlanResult, ReturnFieldChoice,
+ };
+@@ -289,6 +293,36 @@ pub async fn export_character_content(
+         .map_err(map_command_error("Failed to export character content"))
+ }
+ 
++#[tauri::command]
++pub async fn preview_character_card_draft(
++    stable_chat_id: String,
++    character_id: String,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<CharacterCardDraftPreview, CommandError> {
++    log_command("preview_character_card_draft");
++    app_state
++        .services
++        .character_card_draft_materialization_service
++        .preview(&stable_chat_id, &character_id)
++        .await
++        .map_err(map_command_error("Failed to preview Character Card draft"))
++}
++
++#[tauri::command]
++pub async fn commit_character_card_draft(
++    request: CharacterCardDraftCommitRequest,
++    app_state: State<'_, Arc<AppState>>,
++) -> Result<CharacterCardDraftCommitResult, CommandError> {
++    log_command("commit_character_card_draft");
++    app_state
++        .services
++        .character_card_draft_materialization_service
++        .commit(request)
++        .await
++        .map_err(map_command_error("Failed to materialize Character Card draft"))
++}
++
+ #[tauri::command]
+ pub async fn export_bound_character_card(
+     binding_id: String,
+diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
+--- a/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
++++ b/src-tauri/crates/tauritavern/src/presentation/commands/registry.rs
+@@ -26,6 +26,8 @@ pub fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static {
+         super::character_commands::replace_character,
+         super::character_commands::export_character,
+         super::character_commands::export_character_content,
++        super::character_commands::preview_character_card_draft,
++        super::character_commands::commit_character_card_draft,
+         super::character_commands::export_bound_character_card,
+         super::character_commands::preview_character_card_return,
