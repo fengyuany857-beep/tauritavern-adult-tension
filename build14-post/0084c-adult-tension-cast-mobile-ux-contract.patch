@@ -2,7 +2,7 @@ diff --git a/tests/adult-tension-cast-mobile-ux-contract.test.mjs b/tests/adult-
 new file mode 100644
 --- /dev/null
 +++ b/tests/adult-tension-cast-mobile-ux-contract.test.mjs
-@@ -0,0 +1,77 @@
+@@ -0,0 +1,89 @@
 +import assert from 'node:assert/strict';
 +import fs from 'node:fs';
 +import path from 'node:path';
@@ -12,18 +12,30 @@ new file mode 100644
 +const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 +const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 +const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js');
++const mobileGeometry = read('src/tauri/main/compat/mobile/mobile-geometry-firewall.js');
 +const i18n = read('src/scripts/extensions/agent-system/src/i18n.js');
 +const zhCn = read('src/scripts/extensions/agent-system/i18n/zh-cn.json');
 +const zhTw = read('src/scripts/extensions/agent-system/i18n/zh-tw.json');
 +
-+test('RP Cast mobile surface has a dedicated dynamic viewport scroll boundary', () => {
-+    assert.match(ui, /ttas_adult_tension_cast_mobile_ux/);
++test('RP Cast owns only its internal scroll boundary and delegates viewport geometry to the host mobile contract', () => {
++    assert.match(ui, /data-tt-mobile-surface', 'fullscreen-window'/);
++    assert.match(ui, /\.ttas-cast-dialog > \.ttas-popup-mount/);
 +    assert.match(ui, /overflow-y:\s*auto/);
 +    assert.match(ui, /-webkit-overflow-scrolling:\s*touch/);
-+    assert.match(ui, /safe-area-inset-bottom/);
-+    assert.match(ui, /window\.visualViewport/);
-+    assert.match(ui, /removeEventListener\('resize', update\)/);
-+    assert.match(ui, /removeEventListener\('scroll', update\)/);
++    assert.doesNotMatch(ui, /window\.visualViewport/);
++    assert.doesNotMatch(ui, /safe-area-inset-/);
++    assert.doesNotMatch(ui, /ttas-cast-visual-height/);
++    assert.match(mobileGeometry, /data-tt-mobile-surface=\"fullscreen-window\"/);
++    assert.match(mobileGeometry, /--tt-viewport-bottom-inset/);
++    assert.match(mobileGeometry, /--tt-inset-top/);
++});
++
++test('critical draft and Card to RP actions stay reachable in a sticky in-surface action bar', () => {
++    assert.match(ui, /ttas-cast-action-bar/);
++    assert.match(ui, /position:\s*sticky/);
++    assert.match(ui, /bottom:\s*0/);
++    assert.match(ui, /lifecycle\.append\(commit\)/);
++    assert.match(ui, /applyBar\.append\(apply\)/);
 +});
 +
 +test('RP Cast candidates are compact accessible accordions with current-chat search', () => {
@@ -33,6 +45,7 @@ new file mode 100644
 +    assert.match(ui, /searchRpCharacters/);
 +    assert.match(ui, /candidateSearchText/);
 +    assert.match(ui, /listMaterializationDraftCandidates\(\{ stableChatId: chatId \}\)/);
++    assert.match(ui, /fa-chevron-down/);
 +    assert.doesNotMatch(ui, /localStorage/);
 +    assert.doesNotMatch(ui, /sessionStorage/);
 +});
@@ -51,7 +64,7 @@ new file mode 100644
 +    assert.match(ui, /active chat identity resolution failed/);
 +});
 +
-+test('known RP display enums and Character Card field labels are localized without changing canonical values', () => {
++test('known RP display enums, provenance spellings, and Character Card field labels are localized without changing canonical values', () => {
 +    for (const token of [
 +        'incidental', 'recurring', 'supporting', 'main',
 +        'ai', 'user', 'shared',
@@ -59,7 +72,7 @@ new file mode 100644
 +        'session_character', 'world_character',
 +        'source_advanced', 'ready_to_materialize',
 +        'card_missing', 'target_missing', 'corrupted',
-+        'STABLE_PROFILE', 'AUTHOR_CANON',
++        'STABLE_PROFILE', 'AUTHOR_CANON', 'stable_profile', 'author_canon',
 +    ]) assert.match(ui, new RegExp(token));
 +    assert.match(ui, /characterCardFieldPostHistoryInstructions/);
 +    assert.match(ui, /characterCardFieldTags/);
