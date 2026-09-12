@@ -1,0 +1,57 @@
+diff --git a/src/scripts/extensions/agent-system/src/i18n.js b/src/scripts/extensions/agent-system/src/i18n.js
+--- a/src/scripts/extensions/agent-system/src/i18n.js
++++ b/src/scripts/extensions/agent-system/src/i18n.js
+@@ -80,6 +80,17 @@ const DEFAULT_MESSAGES = Object.freeze({
+     notYetSynced: 'Not yet synced',
+     openCharacterCard: 'Open Character Card',
+     profileRevisionAtLastSync: 'Profile Revision at Last Sync',
++    applyCardToRp: 'Apply Card to RP',
++    applyCardToRpBoundary: 'Only the selected Card fields below can update the current RP stable profile. World Canon, memory, relations, events, role, control ownership, and lifecycle are not changed.',
++    applyCardToRpActiveRunBlocked: 'Finish or cancel the active Agent Run before applying Card changes to RP.',
++    applyCardToRpConfirm: 'Apply the selected Character Card fields to this RP profile? This does not update World Canon.',
++    applyCardToRpSuccess: 'Character Card changes applied to RP profile revision {revision}.',
++    cardSourceField: 'Card Source Field',
++    confirmApplyCardToRp: 'Confirm Apply to RP',
++    currentRpValue: 'Current RP Value',
++    noCardRpMappings: 'This Card has no safe stable-profile fields to apply.',
++    proposedRpValue: 'Proposed RP Value',
++    selectCardRpMapping: 'Select at least one Card field to apply.',
+     charRangeComplete: '{chars}/{totalChars} chars, complete',
+diff --git a/src/scripts/extensions/agent-system/i18n/zh-cn.json b/src/scripts/extensions/agent-system/i18n/zh-cn.json
+--- a/src/scripts/extensions/agent-system/i18n/zh-cn.json
++++ b/src/scripts/extensions/agent-system/i18n/zh-cn.json
+@@ -77,6 +77,17 @@
+     "agent_system.notYetSynced": "尚未同步",
+     "agent_system.openCharacterCard": "查看角色卡",
+     "agent_system.profileRevisionAtLastSync": "上次同步的资料修订",
++    "agent_system.applyCardToRp": "将角色卡应用到 RP",
++    "agent_system.applyCardToRpBoundary": "只会把下方明确选择的角色卡字段写入当前 RP 的稳定人物资料。不会修改世界 Canon、记忆、关系、事件、叙事角色、控制权或生命周期。",
++    "agent_system.applyCardToRpActiveRunBlocked": "当前有 Agent Run 正在运行，请先完成或取消后再应用角色卡。",
++    "agent_system.applyCardToRpConfirm": "确认把已选择的角色卡字段应用到当前 RP 人物资料？此操作不会更新世界 Canon。",
++    "agent_system.applyCardToRpSuccess": "角色卡修改已应用到 RP，人物资料修订为 {revision}。",
++    "agent_system.cardSourceField": "角色卡来源字段",
++    "agent_system.confirmApplyCardToRp": "确认应用到 RP",
++    "agent_system.currentRpValue": "当前 RP 值",
++    "agent_system.noCardRpMappings": "这张角色卡没有可安全应用到稳定人物资料的字段。",
++    "agent_system.proposedRpValue": "拟应用的 RP 值",
++    "agent_system.selectCardRpMapping": "请至少选择一个要应用的角色卡字段。",
+     "agent_system.background": "后台",
+diff --git a/src/scripts/extensions/agent-system/i18n/zh-tw.json b/src/scripts/extensions/agent-system/i18n/zh-tw.json
+--- a/src/scripts/extensions/agent-system/i18n/zh-tw.json
++++ b/src/scripts/extensions/agent-system/i18n/zh-tw.json
+@@ -77,6 +77,17 @@
+     "agent_system.notYetSynced": "尚未同步",
+     "agent_system.openCharacterCard": "查看角色卡",
+     "agent_system.profileRevisionAtLastSync": "上次同步的資料修訂",
++    "agent_system.applyCardToRp": "將角色卡套用到 RP",
++    "agent_system.applyCardToRpBoundary": "只會把下方明確選擇的角色卡欄位寫入目前 RP 的穩定人物資料。不會修改世界 Canon、記憶、關係、事件、敘事角色、控制權或生命週期。",
++    "agent_system.applyCardToRpActiveRunBlocked": "目前有 Agent Run 正在執行，請先完成或取消後再套用角色卡。",
++    "agent_system.applyCardToRpConfirm": "確認把已選擇的角色卡欄位套用到目前 RP 人物資料？此操作不會更新世界 Canon。",
++    "agent_system.applyCardToRpSuccess": "角色卡修改已套用到 RP，人物資料修訂為 {revision}。",
++    "agent_system.cardSourceField": "角色卡來源欄位",
++    "agent_system.confirmApplyCardToRp": "確認套用到 RP",
++    "agent_system.currentRpValue": "目前 RP 值",
++    "agent_system.noCardRpMappings": "這張角色卡沒有可安全套用到穩定人物資料的欄位。",
++    "agent_system.proposedRpValue": "擬套用的 RP 值",
++    "agent_system.selectCardRpMapping": "請至少選擇一個要套用的角色卡欄位。",
+     "agent_system.background": "背景",
