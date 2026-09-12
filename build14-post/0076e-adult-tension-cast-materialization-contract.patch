@@ -43,7 +43,7 @@ new file mode 100644
 +});
 +
 +test('chat-side RP Cast entry uses stable chat identity and the Draft Preview CAS Commit path', () => {
-+    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast.js');
++    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js');
 +    const index = read('src/scripts/extensions/agent-system/src/index.js');
 +
 +    assert.match(index, /mountAdultTensionCastEntry/);
@@ -62,7 +62,7 @@ new file mode 100644
 +});
 +
 +test('Draft editor exposes generated provenance and conservative-exclusion warnings before explicit save', () => {
-+    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast.js');
++    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js');
 +
 +    assert.match(ui, /fieldProvenance/);
 +    assert.match(ui, /preview\?\.warnings/);
@@ -77,7 +77,7 @@ new file mode 100644
 +});
 +
 +test('materialized candidates are visible but cannot be materialized twice from the Cast panel', () => {
-+    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast.js');
++    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js');
 +
 +    assert.match(ui, /action\.disabled = Boolean\(candidate\?\.materialized\)/);
 +    assert.match(ui, /cardAlreadyMaterialized/);
