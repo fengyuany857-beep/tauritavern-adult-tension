@@ -1,0 +1,43 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+@@ -40,6 +40,7 @@ pub struct CharacterCardDraftPreview {
+     pub cas: CharacterCardDraftCas,
+     pub scope_kind: BindingScopeKind,
+     pub warnings: Vec<String>,
++    pub persisted: bool,
+ }
+ 
+ #[derive(Debug, Clone, Deserialize)]
+@@ -55,6 +56,25 @@ pub struct CharacterCardDraftCommitResult {
+     pub binding: tt_domain::models::character_card_materialization::CharacterCardBinding,
+ }
+ 
++#[derive(Debug, Clone, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CharacterCardDraftSaveRequest {
++    pub cas: CharacterCardDraftCas,
++    pub draft_id: String,
++    pub expected_draft_revision: u64,
++    pub definition: Value,
++}
++
++#[derive(Debug, Clone, Deserialize)]
++#[serde(rename_all = "camelCase", deny_unknown_fields)]
++pub struct CharacterCardDraftArchiveRequest {
++    pub stable_chat_id: String,
++    pub character_id: String,
++    pub draft_id: String,
++    pub expected_draft_revision: u64,
++}
++
+ #[derive(Debug, Clone, Serialize)]
+ #[serde(rename_all = "camelCase")]
+ pub struct CharacterCardDraftStableTraitSummary {
+@@ -195,6 +215,7 @@ impl CharacterCardDraftMaterializationService {
+             draft,
+             scope_kind,
+             warnings,
++            persisted: false,
+         })
+     }
