@@ -63,18 +63,26 @@ diff --git a/src-tauri/crates/tt-ports/src/repositories/character_card_materiali
 +    CharacterCardBinding, CharacterCardDraftRecord, CharacterCardTransactionJournal, ExportRecord,
      StagedCharacterCardImport, UndoRecord,
  };
-@@ -16,6 +16,18 @@ pub trait CharacterCardMaterializationRepository: Send + Sync {
+@@ -16,6 +16,29 @@ pub trait CharacterCardMaterializationRepository: Send + Sync {
  
      async fn write_binding(&self, binding: &CharacterCardBinding) -> Result<(), DomainError>;
  
 +    async fn read_draft(
 +        &self,
-+        draft_id: &str,
-+    ) -> Result<Option<CharacterCardDraftRecord>, DomainError>;
++        _draft_id: &str,
++    ) -> Result<Option<CharacterCardDraftRecord>, DomainError> {
++        Ok(None)
++    }
 +
-+    async fn write_draft(&self, draft: &CharacterCardDraftRecord) -> Result<(), DomainError>;
++    async fn write_draft(&self, _draft: &CharacterCardDraftRecord) -> Result<(), DomainError> {
++        Err(DomainError::InvalidData(
++            "Character Card draft persistence is not supported by this repository".to_string(),
++        ))
++    }
 +
-+    async fn list_drafts(&self) -> Result<Vec<CharacterCardDraftRecord>, DomainError>;
++    async fn list_drafts(&self) -> Result<Vec<CharacterCardDraftRecord>, DomainError> {
++        Ok(Vec::new())
++    }
 +
      async fn read_export_record(
          &self,
