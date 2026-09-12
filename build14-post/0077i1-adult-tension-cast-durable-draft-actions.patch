@@ -1,0 +1,77 @@
+diff --git a/src/scripts/extensions/agent-system/src/adult-tension-cast.js b/src/scripts/extensions/agent-system/src/adult-tension-cast.js
+--- a/src/scripts/extensions/agent-system/src/adult-tension-cast.js
++++ b/src/scripts/extensions/agent-system/src/adult-tension-cast.js
+@@ -176,6 +176,70 @@ function renderDraft(root, candidate, chatId, preview, renderList) {
+     form.append(tagsLabel);
+     root.append(form);
+ 
++    const sourceAdvanced = preview?.draft?.state === 'source_advanced';
++    if (sourceAdvanced) {
++        const stale = element('div', tr('sourceAdvancedDraft'));
++        stale.style.fontWeight = '600';
++        root.append(stale);
++    }
++
++    const lifecycle = element('div');
++    Object.assign(lifecycle.style, { display: 'flex', flexWrap: 'wrap', gap: '.5rem' });
++    const saveDraft = element('button', tr('saveDraft'), 'menu_button');
++    saveDraft.type = 'button';
++    saveDraft.disabled = sourceAdvanced;
++    saveDraft.addEventListener('click', async () => {
++        saveDraft.disabled = true;
++        try {
++            const saved = await api().saveMaterializationDraft({
++                cas: preview.cas,
++                draftId: preview.draft.draftId,
++                expectedDraftRevision: preview.draft.draftRevision,
++                definition,
++            });
++            window.toastr?.success?.(tr('draftSaved'));
++            renderDraft(root, candidate, chatId, saved, renderList);
++        } catch (error) {
++            window.toastr?.error?.(errorText(error));
++        } finally {
++            saveDraft.disabled = sourceAdvanced;
++        }
++    });
++
++    const regenerate = element('button', tr('regenerateDraft'), 'menu_button');
++    regenerate.type = 'button';
++    regenerate.addEventListener('click', async () => {
++        if (!await confirmAction(tr('regenerateDraftConfirm'))) return;
++        regenerate.disabled = true;
++        try {
++            const regenerated = await api().regenerateMaterializationDraft({
++                stableChatId: chatId,
++                characterId: candidate.characterId,
++            });
++            renderDraft(root, candidate, chatId, regenerated, renderList);
++        } catch (error) {
++            window.toastr?.error?.(errorText(error));
++        } finally {
++            regenerate.disabled = false;
++        }
++    });
++    lifecycle.append(saveDraft, regenerate);
++
++    if (preview?.persisted) {
++        const archive = element('button', tr('archiveDraft'), 'menu_button');
++        archive.type = 'button';
++        archive.addEventListener('click', async () => {
++            if (!await confirmAction(tr('archiveDraftConfirm'))) return;
++            await api().archiveMaterializationDraft({
++                stableChatId: chatId,
++                characterId: candidate.characterId,
++                draftId: preview.draft.draftId,
++                expectedDraftRevision: preview.draft.draftRevision,
++            });
++            window.toastr?.success?.(tr('draftArchived'));
++            await renderList();
++        });
++        lifecycle.append(archive);
++    }
++    root.append(lifecycle);
++
+     const commit = element('button', '', 'menu_button menu_button_icon');
+     commit.type = 'button';
++    commit.disabled = sourceAdvanced;
