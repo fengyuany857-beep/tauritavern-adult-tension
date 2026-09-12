@@ -1,3 +1,330 @@
 # Diagnostic matches
+46:  SyntaxError: Unexpected identifier 'git'
+60:  SyntaxError: Unexpected identifier 'git'
+74:  SyntaxError: Unexpected identifier 'git'
+88:  SyntaxError: Unexpected identifier 'git'
+102:  SyntaxError: Unexpected identifier 'git'
+116:  SyntaxError: Unexpected identifier 'git'
+130:  SyntaxError: Unexpected identifier 'git'
+144:  SyntaxError: Unexpected identifier 'git'
+158:  SyntaxError: Unexpected identifier 'git'
+172:  SyntaxError: Unexpected identifier 'git'
+186:  SyntaxError: Unexpected identifier 'git'
+200:  SyntaxError: Unexpected identifier 'git'
+214:  SyntaxError: Unexpected identifier 'git'
+228:  SyntaxError: Unexpected identifier 'git'
+242:  SyntaxError: Unexpected identifier 'git'
+256:  SyntaxError: Unexpected identifier 'git'
+270:  SyntaxError: Unexpected identifier 'git'
+284:  SyntaxError: Unexpected identifier 'git'
+298:  SyntaxError: Unexpected identifier 'git'
 
 # Tail
+✔ Adult Tension profile uses bounded layered context and tool budgets (0.762375ms)
+✔ Adapter recommendations avoid routine duplicate World Info and full Skill reads (0.667917ms)
+✔ RP state bounds hot memory while recall indexes historical memory (0.316916ms)
+✔ Adult Tension distribution bootstraps once and exposes local readiness (0.175916ms)
+✖ api.agent.profiles forwards profile commands with camelCase DTOs (4.616ms)
+✖ api.agent.profiles publishes profile change events after successful mutations (0.642916ms)
+✖ api.agent.profiles fails fast on invalid profile inputs (0.544125ms)
+✖ api.agent.tools lists canonical catalog items (0.455917ms)
+✖ api.agent.promptAssembly prepares backend broker requests (0.419167ms)
+✖ api.agent.promptAssembly normalizes current model connection through backend commands (0.442583ms)
+✖ api.agent.startRunWithPromptSnapshot refreshes Model Target LLM connection before starting run (0.469875ms)
+✖ api.agent.readEvents requests timeline projection only when asked (0.412292ms)
+✖ api.agent.submitGuidance forwards camelCase DTO and fails fast on invalid input (0.449334ms)
+✖ api.agent.listRuns forwards run history filters with camelCase DTOs (0.497042ms)
+✖ api.agent.listRuns fails fast on invalid history filters (0.40525ms)
+✖ api.agent.retention forwards settings and prune contracts (0.409167ms)
+✖ api.agent.retention fails fast on invalid retention inputs (0.401709ms)
+✖ api.agent.readModelTurn forwards camelCase DTO and fails fast on invalid input (0.372334ms)
+✖ api.agent.pruneChatPersistentStates forwards explicit candidate state ids (0.348375ms)
+✖ api.agent.pruneChatPersistentStates fails fast on invalid candidate state ids (0.326708ms)
+✖ agent chat commit bridge detaches on partial success terminal event (0.379292ms)
+✖ agent chat commit bridge runs generated output cleanup before saving (0.373791ms)
+✖ agent chat commit bridge cleans append commits as one raw target message (0.345917ms)
+✔ agent prompt assembly bridge reads pending request by assembly id (9.056458ms)
+✔ shared agent run event subscription fans out over one backend poller (0.802667ms)
+✔ Auto Acceptance is wired through production Settings and Host ABI (1.291667ms)
+✔ Auto Acceptance inline Vue expressions are syntactically parseable (0.379ms)
+✔ Auto Acceptance uses isolated file storage and the production RP path (0.274708ms)
+✔ Auto Acceptance remains quick, bounded, and offline by default (0.183542ms)
+✔ Acceptance report export reuses the existing safe export chain (0.093458ms)
+✔ Adult Tension self-sign distribution blocks upstream update drift (0.146083ms)
+✔ Acceptance build identity includes fork and CI provenance fields (0.117958ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 13
+ℹ fail 19
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 113.080042
+
+✖ failing tests:
+
+test at tests/agent-api-contract.test.mjs:109:1
+✖ api.agent.profiles forwards profile commands with camelCase DTOs (4.616ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:150:1
+✖ api.agent.profiles publishes profile change events after successful mutations (0.642916ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:173:1
+✖ api.agent.profiles fails fast on invalid profile inputs (0.544125ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:198:1
+✖ api.agent.tools lists canonical catalog items (0.455917ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:209:1
+✖ api.agent.promptAssembly prepares backend broker requests (0.419167ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:243:1
+✖ api.agent.promptAssembly normalizes current model connection through backend commands (0.442583ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:317:1
+✖ api.agent.startRunWithPromptSnapshot refreshes Model Target LLM connection before starting run (0.469875ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:408:1
+✖ api.agent.readEvents requests timeline projection only when asked (0.412292ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:446:1
+✖ api.agent.submitGuidance forwards camelCase DTO and fails fast on invalid input (0.449334ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:495:1
+✖ api.agent.listRuns forwards run history filters with camelCase DTOs (0.497042ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:534:1
+✖ api.agent.listRuns fails fast on invalid history filters (0.40525ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:576:1
+✖ api.agent.retention forwards settings and prune contracts (0.409167ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:682:1
+✖ api.agent.retention fails fast on invalid retention inputs (0.401709ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:742:1
+✖ api.agent.readModelTurn forwards camelCase DTO and fails fast on invalid input (0.372334ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:773:1
+✖ api.agent.pruneChatPersistentStates forwards explicit candidate state ids (0.348375ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:797:1
+✖ api.agent.pruneChatPersistentStates fails fast on invalid candidate state ids (0.326708ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+      at ModuleJob.link (node:internal/modules/esm/module_job:381:17)
+
+test at tests/agent-api-contract.test.mjs:819:1
+✖ agent chat commit bridge detaches on partial success terminal event (0.379292ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at node:internal/modules/esm/loader:636:32
+      at TracingChannel.tracePromise (node:diagnostics_channel:361:14)
+
+test at tests/agent-api-contract.test.mjs:844:1
+✖ agent chat commit bridge runs generated output cleanup before saving (0.373791ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at node:internal/modules/esm/loader:636:32
+      at TracingChannel.tracePromise (node:diagnostics_channel:361:14)
+
+test at tests/agent-api-contract.test.mjs:898:1
+✖ agent chat commit bridge cleans append commits as one raw target message (0.345917ms)
+  SyntaxError: Unexpected identifier 'git'
+      at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+      at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+      at #translate (node:internal/modules/esm/loader:438:20)
+      at afterLoad (node:internal/modules/esm/loader:506:29)
+      at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:511:12)
+      at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:564:36)
+      at afterResolve (node:internal/modules/esm/loader:611:52)
+      at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)
+      at node:internal/modules/esm/loader:636:32
+      at TracingChannel.tracePromise (node:diagnostics_channel:361:14)
