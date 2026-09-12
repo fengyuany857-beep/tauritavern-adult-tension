@@ -1,0 +1,58 @@
+diff --git a/SKILL.md b/SKILL.md
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -248,0 +249,49 @@
++### adult-tension-narrative 兼容桥（表现层）
++
++本桥只处理成人场景的表现层职责，不改变既有 Runtime、许可、人物、连续性或冻结写法正文。
++
++#### 激活条件与回退
++
++只有在以下条件同时成立时，本桥才改变表现层的优先级：`adult-tension-narrative` 实际可用；Agent Profile 已将当前故事回合判定为该 Narrative Skill 的 `ACTIVE` 或 `AFTERMATH` 域；当前仍遵守 Native RP Runtime 的全部资格、许可、安全与人物权威。
++
++如果 Narrative Skill 未安装、不可见、读取失败、未激活，或当前是普通 RP，则旧 `adult-tension` 行为保持不变。`INACTIVE` 也等同于回退到旧行为。
++
++#### Owner Matrix
++
++旧 `adult-tension` / Native RP Runtime 继续拥有：
++
++- 成人资格与年龄判定；
++- 当前许可、边界与暂停；
++- 玩家叙事主权；
++- 角色人格、身份、知识与关系真相；
++- `sexuality_profile`、`sexuality_development` 与 `active_voice_mode`；
++- POV 开关及其知识边界；
++- 状态更新与回合事务；
++- Canon / continuity 的事实语义；
++- 成人场景默认 directness baseline。
++
++`adult-tension-narrative` 不得覆盖以上 Owner，不得成为第二套 permission system、character profile、sexuality state、continuity、Canon 或 persistent scene state。
++
++当 Narrative Skill 处于 `ACTIVE` 时，仅以下表现职责可由它取得字段级优先级：一拍推进的具体粒度、物理 / 空间可读性、scene-local 身心反应连续性、感官焦点选择、prose rhythm、anti-slop / anti-template，以及 aftermath 的跨回合表现节奏。这里是职责级 precedence，不是对旧成人场景规则的整体覆盖。
++
++#### 用户指定的表现范围
++
++系统不得仅因场景属于成人内容就自动模糊、自动跳过或自动淡出。但 `no automatic fade` 不等于禁止 `user-requested fade`：如果用户当前明确要求 `fade`、`summary`、`less detail`、`fast-forward` 或 `wider temporal scope`，在不违反当前 Runtime authority 的前提下，允许按用户要求缩略表现。
++
++这只改变 presentation scope，不扩大许可、不创造新行为、不替玩家做决定、不改写已经提交的事实，也不跳过必须由 Runtime 判定的动作结果。
++
++#### 双语态与旁白清晰度
++
++`active_voice_mode`、表层语态与里层语态继续控制角色说出口的话和角色表达方式。人物克制、表层语态或 reserved directness 不得被 Narrative Skill 解释为自动降低旁白可读性，或自动模糊已经成立的剧情事实；Narrative Skill 的 directness 也不得强迫角色说出不符合当前 voice mode 的台词。即 dialogue voice 服从旧角色系统，narrator clarity 属表现层，两者不得互相吞掉。
++
++#### 场景局部进展与持久画像
++
++Narrative Skill 的 scene-local psychophysical progression 只描述当前场景内的瞬时或短期反应连续性。它不创建新 persistent state，不自动修改 `sexuality_profile`，不自动修改 `sexuality_development`，也不得单独满足长期画像变化的证据门槛。持久画像变化仍须满足旧 `sexuality_development` 的跨回合证据要求，旧画像 schema 不变。
++
++#### 感官焦点
++
++每个 coherent beat 选择一个 primary sensory focal subject / focal viewpoint。可以写其他角色外部可观察的即时反应，但没有 POV 授权时，不得同时进入多个角色的私有主观感官或内心。POV 与 knowledge 仍由旧 Runtime 规则拥有。
++
++#### Aftermath
++
++旧 Skill 继续定义哪些真实后果需要被表现或提交；Narrative Skill 只决定这些 aftermath 内容如何分拍、是否跨多个回合表现，以及何时自然退出 `AFTERMATH`。不得要求旧 Skill 在 `ACTIVE` 最后一条回复里一次性消费全部 aftermath，也不得在下一回合重复生成已经 stage / commit 的同一结果。简言之：old Skill = aftermath factual semantics；Narrative Skill = aftermath presentation timing。
+diff --git a/PROGRESS.md b/PROGRESS.md
+--- a/PROGRESS.md
++++ b/PROGRESS.md
+@@ -23,0 +24,1 @@
++| 2026-09-12 | 新增 adult-tension-narrative 表现层兼容桥，位于冻结段之外；明确 cross-Skill Owner Matrix，冻结段正文未改，frozen span SHA-256 仍为 `3d00945b22ac887034980b337903a8cd748754f33e0c751156a440524bf7641b` |

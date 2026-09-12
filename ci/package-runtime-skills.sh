@@ -9,6 +9,9 @@ OUT_DIR="${SKILL_OUT_DIR:-$SOURCE_DIR/dist/runtime-skills}"
 CONTINUITY_SHA256="4fbead4ed0deaa157f498a32ae6ee7ba077eaee0f046a1b71eb194c31a3d9201"
 CONTINUITY_NAME="adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip"
 CONTINUITY_SOURCE="$CONTROL_DIR/vendor/continuity/$CONTINUITY_NAME"
+ADULT_TENSION_REVISION="cbfdc623fccc91247cbb37783757fc157406c2a5"
+OVERLAY_PATH="$CONTROL_DIR/vendor/adult-tension-overlays/0001-narrative-compat.patch"
+COMPAT_VERIFIER="$CONTROL_DIR/ci/verify-adult-tension-narrative-compat.py"
 
 rm -rf "$OUT_DIR" /tmp/adult-tension-package /tmp/adapter-package
 mkdir -p "$OUT_DIR" /tmp/adult-tension-package /tmp/adapter-package
@@ -23,6 +26,13 @@ rsync -a --exclude='.git' "$ADULT_TENSION_SOURCE_DIR/" /tmp/adult-tension-packag
 rsync -a "$SOURCE_DIR/extras/adult-tension-tauritavern-adapter/" /tmp/adapter-package/
 test -f /tmp/adult-tension-package/SKILL.md
 test -f /tmp/adapter-package/SKILL.md
+test "$(git -C "$ADULT_TENSION_SOURCE_DIR" rev-parse HEAD)" = "$ADULT_TENSION_REVISION"
+test -f "$OVERLAY_PATH"
+test -f "$COMPAT_VERIFIER"
+python3 "$COMPAT_VERIFIER" --root /tmp/adult-tension-package --mode baseline
+git -c core.autocrlf=false -C /tmp/adult-tension-package apply --check --unidiff-zero --whitespace=error "$OVERLAY_PATH"
+git -c core.autocrlf=false -C /tmp/adult-tension-package apply --unidiff-zero --whitespace=error "$OVERLAY_PATH"
+python3 "$COMPAT_VERIFIER" --root /tmp/adult-tension-package --mode patched
 grep -q '^name: adult-tension$' /tmp/adult-tension-package/SKILL.md
 grep -q '^name: adult-tension-tauritavern-adapter$' /tmp/adapter-package/SKILL.md
 (cd /tmp/adult-tension-package && zip -qr "$OUT_DIR/adult-tension-cbfdc623.zip" .)
@@ -35,9 +45,12 @@ unzip -t "$OUT_DIR/adult-tension-tauritavern-adapter-build14.zip" >/dev/null
   sha256sum adult-tension-cbfdc623.zip "$CONTINUITY_NAME" adult-tension-tauritavern-adapter-build14.zip > SKILL-SHA256SUMS.txt
 )
 
-python3 - "$OUT_DIR/skills-manifest.json" "$CONTINUITY_SHA256" <<'PY'
+python3 - "$OUT_DIR/skills-manifest.json" "$CONTINUITY_SHA256" "$OVERLAY_PATH" <<'PY'
 import json, os, sys
-path, continuity_sha = sys.argv[1:]
+import hashlib
+path, continuity_sha, overlay_path = sys.argv[1:]
+with open(overlay_path, "rb") as f:
+    overlay_sha = hashlib.sha256(f.read()).hexdigest()
 data = {
     "schemaVersion": 1,
     "suite": "adult-tension-runtime-skills",
@@ -47,7 +60,15 @@ data = {
     "upstreamSha": os.environ.get("UPSTREAM_SHA", "3a8c5401c859ac15ac11f3339846360615232896"),
     "adultTensionSource": {
         "repository": "daha1216/dsh-adult-tension",
-        "revision": "cbfdc623fccc91247cbb37783757fc157406c2a5"
+        "revision": "cbfdc623fccc91247cbb37783757fc157406c2a5",
+        "overlays": [
+            {
+                "id": "narrative-compat-v1",
+                "path": "vendor/adult-tension-overlays/0001-narrative-compat.patch",
+                "sha256": overlay_sha,
+                "frozenSpanSha256": "3d00945b22ac887034980b337903a8cd748754f33e0c751156a440524bf7641b"
+            }
+        ]
     },
     "continuitySource": {
         "type": "vendored-binary",
