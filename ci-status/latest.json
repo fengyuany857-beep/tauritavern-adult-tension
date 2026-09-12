@@ -7,8 +7,8 @@
   "workflow_trigger_sha": "43e174a853b51773700a3c3943206a36d625d885",
   "upstream_sha": "3a8c5401c859ac15ac11f3339846360615232896",
   "stage": "Native RP and Agent contracts",
-  "state": "RUNNING",
+  "state": "PASS",
   "exit_code": 0,
-  "updated_at": "2026-09-12T09:21:12Z",
+  "updated_at": "2026-09-12T09:21:16Z",
   "release_url": "https://github.com/fengyuany857-beep/tauritavern-adult-tension/releases/tag/selfsign-ios-38-a1"
 }
