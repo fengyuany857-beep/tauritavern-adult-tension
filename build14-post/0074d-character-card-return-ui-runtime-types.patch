@@ -1,0 +1,9 @@
+diff --git a/src/scripts/tauri/character-card-return-ui.js b/src/scripts/tauri/character-card-return-ui.js
+--- a/src/scripts/tauri/character-card-return-ui.js
++++ b/src/scripts/tauri/character-card-return-ui.js
+@@ -289,1 +289,1 @@
+-                if (!committed) window.toastr?.warning?.(t`The staged Return preview could not be cleaned up automatically.`);
++                if (!committed) toast()?.warning?.(t`The staged Return preview could not be cleaned up automatically.`);
+@@ -326,1 +326,1 @@
+-            window.toastr?.error?.(error instanceof Error ? error.message : String(error));
++            toast()?.error?.(error instanceof Error ? error.message : String(error));
