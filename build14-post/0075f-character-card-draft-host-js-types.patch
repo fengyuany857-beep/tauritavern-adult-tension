@@ -38,15 +38,15 @@ diff --git a/src/tauri/main/api/character-cards.js b/src/tauri/main/api/characte
      async function returnBytes(file) {
          if (!file || typeof file.arrayBuffer !== 'function') {
              throw new Error('Character Card Return requires a readable File');
-@@ -199,6 +230,8 @@ function createCharacterCardsApi({
+@@ -216,6 +247,8 @@ function createCharacterCardsApi({
      return {
          isNativePickerAvailable,
          pickFiles,
 +        previewMaterializationDraft,
 +        commitMaterializationDraft,
          previewReturnImport,
+         resolveReturnContext,
          planReturnImport,
-         commitReturnImport,
 diff --git a/src/tauri/main/kernel/invokes/tauri-commands.js b/src/tauri/main/kernel/invokes/tauri-commands.js
 --- a/src/tauri/main/kernel/invokes/tauri-commands.js
 +++ b/src/tauri/main/kernel/invokes/tauri-commands.js
@@ -56,7 +56,7 @@ diff --git a/src/tauri/main/kernel/invokes/tauri-commands.js b/src/tauri/main/ke
   *   | 'cleanup_user_backup_archive'
 + *   | 'commit_character_card_draft'
   *   | 'commit_character_card_return'
-@@ -118,6 +119,7 @@ export {};
+@@ -119,6 +120,7 @@ export {};
   *   | 'preview_skill_import'
 + *   | 'preview_character_card_draft'
   *   | 'preview_character_card_return'
@@ -133,7 +133,7 @@ diff --git a/src/types.d.ts b/src/types.d.ts
 +};
 +
  type TauriTavernCharacterCardReturnChoice = 'KEEP_LOCAL' | 'USE_IMPORTED';
-@@ -981,6 +1053,14 @@ type TauriTavernCharacterCardsApi = {
+@@ -1053,6 +1125,14 @@ type TauriTavernCharacterCardsApi = {
      isNativePickerAvailable: () => boolean;
      pickFiles: (options?: TauriTavernCharacterCardsPickOptions) => Promise<File[] | null>;
 +    previewMaterializationDraft: (input: {
