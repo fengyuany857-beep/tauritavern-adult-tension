@@ -1,0 +1,176 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+@@ -276,6 +276,162 @@ impl CharacterCardDraftMaterializationService {
+         })
+     }
+ 
++    pub async fn resume(
++        &self,
++        stable_chat_id: &str,
++        character_id: &str,
++    ) -> Result<Option<CharacterCardDraftPreview>, ApplicationError> {
++        let stable_chat_id = stable_chat_id.trim();
++        let character_id = character_id.trim();
++        if stable_chat_id.is_empty() || character_id.is_empty() {
++            return Err(ApplicationError::ValidationError(
++                "character_card_draft.stable_chat_id_and_character_id_required".to_string(),
++            ));
++        }
++        let records = self.materialization.list_drafts().await?;
++        let Some(mut record) = latest_active_draft(&records, stable_chat_id, character_id) else {
++            return Ok(None);
++        };
++
++        let source_advanced = match self.preview(stable_chat_id, character_id).await {
++            Ok(current) => current.cas != cas_from_record(&record),
++            Err(DomainError::NotFound(_)) => true,
++            Err(error) => return Err(error.into()),
++        };
++        if source_advanced
++            && record.draft.state
++                != tt_domain::models::character_card_materialization::DraftState::SourceAdvanced
++        {
++            record.draft.state =
++                tt_domain::models::character_card_materialization::DraftState::SourceAdvanced;
++            record.draft.draft_revision = record.draft.draft_revision.saturating_add(1);
++            record.draft.updated_at = Utc::now().to_rfc3339();
++            self.materialization.write_draft(&record).await?;
++        }
++        Ok(Some(preview_from_record(record)))
++    }
++
++    pub async fn save(
++        &self,
++        request: CharacterCardDraftSaveRequest,
++    ) -> Result<CharacterCardDraftPreview, ApplicationError> {
++        validate_commit_cas(&request.cas)?;
++        validate_draft_id(&request.draft_id)?;
++        if request.expected_draft_revision == 0 {
++            return Err(ApplicationError::ValidationError(
++                "character_card_draft.invalid_expected_revision".to_string(),
++            ));
++        }
++        let _ = create_character_dto(&request.definition)?;
++        let _guard = self.commit_guard.lock().await;
++        let current = self
++            .preview(&request.cas.stable_chat_id, &request.cas.character_id)
++            .await?;
++        if current.cas != request.cas {
++            return Err(ApplicationError::ValidationError(
++                "character_card_draft.DRAFT_STALE: selected RP authority changed before draft save"
++                    .to_string(),
++            ));
++        }
++
++        let existing = self.materialization.read_draft(&request.draft_id).await?;
++        let mut draft = match existing {
++            Some(record) => {
++                if cas_from_record(&record) != request.cas
++                    || record.draft.state
++                        == tt_domain::models::character_card_materialization::DraftState::Archived
++                {
++                    return Err(ApplicationError::ValidationError(
++                        "character_card_draft.DRAFT_STALE: stored draft authority no longer matches"
++                            .to_string(),
++                    ));
++                }
++                if record.draft.draft_revision != request.expected_draft_revision {
++                    return Err(ApplicationError::ValidationError(
++                        "character_card_draft.DRAFT_REVISION_CONFLICT".to_string(),
++                    ));
++                }
++                record.draft
++            }
++            None => {
++                if request.expected_draft_revision != 1 {
++                    return Err(ApplicationError::ValidationError(
++                        "character_card_draft.DRAFT_REVISION_CONFLICT".to_string(),
++                    ));
++                }
++                let mut draft = current.draft.clone();
++                draft.draft_id = request.draft_id.clone();
++                draft
++            }
++        };
++
++        let edited = request.definition != current.draft.definition;
++        draft.definition = request.definition;
++        draft.source_profile_revision = current.cas.source_profile_revision;
++        draft.generated_base_hash = current.draft.generated_base_hash.clone();
++        draft.field_provenance = current.draft.field_provenance.clone();
++        apply_user_edit_provenance(&mut draft, &current.draft.definition);
++        draft.user_edited = edited;
++        draft.state = if edited {
++            tt_domain::models::character_card_materialization::DraftState::UserEdited
++        } else {
++            tt_domain::models::character_card_materialization::DraftState::Generated
++        };
++        draft.draft_revision = request.expected_draft_revision.saturating_add(1);
++        draft.updated_at = Utc::now().to_rfc3339();
++
++        let record = record_from_preview(&current, draft);
++        self.materialization.write_draft(&record).await?;
++        Ok(preview_from_record(record))
++    }
++
++    pub async fn regenerate(
++        &self,
++        stable_chat_id: &str,
++        character_id: &str,
++    ) -> Result<CharacterCardDraftPreview, ApplicationError> {
++        let _guard = self.commit_guard.lock().await;
++        let current = self.preview(stable_chat_id, character_id).await?;
++        let records = self.materialization.list_drafts().await?;
++        let existing = latest_active_draft(&records, stable_chat_id.trim(), character_id.trim());
++        let mut draft = current.draft.clone();
++        if let Some(existing) = existing {
++            draft.draft_id = existing.draft.draft_id;
++            draft.draft_revision = existing.draft.draft_revision.saturating_add(1);
++        }
++        draft.user_edited = false;
++        draft.state = tt_domain::models::character_card_materialization::DraftState::Generated;
++        draft.updated_at = Utc::now().to_rfc3339();
++        let record = record_from_preview(&current, draft);
++        self.materialization.write_draft(&record).await?;
++        Ok(preview_from_record(record))
++    }
++
++    pub async fn archive(
++        &self,
++        request: CharacterCardDraftArchiveRequest,
++    ) -> Result<CharacterCardDraftPreview, ApplicationError> {
++        validate_draft_id(&request.draft_id)?;
++        let _guard = self.commit_guard.lock().await;
++        let mut record = self
++            .materialization
++            .read_draft(&request.draft_id)
++            .await?
++            .ok_or_else(|| ApplicationError::NotFound("character_card_draft.not_found".to_string()))?;
++        if record.authority.stable_chat_id != request.stable_chat_id.trim()
++            || record.draft.character_id.0 != request.character_id.trim()
++        {
++            return Err(ApplicationError::ValidationError(
++                "character_card_draft.archive_identity_mismatch".to_string(),
++            ));
++        }
++        if record.draft.draft_revision != request.expected_draft_revision {
++            return Err(ApplicationError::ValidationError(
++                "character_card_draft.DRAFT_REVISION_CONFLICT".to_string(),
++            ));
++        }
++        if record.draft.state
++            != tt_domain::models::character_card_materialization::DraftState::Archived
++        {
++            record.draft.state =
++                tt_domain::models::character_card_materialization::DraftState::Archived;
++            record.draft.draft_revision = record.draft.draft_revision.saturating_add(1);
++            record.draft.updated_at = Utc::now().to_rfc3339();
++            self.materialization.write_draft(&record).await?;
++        }
++        Ok(preview_from_record(record))
++    }
++
+     pub async fn commit(
+         &self,
+         request: CharacterCardDraftCommitRequest,
