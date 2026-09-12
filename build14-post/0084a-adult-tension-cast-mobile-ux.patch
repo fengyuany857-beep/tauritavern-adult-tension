@@ -1,0 +1,551 @@
+diff --git a/src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js b/src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js
+--- a/src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js
++++ b/src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js
+@@ -6,18 +6,66 @@
+ import { translateAgentSystem as tr } from './i18n.js';
+ 
+ const BUTTON_ID = 'ttas_adult_tension_cast';
++const STYLE_ID = 'ttas_adult_tension_cast_mobile_ux';
+ const DRAFT_FIELDS = Object.freeze([
+-    ['name', 'Name', false],
+-    ['description', 'Description', true],
+-    ['personality', 'Personality', true],
+-    ['scenario', 'Scenario', true],
+-    ['first_mes', 'First Message', true],
+-    ['mes_example', 'Message Example', true],
+-    ['creator_notes', 'Creator Notes', true],
+-    ['system_prompt', 'System Prompt', true],
+-    ['post_history_instructions', 'Post-history Instructions', true],
+-    ['creator', 'Creator', false],
+-    ['character_version', 'Character Version', false],
++    ['name', 'characterCardFieldName', false],
++    ['description', 'characterCardFieldDescription', true],
++    ['personality', 'characterCardFieldPersonality', true],
++    ['scenario', 'characterCardFieldScenario', true],
++    ['first_mes', 'characterCardFieldFirstMessage', true],
++    ['mes_example', 'characterCardFieldMessageExample', true],
++    ['creator_notes', 'characterCardFieldCreatorNotes', true],
++    ['system_prompt', 'characterCardFieldSystemPrompt', true],
++    ['post_history_instructions', 'characterCardFieldPostHistoryInstructions', true],
++    ['creator', 'characterCardFieldCreator', false],
++    ['character_version', 'characterCardFieldVersion', false],
+ ]);
+ 
++const DISPLAY_VALUE_KEYS = Object.freeze({
++    narrativeRole: Object.freeze({
++        incidental: 'rpRoleIncidental',
++        recurring: 'rpRoleRecurring',
++        supporting: 'rpRoleSupporting',
++        main: 'rpRoleMain',
++    }),
++    controlOwner: Object.freeze({
++        ai: 'rpControlAi',
++        user: 'rpControlUser',
++        shared: 'rpControlShared',
++    }),
++    lifecycleStatus: Object.freeze({
++        active: 'rpLifecycleActive',
++        offscreen: 'rpLifecycleOffscreen',
++        inactive: 'rpLifecycleInactive',
++        missing: 'rpLifecycleMissing',
++        departed: 'rpLifecycleDeparted',
++        retired: 'rpLifecycleRetired',
++        dead: 'rpLifecycleDead',
++        archived: 'rpLifecycleArchived',
++    }),
++    scopeKind: Object.freeze({
++        session_character: 'rpScopeSessionCharacter',
++        world_character: 'rpScopeWorldCharacter',
++    }),
++    draftState: Object.freeze({
++        generated: 'rpDraftGenerated',
++        user_edited: 'rpDraftUserEdited',
++        source_advanced: 'rpDraftSourceAdvanced',
++        ready_to_materialize: 'rpDraftReadyToMaterialize',
++        archived: 'rpDraftArchived',
++    }),
++    bindingStatus: Object.freeze({
++        active: 'rpBindingActive',
++        card_missing: 'rpBindingCardMissing',
++        detached: 'rpBindingDetached',
++        target_missing: 'rpBindingTargetMissing',
++        corrupted: 'rpBindingCorrupted',
++        archived: 'rpBindingArchived',
++    }),
++    provenance: Object.freeze({
++        STABLE_PROFILE: 'rpSourceStableProfile',
++        AUTHOR_CANON: 'rpSourceAuthorCanon',
++    }),
++});
++
+ let activeDialog = null;
+@@ -70,9 +107,124 @@
+     return definition;
+ }
+ 
++function displayValue(group, value) {
++    const normalized = String(value ?? '').trim();
++    const key = DISPLAY_VALUE_KEYS[group]?.[normalized];
++    return key ? tr(key) : normalized;
++}
++
+ function sourceText(preview, key) {
+     const source = preview?.draft?.fieldProvenance?.[`data.${key}`];
+-    return Array.isArray(source) ? source.join(', ') : '';
++    return Array.isArray(source)
++        ? source.map(value => displayValue('provenance', value)).join(', ')
++        : '';
++}
++
++function candidateSearchText(candidate) {
++    return [
++        candidate?.displayName,
++        candidate?.characterId,
++        candidate?.narrativeRole,
++        displayValue('narrativeRole', candidate?.narrativeRole),
++        candidate?.controlOwner,
++        displayValue('controlOwner', candidate?.controlOwner),
++        candidate?.lifecycleStatus,
++        displayValue('lifecycleStatus', candidate?.lifecycleStatus),
++        candidate?.scopeKind,
++        displayValue('scopeKind', candidate?.scopeKind),
++    ]
++        .map(value => String(value ?? '').trim().toLocaleLowerCase())
++        .filter(Boolean)
++        .join('\n');
++}
++
++function ensureCastStyles() {
++    if (document.getElementById(STYLE_ID)) return;
++    const style = element('style');
++    style.id = STYLE_ID;
++    style.textContent = `
++.ttas-cast-dialog {
++    box-sizing: border-box;
++    overflow: hidden;
++    max-height: var(--ttas-cast-visual-height, 100dvh);
++}
++.ttas-cast-dialog > .ttas-popup-mount {
++    box-sizing: border-box;
++    min-height: 0;
++    max-height: var(--ttas-cast-visual-height, 100dvh);
++    overflow-y: auto;
++    overflow-x: hidden;
++    overscroll-behavior: contain;
++    -webkit-overflow-scrolling: touch;
++}
++.ttas-cast-list { min-height: 0; }
++.ttas-cast-candidate {
++    border: 1px solid var(--SmartThemeBorderColor);
++    border-radius: 8px;
++    padding: .6rem .7rem;
++}
++.ttas-cast-candidate:not(.is-expanded) > :not(.ttas-cast-candidate-toggle) {
++    display: none !important;
++}
++.ttas-cast-candidate-toggle {
++    appearance: none;
++    border: 0;
++    background: transparent;
++    color: inherit;
++    width: 100%;
++    padding: .15rem 0;
++    display: grid;
++    grid-template-columns: minmax(0,1fr) auto auto;
++    align-items: center;
++    gap: .55rem;
++    text-align: left;
++}
++.ttas-cast-candidate-toggle > strong {
++    min-width: 0;
++    overflow-wrap: anywhere;
++}
++.ttas-cast-candidate-toggle:focus-visible {
++    outline: 2px solid currentColor;
++    outline-offset: 3px;
++}
++.ttas-cast-search {
++    position: sticky;
++    top: 0;
++    z-index: 2;
++    background: var(--SmartThemeBlurTintColor, var(--SmartThemeBodyColor));
++    padding-block: .2rem;
++}
++@media (max-width: 768px) {
++    .ttas-cast-dialog {
++        width: 100vw;
++        max-width: 100vw;
++        height: var(--ttas-cast-visual-height, 100dvh);
++        max-height: var(--ttas-cast-visual-height, 100dvh);
++        margin: 0;
++        padding: max(.65rem, env(safe-area-inset-top)) .7rem max(.75rem, env(safe-area-inset-bottom));
++    }
++    .ttas-cast-dialog > .ttas-popup-mount {
++        height: 100%;
++        max-height: 100%;
++    }
++}`;
++    document.head.append(style);
++}
++
++function bindCastVisualViewport(dialog) {
++    const viewport = window.visualViewport;
++    const update = () => {
++        const height = Number(viewport?.height || window.innerHeight || 0);
++        if (height > 0) dialog.style.setProperty('--ttas-cast-visual-height', `${Math.round(height)}px`);
++    };
++    update();
++    if (!viewport) return () => {};
++    viewport.addEventListener('resize', update);
++    viewport.addEventListener('scroll', update);
++    return () => {
++        viewport.removeEventListener('resize', update);
++        viewport.removeEventListener('scroll', update);
++    };
+ }
+ 
+ function avatarStorageIdentity(value) {
+@@ -99,24 +221,48 @@
+     await createOrEditCharacter();
+ }
+ 
+-function candidateCard(candidate, openDraft, openRpApply) {
+-    const card = stack(element('section'), '.5rem');
+-    Object.assign(card.style, {
+-        border: '1px solid var(--SmartThemeBorderColor)',
+-        borderRadius: '8px',
+-        padding: '.8rem',
+-    });
+-    const title = element('div');
+-    Object.assign(title.style, { display: 'flex', justifyContent: 'space-between', gap: '.7rem' });
++function candidateCard(candidate, openDraft, openRpApply, viewState = {}) {
++    const card = stack(element('section', '', 'ttas-cast-candidate'), '.5rem');
++    card.dataset.characterId = String(candidate?.characterId ?? '');
++    card.dataset.searchText = candidateSearchText(candidate);
++    const title = element('button', '', 'ttas-cast-candidate-toggle');
++    title.type = 'button';
++    title.setAttribute('aria-expanded', 'false');
++    const chevron = element('i', '', 'fa-solid fa-chevron-down');
++    chevron.setAttribute('aria-hidden', 'true');
+     title.append(
+         element('strong', candidate?.displayName || candidate?.characterId || tr('unknownCharacter')),
+         element('span', candidate?.materialized ? tr('boundCard') : tr('draftAvailable')),
++        chevron,
+     );
+     card.append(title);
+-    meta(card, tr('narrativeRole'), candidate?.narrativeRole);
+-    meta(card, tr('controlOwner'), candidate?.controlOwner);
+-    meta(card, tr('lifecycleStatus'), candidate?.lifecycleStatus);
+-    meta(card, tr('scope'), candidate?.scopeKind);
++
++    const setExpanded = (expanded, notify = true) => {
++        card.classList.toggle('is-expanded', expanded);
++        title.setAttribute('aria-expanded', String(expanded));
++        chevron.className = `fa-solid ${expanded ? 'fa-chevron-up' : 'fa-chevron-down'}`;
++        if (notify) viewState.onToggle?.(expanded ? candidate?.characterId : null);
++    };
++    setExpanded(Boolean(viewState.expanded), false);
++    title.addEventListener('click', () => {
++        const next = !card.classList.contains('is-expanded');
++        if (next && card.parentElement) {
++            for (const other of card.parentElement.querySelectorAll('.ttas-cast-candidate.is-expanded')) {
++                if (other === card) continue;
++                other.classList.remove('is-expanded');
++                const otherToggle = other.querySelector('.ttas-cast-candidate-toggle');
++                otherToggle?.setAttribute('aria-expanded', 'false');
++                const otherChevron = otherToggle?.querySelector('i');
++                if (otherChevron) otherChevron.className = 'fa-solid fa-chevron-down';
++            }
++        }
++        setExpanded(next);
++    });
++
++    meta(card, tr('narrativeRole'), displayValue('narrativeRole', candidate?.narrativeRole));
++    meta(card, tr('controlOwner'), displayValue('controlOwner', candidate?.controlOwner));
++    meta(card, tr('lifecycleStatus'), displayValue('lifecycleStatus', candidate?.lifecycleStatus));
++    meta(card, tr('scope'), displayValue('scopeKind', candidate?.scopeKind));
+     meta(card, tr('profileRevision'), candidate?.profileRevision);
+ 
+     const binding = candidate?.binding;
+@@ -127,6 +278,6 @@
+         meta(card, tr('bindingId'), binding.bindingId);
+         meta(card, tr('cardRevision'), binding.cardRevision);
+         meta(card, tr('bindingGeneration'), binding.generation);
+-        meta(card, tr('bindingStatus'), binding.status);
++        meta(card, tr('bindingStatus'), displayValue('bindingStatus', binding.status));
+         meta(card, tr('profileRevisionAtLastSync'), binding.profileRevisionAtLastSync ?? tr('notYetSynced'));
+     }
+@@ -176,5 +327,6 @@
+ }
+ 
+ function renderRpApply(root, candidate, chatId, preview, renderList) {
++    root.dataset.ttasCastView = 'apply';
+     root.replaceChildren();
+     const header = element('div');
+@@ -258,7 +410,9 @@
+     root.append(apply);
+ }
+ 
+-function renderDraft(root, candidate, chatId, preview, renderList) {
++function renderDraft(root, candidate, chatId, preview, renderList, setLeaveGuard) {
++    root.dataset.ttasCastView = 'draft';
+     root.replaceChildren();
++    let canLeaveDraft = async () => true;
+     const header = element('div');
+     Object.assign(header.style, { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '.7rem' });
+@@ -267,6 +421,10 @@
+     title.style.margin = '0';
+     const back = element('button', tr('backToCharacters'), 'menu_button');
+     back.type = 'button';
+-    back.addEventListener('click', renderList);
++    back.addEventListener('click', async () => {
++        if (!await canLeaveDraft()) return;
++        setLeaveGuard(null);
++        await renderList();
++    });
+     header.append(title, back);
+     root.append(header);
+@@ -281,11 +439,11 @@
+         borderRadius: '8px',
+         padding: '.7rem',
+     });
+-    meta(authority, tr('narrativeRole'), candidate.narrativeRole);
+-    meta(authority, tr('scope'), preview?.scopeKind);
+-    meta(authority, tr('controlOwner'), candidate.controlOwner);
++    meta(authority, tr('narrativeRole'), displayValue('narrativeRole', candidate.narrativeRole));
++    meta(authority, tr('scope'), displayValue('scopeKind', preview?.scopeKind));
++    meta(authority, tr('controlOwner'), displayValue('controlOwner', candidate.controlOwner));
+     meta(authority, tr('profileRevision'), preview?.cas?.sourceProfileRevision);
+     meta(authority, tr('draftRevision'), preview?.draft?.draftRevision);
+-    meta(authority, tr('draftState'), preview?.draft?.state);
++    meta(authority, tr('draftState'), displayValue('draftState', preview?.draft?.state));
+     meta(authority, tr('draftPersistence'), preview?.persisted ? tr('durableDraft') : tr('unsavedDraft'));
+     root.append(authority);
+@@ -310,10 +468,15 @@
+ 
+     const definition = draftDefinition(preview);
+     const data = definition.data;
++    const baseline = JSON.stringify(definition);
++    const isDirty = () => JSON.stringify(definition) !== baseline;
++    canLeaveDraft = async () => !isDirty() || await confirmAction(tr('discardDraftChangesConfirm'));
++    setLeaveGuard(canLeaveDraft);
++
+     const form = stack(element('div'));
+-    for (const [key, labelText, multiline] of DRAFT_FIELDS) {
++    for (const [key, labelKey, multiline] of DRAFT_FIELDS) {
+         const label = stack(element('label'), '.2rem');
+         const heading = element('span');
+-        heading.append(element('strong', labelText));
++        heading.append(element('strong', tr(labelKey)));
+         const source = sourceText(preview, key);
+         if (source) {
+@@ -328,6 +492,6 @@
+         form.append(label);
+     }
+     const tagsLabel = stack(element('label'), '.2rem');
+-    tagsLabel.append(element('strong', 'Tags'));
++    tagsLabel.append(element('strong', tr('characterCardFieldTags')));
+     const tags = element('input', '', 'text_pole');
+     tags.value = Array.isArray(data.tags) ? data.tags.join(', ') : '';
+@@ -353,6 +517,6 @@
+                 definition,
+             });
+             window.toastr?.success?.(tr('draftSaved'));
+-            renderDraft(root, candidate, chatId, saved, renderList);
++            renderDraft(root, candidate, chatId, saved, renderList, setLeaveGuard);
+         } catch (error) {
+             window.toastr?.error?.(errorText(error));
+@@ -373,6 +537,6 @@
+                 stableChatId: chatId,
+                 characterId: candidate.characterId,
+             });
+-            renderDraft(root, candidate, chatId, regenerated, renderList);
++            renderDraft(root, candidate, chatId, regenerated, renderList, setLeaveGuard);
+         } catch (error) {
+             window.toastr?.error?.(errorText(error));
+@@ -385,5 +549,6 @@
+         const archive = element('button', tr('archiveDraft'), 'menu_button');
+         archive.type = 'button';
+         archive.addEventListener('click', async () => {
++            if (!await canLeaveDraft()) return;
+             if (!await confirmAction(tr('archiveDraftConfirm'))) return;
+             await api().archiveMaterializationDraft({
+@@ -394,5 +559,6 @@
+                 expectedDraftRevision: preview.draft.draftRevision,
+             });
+             window.toastr?.success?.(tr('draftArchived'));
++            setLeaveGuard(null);
+             await renderList();
+         });
+@@ -417,11 +583,11 @@
+         try {
+             const result = await api().commitMaterializationDraft({ cas: preview.cas, definition });
+             window.toastr?.success?.(tr('characterCardMaterialized', { name: result?.character?.name || data.name }));
++            setLeaveGuard(null);
+             await renderList();
+         } catch (error) {
+             const message = errorText(error);
+             console.error('[AdultTensionCast] materialization failed', error);
+             window.toastr?.error?.(message);
+-            if (message.includes('DRAFT_STALE')) await renderList();
+         } finally {
+             commit.disabled = sourceAdvanced;
+@@ -434,10 +600,15 @@
+     root.append(commit);
+ }
+ 
+-async function stableChatId() {
++async function activeChatContext() {
+     const activeChat = getActiveChatSnapshot();
+-    if (!activeChat?.ref) throw new Error(tr('activeChatRequired'));
+-    return resolveStableChatId(activeChat.ref);
++    if (!activeChat?.ref) return { kind: 'none' };
++    try {
++        return { kind: 'ready', stableChatId: await resolveStableChatId(activeChat.ref) };
++    } catch (error) {
++        console.error('[AdultTensionCast] active chat identity resolution failed', error);
++        return { kind: 'identity_error', error };
++    }
+ }
+ 
+ async function openCastDialog() {
+@@ -447,22 +620,36 @@
+     if (typeof HTMLDialogElement === 'undefined') throw new Error(tr('agentSystemElementUnsupported'));
+     const dialog = document.createElement('dialog');
+     if (typeof dialog.showModal !== 'function') throw new Error(tr('agentSystemDialogUnsupported'));
++    ensureCastStyles();
+     dialog.className = 'ttas-dialog ttas-cast-dialog';
+     dialog.setAttribute('data-tt-mobile-surface', 'fullscreen-window');
+     const root = stack(element('div', '', 'ttas-popup-mount'));
+     dialog.append(root);
+     document.body.append(dialog);
+     activeDialog = dialog;
++    const listState = { query: '', expandedCharacterId: null, scrollTop: 0, stableChatId: null };
++    let leaveGuard = null;
++    const setLeaveGuard = guard => { leaveGuard = typeof guard === 'function' ? guard : null; };
++    const cleanupViewport = bindCastVisualViewport(dialog);
++    const requestClose = async () => {
++        if (leaveGuard && !await leaveGuard()) return;
++        leaveGuard = null;
++        dialog.close();
++    };
+     dialog.addEventListener('close', () => {
++        cleanupViewport();
+         dialog.remove();
+         if (activeDialog === dialog) activeDialog = null;
+     }, { once: true });
+     dialog.addEventListener('cancel', event => {
+         event.preventDefault();
+-        dialog.close();
++        void requestClose();
+     });
+ 
+     const renderList = async () => {
++        if (root.dataset.ttasCastView === 'list') listState.scrollTop = root.scrollTop;
++        setLeaveGuard(null);
+         root.replaceChildren();
++        root.dataset.ttasCastView = 'list';
+         const header = element('div');
+         Object.assign(header.style, { display: 'flex', justifyContent: 'space-between', alignItems: 'center' });
+@@ -474,15 +660,71 @@
+         const loading = element('div', tr('loading'));
+         root.append(loading);
+         try {
+-            const chatId = await stableChatId();
++            const context = await activeChatContext();
++            if (context.kind === 'none') {
++                loading.remove();
++                root.append(element('div', tr('activeChatRequired')));
++                return;
++            }
++            if (context.kind === 'identity_error') {
++                loading.remove();
++                root.append(element('div', tr('activeChatIdentityError')));
++                return;
++            }
++            const chatId = context.stableChatId;
++            if (listState.stableChatId && listState.stableChatId !== chatId) {
++                listState.query = '';
++                listState.expandedCharacterId = null;
++                listState.scrollTop = 0;
++            }
++            listState.stableChatId = chatId;
+             const result = await api().listMaterializationDraftCandidates({ stableChatId: chatId });
+             loading.remove();
+             const candidates = Array.isArray(result?.candidates) ? result.candidates : [];
+             if (!candidates.length) {
+                 root.append(element('div', tr('noRpCharacters')));
+                 return;
+             }
++
++            const searchWrap = stack(element('label', '', 'ttas-cast-search'), '.25rem');
++            searchWrap.append(element('span', tr('searchRpCharacters')));
++            const search = element('input', '', 'text_pole');
++            search.type = 'search';
++            search.value = listState.query;
++            search.setAttribute('aria-label', tr('searchRpCharacters'));
++            searchWrap.append(search);
++            root.append(searchWrap);
++
++            const list = stack(element('div', '', 'ttas-cast-list'), '.45rem');
++            const noResults = element('div', tr('noRpCharacterSearchResults'));
++            noResults.hidden = true;
++            root.append(list, noResults);
++
++            const applyFilter = () => {
++                const query = listState.query.trim().toLocaleLowerCase();
++                let visible = 0;
++                for (const card of list.querySelectorAll('.ttas-cast-candidate')) {
++                    const matches = !query || String(card.dataset.searchText || '').includes(query);
++                    card.hidden = !matches;
++                    if (matches) {
++                        visible += 1;
++                    } else if (card.classList.contains('is-expanded')) {
++                        card.classList.remove('is-expanded');
++                        card.querySelector('.ttas-cast-candidate-toggle')?.setAttribute('aria-expanded', 'false');
++                        if (listState.expandedCharacterId === card.dataset.characterId) {
++                            listState.expandedCharacterId = null;
++                        }
++                    }
++                }
++                noResults.hidden = visible !== 0;
++            };
++            search.addEventListener('input', () => {
++                listState.query = search.value;
++                applyFilter();
++            });
++
+             for (const candidate of candidates) {
+-                root.append(candidateCard(candidate, async selected => {
++                list.append(candidateCard(candidate, async selected => {
++                    listState.scrollTop = root.scrollTop;
+                     try {
+                         const resumed = await api().resumeMaterializationDraft({
+@@ -493,11 +728,12 @@
+                             stableChatId: chatId,
+                             characterId: selected.characterId,
+                         });
+-                        renderDraft(root, selected, chatId, preview, renderList);
++                        renderDraft(root, selected, chatId, preview, renderList, setLeaveGuard);
+                     } catch (error) {
+                         console.error('[AdultTensionCast] preview failed', error);
+                         window.toastr?.error?.(errorText(error));
+                     }
+                 }, async selected => {
++                    listState.scrollTop = root.scrollTop;
+                     try {
+                         const preview = await api().previewRpApply({
+@@ -512,7 +748,12 @@
+                         console.error('[AdultTensionCast] Card to RP Preview failed', error);
+                         window.toastr?.error?.(errorText(error));
+                     }
+-                }));
++                }, {
++                    expanded: listState.expandedCharacterId === candidate.characterId,
++                    onToggle: characterId => { listState.expandedCharacterId = characterId; },
++                }));
+             }
++            applyFilter();
++            requestAnimationFrame(() => { root.scrollTop = listState.scrollTop; });
+         } catch (error) {
+             loading.remove();
