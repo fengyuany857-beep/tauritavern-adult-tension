@@ -1,0 +1,95 @@
+diff --git a/tests/character-card-rp-apply-contract.test.mjs b/tests/character-card-rp-apply-contract.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/character-card-rp-apply-contract.test.mjs
+@@ -0,0 +1,91 @@
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import path from 'node:path';
++import test from 'node:test';
++import { fileURLToPath } from 'node:url';
++
++const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
++
++test('Card to RP Apply is a separate Preview and explicit confirmed transaction', () => {
++    const service = read('src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs');
++    assert.match(service, /pub async fn preview\(/);
++    assert.match(service, /pub async fn prepare\(/);
++    assert.match(service, /pub async fn finalize\(/);
++    assert.match(service, /confirm: bool/);
++    assert.match(service, /CARD_RP_CONFIRMATION_REQUIRED/);
++    assert.match(service, /preview\.plan_token != request\.plan_token/);
++    assert.match(service, /CARD_RP_PLAN_STALE/);
++});
++
++test('active Agent Run blocks Card to RP Apply before persistent authority is prepared', () => {
++    const service = read('src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs');
++    assert.match(service, /has_active_run/);
++    assert.match(service, /!run\.status\.is_terminal\(\)/);
++    assert.match(service, /ACTIVE_AGENT_RUN/);
++    const prepare = service.match(/pub async fn prepare\([\s\S]*?pub async fn finalize/);
++    assert.ok(prepare, 'prepare function not found');
++    assert.match(prepare[0], /if preview\.active_agent_run/);
++});
++
++test('Prepare derives an immutable persistent state from the selected base instead of editing it in place', () => {
++    const service = read('src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs');
++    assert.match(service, /persist_base_state_id = Some\(selected\.state_id\.clone\(\)\)/);
++    assert.match(service, /initialize_run/);
++    assert.match(service, /commit_persistent_changes\(&transaction_id\)/);
++    assert.match(service, /changes\.base_state_id\.as_deref\(\) != Some\(selected\.state_id\.as_str\(\)\)/);
++    assert.match(service, /CharacterCardTransactionState::RpProfileWritten/);
++});
++
++test('only offered stable-profile mappings may change and Author Canon remains protected', () => {
++    const service = read('src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs');
++    assert.match(service, /personality_invariants/);
++    assert.match(service, /appearance_and_background/);
++    assert.match(service, /allowed\.contains\(trait_key\)/);
++    assert.match(service, /CARD_RP_MAPPING_INVALID/);
++    assert.match(service, /author\.contains_key\(trait_key\)/);
++    assert.match(service, /CARD_RP_AUTHOR_CANON_PROTECTED/);
++    assert.doesNotMatch(service, /WorldInfoRepository|world_info_service|write_world/i);
++});
++
++test('Card-origin profile evidence is internal and survives later AEGPE rebuilds', () => {
++    const service = read('src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs');
++    const rp = read('src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs');
++    const descriptor = read('src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs');
++    assert.match(service, /"sourceKind": "imported_card"/);
++    assert.match(rp, /evidence\.source_kind == "imported_card"/);
++    assert.doesNotMatch(descriptor, /imported_card/);
++});
++
++test('host commit switches only persistent-state metadata through the normal chat save path', () => {
++    const bridge = read('src/tauri/main/api/agent-chat-commit-bridge.js');
++    const api = read('src/tauri/main/api/character-cards.js');
++    assert.match(bridge, /commitPreparedPersistentStateToActiveChat/);
++    assert.match(bridge, /persistStateId: preparedStateId/);
++    assert.match(bridge, /persistBaseStateId: baseStateId/);
++    assert.match(bridge, /persistStateStatus: 'committed'/);
++    assert.match(bridge, /await persistActiveChat\(script, CHAT_COMMIT_REASON\.MUTATION\)/);
++    assert.match(api, /prepare_character_card_rp_apply/);
++    assert.match(api, /commitPreparedPersistentStateToActiveChat/);
++    assert.match(api, /finalize_character_card_rp_apply/);
++});
++
++test('Finalize readbacks selected state before updating Binding sync revision', () => {
++    const service = read('src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs');
++    assert.match(service, /selected\.state_id != transaction_id/);
++    assert.match(service, /CARD_RP_HOST_COMMIT_MISSING/);
++    assert.match(service, /CharacterCardTransactionState::ReadbackVerified/);
++    assert.match(service, /binding\.profile_revision_at_last_sync = Some\(profile_revision\)/);
++    assert.match(service, /context\.last_seen_profile_revision = Some\(profile_revision\)/);
++    assert.match(service, /CharacterCardTransactionState::Committed/);
++});
++
++test('UI shows mappings and requires a user confirmation before Apply', () => {
++    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js');
++    assert.match(ui, /renderRpApply/);
++    assert.match(ui, /previewRpApply/);
++    assert.match(ui, /confirmAction\(tr\('applyCardToRpConfirm'\)\)/);
++    assert.match(ui, /applyCardToRp/);
++    assert.match(ui, /preview\?\.blockedReason/);
++});
