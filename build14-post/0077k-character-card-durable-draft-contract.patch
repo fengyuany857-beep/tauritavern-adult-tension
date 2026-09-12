@@ -1,0 +1,93 @@
+diff --git a/tests/character-card-durable-draft-contract.test.mjs b/tests/character-card-durable-draft-contract.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/character-card-durable-draft-contract.test.mjs
+@@ -0,0 +1,105 @@
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import path from 'node:path';
++import test from 'node:test';
++import { fileURLToPath } from 'node:url';
++
++const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
++
++test('durable Character Card drafts have a typed authority record and repository boundary', () => {
++    const domain = read('src-tauri/crates/tt-domain/src/models/character_card_materialization.rs');
++    const port = read('src-tauri/crates/tt-ports/src/repositories/character_card_materialization_repository.rs');
++    assert.match(domain, /struct CharacterCardDraftAuthority/);
++    assert.match(domain, /stable_chat_id/);
++    assert.match(domain, /state_id/);
++    assert.match(domain, /active_branch_id/);
++    assert.match(domain, /struct CharacterCardDraftRecord/);
++    assert.match(port, /async fn read_draft/);
++    assert.match(port, /async fn write_draft/);
++    assert.match(port, /async fn list_drafts/);
++});
++
++test('draft storage is local atomic persistence under the materialization root', () => {
++    const store = read('src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs');
++    assert.match(store, /const DRAFTS_DIR: &str = "drafts"/);
++    assert.match(store, /self\.drafts_dir\(\)/);
++    assert.match(store, /pub async fn write_draft/);
++    assert.match(store, /atomic_write_json\(&path, draft\)/);
++    assert.doesNotMatch(store, /draft.*absolute/i);
++});
++
++test('draft lifecycle uses revision CAS and refuses stale source writes', () => {
++    const service = read('src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs');
++    assert.match(service, /pub async fn resume/);
++    assert.match(service, /pub async fn save/);
++    assert.match(service, /pub async fn regenerate/);
++    assert.match(service, /pub async fn archive/);
++    assert.match(service, /DRAFT_REVISION_CONFLICT/);
++    assert.match(service, /DRAFT_STALE/);
++    assert.match(service, /DraftState::SourceAdvanced/);
++    assert.match(service, /DraftState::Archived/);
++    assert.match(service, /DraftSourceKind::UserEdited/);
++    assert.match(service, /current\.cas != request\.cas/);
++});
++
++test('durable draft lifecycle is exposed through dedicated Host commands and JS ABI', () => {
++    const commands = read('src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs');
++    const registry = read('src-tauri/crates/tauritavern/src/presentation/commands/registry.rs');
++    const api = read('src/tauri/main/api/character-cards.js');
++    const invokes = read('src/tauri/main/kernel/invokes/tauri-commands.js');
++    for (const command of [
++        'resume_character_card_draft',
++        'save_character_card_draft',
++        'regenerate_character_card_draft',
++        'archive_character_card_draft',
++    ]) {
++        assert.match(commands, new RegExp(command));
++        assert.match(registry, new RegExp(command));
++        assert.match(invokes, new RegExp(command));
++    }
++    for (const method of [
++        'resumeMaterializationDraft',
++        'saveMaterializationDraft',
++        'regenerateMaterializationDraft',
++        'archiveMaterializationDraft',
++    ]) assert.match(api, new RegExp(method));
++});
++
++test('Cast UI resumes durable drafts and makes regeneration explicit for advanced sources', () => {
++    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast.js');
++    assert.match(ui, /resumeMaterializationDraft/);
++    assert.match(ui, /saveMaterializationDraft/);
++    assert.match(ui, /regenerateMaterializationDraft/);
++    assert.match(ui, /archiveMaterializationDraft/);
++    assert.match(ui, /source_advanced/);
++    assert.match(ui, /confirmAction\(tr\('regenerateDraftConfirm'\)\)/);
++    assert.match(ui, /expectedDraftRevision: preview\.draft\.draftRevision/);
++    assert.doesNotMatch(ui, /localStorage/);
++    assert.doesNotMatch(ui, /sessionStorage/);
++});
++
++test('all durable draft UI state remains host-owned rather than persisted in browser storage', () => {
++    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast.js');
++    const api = read('src/tauri/main/api/character-cards.js');
++    assert.doesNotMatch(ui, /persist\/rp\/state\.json/);
++    assert.doesNotMatch(ui, /indexedDB/);
++    assert.doesNotMatch(api, /localStorage/);
++});
