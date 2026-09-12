@@ -1,0 +1,203 @@
+diff --git a/src/scripts/tauri/character-card-return-ui.js b/src/scripts/tauri/character-card-return-ui.js
+--- a/src/scripts/tauri/character-card-return-ui.js
++++ b/src/scripts/tauri/character-card-return-ui.js
+@@ -14,25 +14,42 @@ import { resolveStableChatId } from '../../tauri/main/api/agent-chat-identity.js';
+ const BUTTON_ID = 'tt_character_card_return_button';
+ const COMMIT_ELIGIBLE_STATE = 'KNOWN_EXACT_RETURN';
+ 
++/** @returns {any} */
++function toast() {
++    return /** @type {any} */ (window.toastr);
++}
++
++/** @returns {TauriTavernCharacterCardsApi} */
+ function characterCardApi() {
+     const api = window.__TAURITAVERN__?.api?.characterCards;
+-    for (const name of [
++    if (!api) {
++        throw new Error(t`Character Card Return API is not available`);
++    }
++    const required = /** @type {(keyof TauriTavernCharacterCardsApi)[]} */ ([
+         'previewReturnImport',
+         'resolveReturnContext',
+         'planReturnImport',
+         'commitReturnImport',
+         'discardReturnPreview',
+-    ]) {
+-        if (typeof api?.[name] !== 'function') {
++    ]);
++    for (const name of required) {
++        if (typeof api[name] !== 'function') {
+             throw new Error(t`Character Card Return API is not available`);
+         }
+     }
+     return api;
+ }
+ 
++/**
++ * @param {File} file
++ * @returns {'png' | 'json'}
++ */
+ function returnFormat(file) {
+     const name = String(file?.name || '').toLowerCase();
+     if (name.endsWith('.png')) return 'png';
+@@ -40,12 +57,17 @@ function returnFormat(file) {
+     throw new Error(t`Character Card Return only accepts PNG or JSON files`);
+ }
+ 
++/** @returns {Promise<File | null>} */
+ function pickWebViewFile() {
+-    return new Promise((resolve) => {
++    return new Promise((resolve) => {
+         const input = document.createElement('input');
+         input.type = 'file';
+         input.accept = '.png,.json,image/png,application/json';
+         input.style.display = 'none';
++        /** @param {File | null} file */
+         const finish = (file) => {
+             input.remove();
+             resolve(file);
+@@ -57,6 +79,7 @@ function pickWebViewFile() {
+     });
+ }
+ 
++/** @returns {Promise<File | null>} */
+ async function pickReturnFile() {
+     if (!isNativeCharacterCardPickerAvailable()) return pickWebViewFile();
+     const files = await pickNativeCharacterCardFiles({
+@@ -66,6 +89,11 @@ async function pickReturnFile() {
+     return files?.[0] || null;
+ }
+ 
++/**
++ * @param {HTMLElement} parent
++ * @param {string} labelText
++ * @param {unknown} value
++ */
+ function appendTextRow(parent, labelText, value) {
+     const row = document.createElement('div');
+     row.style.display = 'grid';
+@@ -82,12 +110,18 @@ function appendTextRow(parent, labelText, value) {
+     parent.append(row);
+ }
+ 
++/** @param {unknown} value */
+ function valueText(value) {
+     if (value === undefined) return t`Missing`;
+     const text = JSON.stringify(value, null, 2) ?? String(value);
+     return text.length > 800 ? `${text.slice(0, 800)}…` : text;
+ }
+ 
++/**
++ * @param {TauriTavernCharacterCardReturnPreview} preview
++ * @param {'png' | 'json'} format
++ * @returns {HTMLElement}
++ */
+ function buildDiffPopup(preview, format) {
+     const root = document.createElement('div');
+     root.style.display = 'flex';
+@@ -121,11 +155,12 @@ function buildDiffPopup(preview, format) {
+         header.textContent = `${decision?.fieldPath || `field-${index}`} · ${decision?.state || 'UNKNOWN'}`;
+         section.append(header);
+ 
+-        for (const [labelText, value] of [
++        const valueRows = /** @type {Array<[string, unknown]>} */ ([
+             [t`Base`, decision?.base],
+             [t`Local`, decision?.local],
+             [t`Returned`, decision?.imported],
+-        ]) {
++        ]);
++        for (const [labelText, value] of valueRows) {
+             const details = document.createElement('details');
+             const summary = document.createElement('summary');
+             summary.textContent = labelText;
+@@ -168,7 +203,14 @@ function buildDiffPopup(preview, format) {
+     return root;
+ }
+ 
++/**
++ * @param {HTMLElement} root
++ * @param {TauriTavernCharacterCardReturnPreview} preview
++ * @returns {{ choices: Record<string, TauriTavernCharacterCardReturnChoice>, replaceAvatar: boolean }}
++ */
+ function collectDiffChoices(root, preview) {
+-    const choices = {};
++    /** @type {Record<string, TauriTavernCharacterCardReturnChoice>} */
++    const choices = {};
+     const decisions = Array.isArray(preview?.decisions) ? preview.decisions : [];
+     decisions.forEach((decision, index) => {
+         if (!decision?.requiresUserConfirmation) return;
+@@ -177,13 +219,22 @@ function collectDiffChoices(root, preview) {
+         if (!(select instanceof HTMLSelectElement) || !select.value) {
+             throw new Error(t`Every conflicted field needs an explicit choice before commit.`);
+         }
+-        choices[String(decision.fieldPath)] = select.value;
++        if (select.value !== 'KEEP_LOCAL' && select.value !== 'USE_IMPORTED') {
++            throw new Error(t`Character Card Return field choice is invalid.`);
++        }
++        choices[String(decision.fieldPath)] = select.value;
+     });
+     const avatar = root.querySelector('[data-return-replace-avatar="true"]');
+     return {
+         choices,
+         replaceAvatar: avatar instanceof HTMLInputElement ? avatar.checked : false,
+     };
+ }
+ 
++/**
++ * @param {TauriTavernCharacterCardReturnPreview} preview
++ * @param {'png' | 'json'} format
++ * @returns {Promise<{ choices: Record<string, TauriTavernCharacterCardReturnChoice>, replaceAvatar: boolean } | null>}
++ */
+ async function promptForDiff(preview, format) {
+     const eligible = preview?.recognitionState === COMMIT_ELIGIBLE_STATE;
+     while (true) {
+@@ -202,11 +253,14 @@ async function promptForDiff(preview, format) {
+         try {
+             return collectDiffChoices(root, preview);
+         } catch (error) {
+-            window.toastr?.warning?.(error instanceof Error ? error.message : String(error));
++            toast()?.warning?.(error instanceof Error ? error.message : String(error));
+         }
+     }
+ }
+ 
++/**
++ * @param {TauriTavernCharacterCardReturnPlanResult} planResult
++ * @returns {Promise<boolean>}
++ */
+ async function confirmPlan(planResult) {
+     const plan = planResult?.plan;
+     if (!plan || typeof plan !== 'object') throw new Error(t`Character Card Return plan is invalid`);
+@@ -244,6 +298,7 @@ async function runCharacterCardReturn() {
+         if (!stagedRef) throw new Error(t`Character Card Return preview did not provide a staged reference`);
+ 
++        /** @type {TauriTavernCharacterCardReturnContext | null} */
+         let context = null;
+         if (preview?.recognitionState === COMMIT_ELIGIBLE_STATE) {
+             const activeChat = getActiveChatSnapshot();
+@@ -277,7 +332,7 @@ async function runCharacterCardReturn() {
+         });
+         committed = true;
+-        window.toastr?.success?.(
++        toast()?.success?.(
+             `${t`Revision`} ${result?.cardRevision ?? ''}`.trim(),
+             t`Character Card Return committed`,
+         );
+@@ -288,7 +343,7 @@ async function runCharacterCardReturn() {
+             await api.discardReturnPreview(stagedRef);
+         } catch (error) {
+             console.warn('[CharacterCardReturn] staged preview cleanup failed', error);
+-            if (!committed) window.toastr?.warning?.(t`The staged Return preview could not be cleaned up automatically.`);
++            if (!committed) toast()?.warning?.(t`The staged Return preview could not be cleaned up automatically.`);
+         }
+     }
+ }
+@@ -324,7 +379,7 @@ function mountReturnButton() {
+         } catch (error) {
+             console.error('[CharacterCardReturn]', error);
+-            window.toastr?.error?.(error instanceof Error ? error.message : String(error));
++            toast()?.error?.(error instanceof Error ? error.message : String(error));
+         } finally {
+             sync();
+         }
