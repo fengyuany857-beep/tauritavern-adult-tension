@@ -1,29 +1,15 @@
 diff --git a/src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js b/src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js
 --- a/src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js
 +++ b/src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js
-@@ -1,15 +1,21 @@
+@@ -1,2 +1,1 @@
 -import { characters, createOrEditCharacter, select_selected_character } from '../../../../script.js';
  import { getActiveChatSnapshot } from '../../../../tauri/main/adapters/st/active-chat-ref.js';
- import { resolveStableChatId } from '../../../../tauri/main/api/agent-chat-identity.js';
- import { isAdultTensionDistribution } from './adult-tension-readiness.js';
- import { confirmAction, errorText } from './host-api.js';
- import { translateAgentSystem as tr } from './i18n.js';
- 
- const BUTTON_ID = 'ttas_adult_tension_cast';
- 
-+let characterLibraryPromise;
-+function loadCharacterLibrary() {
-+    characterLibraryPromise ??= import('../../../../script.js' /* webpackIgnore: true */);
-+    return characterLibraryPromise;
-+}
-+
- async function openBoundCard(candidate) {
+@@ -98,4 +98,5 @@ async function openBoundCard(candidate) {
      const storageIdentity = candidate?.binding?.cardStorageIdentity;
      if (!storageIdentity) throw new Error(tr('boundCardNotFound'));
-+    const { characters, createOrEditCharacter, select_selected_character } = await loadCharacterLibrary();
++    const { characters, createOrEditCharacter, select_selected_character } = await import('../../../../script.js' /* webpackIgnore: true */);
      const index = characters.findIndex(character => avatarStorageIdentity(character?.avatar) === storageIdentity);
      if (index < 0) throw new Error(tr('boundCardNotFound'));
- 
 diff --git a/tests/character-card-bound-management-contract.test.mjs b/tests/character-card-bound-management-contract.test.mjs
 --- a/tests/character-card-bound-management-contract.test.mjs
 +++ b/tests/character-card-bound-management-contract.test.mjs
