@@ -1,0 +1,85 @@
+diff --git a/tests/character-card-draft-cast-ui-contract.test.mjs b/tests/character-card-draft-cast-ui-contract.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/character-card-draft-cast-ui-contract.test.mjs
+@@ -0,0 +1,83 @@
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import path from 'node:path';
++import test from 'node:test';
++import { fileURLToPath } from 'node:url';
++
++const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++
++function read(relativePath) {
++    return fs.readFileSync(path.join(REPO_ROOT, relativePath), 'utf8');
++}
++
++test('RP cast candidate list is resolved from selected durable authority', () => {
++    const service = read('src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs');
++
++    assert.match(service, /pub async fn list_candidates/);
++    assert.match(service, /resolve_stable_chat_id\(stable_chat_id\)/);
++    assert.match(service, /read_selected_state\(&selected\)/);
++    assert.match(service, /parse_durable_state\(&durable\.text\)/);
++    assert.match(service, /state\.cast_registry\.values\(\)/);
++    assert.match(service, /materialization\s*\.read_binding\(&proposed_binding_id\)/);
++    assert.match(service, /inferred_field_count: source\.inferred_profile\.len\(\)/);
++});
++
++test('RP cast candidate list is exposed through a dedicated Host ABI command', () => {
++    const commands = read('src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs');
++    const registry = read('src-tauri/crates/tauritavern/src/presentation/commands/registry.rs');
++    const hostApi = read('src/tauri/main/api/character-cards.js');
++    const invokeNames = read('src/tauri/main/kernel/invokes/tauri-commands.js');
++
++    assert.match(commands, /pub async fn list_character_card_draft_candidates/);
++    assert.match(commands, /\.list_candidates\(&stable_chat_id\)/);
++    assert.match(registry, /list_character_card_draft_candidates/);
++    assert.match(hostApi, /listMaterializationDraftCandidates/);
++    assert.match(hostApi, /safeInvoke\('list_character_card_draft_candidates'/);
++    assert.match(hostApi, /stable_chat_id: requireNonEmptyString\(stableChatId/);
++    assert.match(invokeNames, /list_character_card_draft_candidates/);
++});
++
++test('chat-side RP Cast entry uses stable chat identity and the Draft Preview CAS Commit path', () => {
++    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast.js');
++    const index = read('src/scripts/extensions/agent-system/src/index.js');
++
++    assert.match(index, /mountAdultTensionCastEntry/);
++    assert.match(ui, /getActiveChatSnapshot/);
++    assert.match(ui, /resolveStableChatId\(activeChat\.ref\)/);
++    assert.match(ui, /listMaterializationDraftCandidates/);
++    assert.match(ui, /previewMaterializationDraft/);
++    assert.match(ui, /commitMaterializationDraft/);
++    assert.match(ui, /saveCharacterCardAndBind/);
++    assert.match(ui, /candidate\?\.materialized/);
++    assert.doesNotMatch(ui, /localStorage/);
++    assert.doesNotMatch(ui, /sessionStorage/);
++    assert.doesNotMatch(ui, /persist\/rp\/state\.json/);
++    assert.doesNotMatch(ui, /import_character/);
++    assert.doesNotMatch(ui, /replace_character/);
++});
++
++test('Draft editor exposes generated provenance and conservative-exclusion warnings before explicit save', () => {
++    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast.js');
++
++    assert.match(ui, /fieldProvenance/);
++    assert.match(ui, /preview\?\.warnings/);
++    assert.match(ui, /inferredFieldsExcluded/);
++    assert.match(ui, /DRAFT_FIELDS/);
++    assert.match(ui, /description/);
++    assert.match(ui, /personality/);
++    assert.match(ui, /scenario/);
++    assert.match(ui, /first_mes/);
++    assert.match(ui, /mes_example/);
++    assert.match(ui, /commit\.addEventListener\('click'/);
++});
++
++test('materialized candidates are visible but cannot be materialized twice from the Cast panel', () => {
++    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast.js');
++
++    assert.match(ui, /action\.disabled = Boolean\(candidate\?\.materialized\)/);
++    assert.match(ui, /cardAlreadyMaterialized/);
++    assert.match(ui, /boundCard/);
++});
