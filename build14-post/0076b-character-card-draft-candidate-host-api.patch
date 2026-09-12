@@ -1,17 +1,7 @@
 diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
 --- a/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
 +++ b/src-tauri/crates/tauritavern/src/presentation/commands/character_commands.rs
-@@ -4,8 +4,9 @@ use std::sync::Arc;
- use tauri::State;
- use tt_application::services::character_card_draft_materialization_service::{
--    CharacterCardDraftCommitRequest, CharacterCardDraftCommitResult,
--    CharacterCardDraftPreview,
-+    CharacterCardDraftCandidateList, CharacterCardDraftCommitRequest,
-+    CharacterCardDraftCommitResult, CharacterCardDraftPreview,
- };
- use tt_application::services::character_card_materialization_orchestrator::{
-     CharacterCardReturnCommitResult, CharacterCardReturnContextResult,
-@@ -293,6 +294,21 @@ pub async fn export_character_content(
+@@ -293,6 +293,24 @@ pub async fn export_character_content(
          .map_err(map_command_error("Failed to export character content"))
  }
  
@@ -19,7 +9,10 @@ diff --git a/src-tauri/crates/tauritavern/src/presentation/commands/character_co
 +pub async fn list_character_card_draft_candidates(
 +    stable_chat_id: String,
 +    app_state: State<'_, Arc<AppState>>,
-+) -> Result<CharacterCardDraftCandidateList, CommandError> {
++) -> Result<
++    tt_application::services::character_card_draft_materialization_service::CharacterCardDraftCandidateList,
++    CommandError,
++> {
 +    log_command("list_character_card_draft_candidates");
 +    app_state
 +        .services
