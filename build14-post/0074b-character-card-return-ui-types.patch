@@ -47,8 +47,7 @@ diff --git a/src/scripts/tauri/character-card-return-ui.js b/src/scripts/tauri/c
  
 +/** @returns {Promise<File | null>} */
  function pickWebViewFile() {
--    return new Promise((resolve) => {
-+    return new Promise((resolve) => {
+     return new Promise((resolve) => {
          const input = document.createElement('input');
          input.type = 'file';
          input.accept = '.png,.json,image/png,application/json';
@@ -184,20 +183,3 @@ diff --git a/src/scripts/tauri/character-card-return-ui.js b/src/scripts/tauri/c
              `${t`Revision`} ${result?.cardRevision ?? ''}`.trim(),
              t`Character Card Return committed`,
          );
-@@ -288,7 +343,7 @@ async function runCharacterCardReturn() {
-             await api.discardReturnPreview(stagedRef);
-         } catch (error) {
-             console.warn('[CharacterCardReturn] staged preview cleanup failed', error);
--            if (!committed) window.toastr?.warning?.(t`The staged Return preview could not be cleaned up automatically.`);
-+            if (!committed) toast()?.warning?.(t`The staged Return preview could not be cleaned up automatically.`);
-         }
-     }
- }
-@@ -324,7 +379,7 @@ function mountReturnButton() {
-         } catch (error) {
-             console.error('[CharacterCardReturn]', error);
--            window.toastr?.error?.(error instanceof Error ? error.message : String(error));
-+            toast()?.error?.(error instanceof Error ? error.message : String(error));
-         } finally {
-             sync();
-         }
