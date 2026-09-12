@@ -1,0 +1,68 @@
+diff --git a/tests/character-card-bound-management-contract.test.mjs b/tests/character-card-bound-management-contract.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/character-card-bound-management-contract.test.mjs
+@@ -0,0 +1,70 @@
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import path from 'node:path';
++import test from 'node:test';
++import { fileURLToPath } from 'node:url';
++
++const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
++
++test('Cast candidate exposes the existing Binding as management metadata rather than a second card store', () => {
++    const service = read('src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs');
++    const types = read('src/types.d.ts');
++    assert.match(service, /struct CharacterCardBoundSummary/);
++    assert.match(service, /card_storage_identity: String/);
++    assert.match(service, /card_revision: u64/);
++    assert.match(service, /profile_revision_at_last_sync: Option<u64>/);
++    assert.match(service, /generation: u64/);
++    assert.match(service, /pub binding: Option<CharacterCardBoundSummary>/);
++    assert.match(types, /type TauriTavernCharacterCardBoundSummary/);
++    assert.match(types, /binding: TauriTavernCharacterCardBoundSummary \| null/);
++});
++
++test('only an active Binding is treated as an already materialized Card', () => {
++    const service = read('src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs');
++    assert.match(service, /BindingStatus::Active/);
++    assert.match(service, /"card_missing"/);
++    assert.match(service, /"detached"/);
++    assert.match(service, /"target_missing"/);
++    assert.match(service, /"corrupted"/);
++    assert.match(service, /"archived"/);
++});
++
++test('bound RP people navigate into the existing Character Library editor', () => {
++    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js');
++    assert.match(ui, /characters, createOrEditCharacter, select_selected_character/);
++    assert.match(ui, /function openBoundCard\(candidate\)/);
++    assert.match(ui, /candidate\?\.binding\?\.cardStorageIdentity/);
++    assert.match(ui, /characters\.findIndex/);
++    assert.match(ui, /select_selected_character\(index\)/);
++    assert.match(ui, /await createOrEditCharacter\(\)/);
++    assert.match(ui, /tr\('openCharacterCard'\)/);
++});
++
++test('bound-card navigation cannot mutate RP authority or route through ordinary import/replace', () => {
++    const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js');
++    const match = ui.match(/async function openBoundCard\(candidate\) \{[\s\S]*?\n\}/);
++    assert.ok(match, 'openBoundCard function not found');
++    const flow = match[0];
++    assert.doesNotMatch(flow, /commitMaterializationDraft/);
++    assert.doesNotMatch(flow, /previewReturnImport/);
++    assert.doesNotMatch(flow, /import_character|replace_character/i);
++    assert.doesNotMatch(flow, /persist\/rp\/state\.json/);
++    assert.doesNotMatch(flow, /canon/i);
++});
++
++test('Card binding remains identity linkage, not a duplicate narrative-role authority', () => {
++    const domain = read('src-tauri/crates/tt-domain/src/models/character_card_materialization.rs');
++    const binding = domain.match(/pub struct CharacterCardBinding \{[\s\S]*?\n\}/);
++    assert.ok(binding, 'CharacterCardBinding not found');
++    assert.doesNotMatch(binding[0], /narrative_role|control_owner|lifecycle_status/);
++    assert.match(binding[0], /card_storage_identity/);
++    assert.match(binding[0], /target: CharacterCardBindingTarget/);
++});
