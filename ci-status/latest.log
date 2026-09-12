@@ -1,18 +1,3 @@
 # Diagnostic matches
-1:/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/control/vendor/continuity/adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip: OK
-9:4fbead4ed0deaa157f498a32ae6ee7ba077eaee0f046a1b71eb194c31a3d9201  adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip
 
 # Tail
-/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/control/vendor/continuity/adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip: OK
-PASS narrative name=adult-tension-narrative version=0.3.1 sha256=52ce3f32d5d8cae4dec45382135c94aca37654dd9d32b75ce468e4d27a22a346 ownerProtocol=adult-tension-narrative-owner-matrix-v1
-PASS mode=baseline root=/tmp/adult-tension-package frozenSpanSHA256=3d00945b22ac887034980b337903a8cd748754f33e0c751156a440524bf7641b
-PASS mode=patched root=/tmp/adult-tension-package frozenSpanSHA256=3d00945b22ac887034980b337903a8cd748754f33e0c751156a440524bf7641b
-PASS narrative name=adult-tension-narrative version=0.3.1 sha256=52ce3f32d5d8cae4dec45382135c94aca37654dd9d32b75ce468e4d27a22a346 ownerProtocol=adult-tension-narrative-owner-matrix-v1
-PASS mode=patched root=/var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/tmp.FxEgWP8rm2 frozenSpanSHA256=3d00945b22ac887034980b337903a8cd748754f33e0c751156a440524bf7641b
-Packaged Adult Tension runtime Skills into /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/runtime-skills
-dcc0199f4eca0b346e6f0d284daafe2c570717aaa5b713a10842df6414a66c4b  adult-tension-cbfdc623.zip
-4fbead4ed0deaa157f498a32ae6ee7ba077eaee0f046a1b71eb194c31a3d9201  adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip
-6fc40c82a545d271acfe5ef7676b8c3ee2e964416e301ff9e3e33f08c91f7091  adult-tension-tauritavern-adapter-build14.zip
-52ce3f32d5d8cae4dec45382135c94aca37654dd9d32b75ce468e4d27a22a346  adult-tension-narrative-v0.3.1.zip
-cc81d7cd6cef92fe5096a0f8eba005de257fc1529d234833c02f25a65cf54515  Adult-Tension-4-Skills.zip
-38a1919015c6f08c3bda83b5dd7ba775d36b01cc617692cf15f3f1bd534cc6f6  skills-manifest.json
