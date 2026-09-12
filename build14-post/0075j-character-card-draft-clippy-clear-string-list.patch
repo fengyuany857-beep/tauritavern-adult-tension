@@ -1,0 +1,16 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+@@ -465,7 +465,11 @@ fn string_list_field(values: &BTreeMap<String, Value>, keys: &[&str]) -> Vec<String> {
+         let Some(value) = values.get(*key) else { continue; };
+         if let Some(text) = value.as_str() {
+             let text = text.trim();
+-            return (!text.is_empty()).then(|| vec![text.to_string()]).unwrap_or_default();
++            return if text.is_empty() {
++                Vec::new()
++            } else {
++                vec![text.to_string()]
++            };
+         }
+         if let Some(items) = value.as_array() {
+             return items
