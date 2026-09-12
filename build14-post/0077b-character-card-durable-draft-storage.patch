@@ -1,0 +1,105 @@
+diff --git a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+--- a/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
++++ b/src-tauri/crates/tt-adapter-storage-core/src/character_card_materialization_store.rs
+@@ -7,7 +7,7 @@ use tokio::fs;
+ use tokio::io::AsyncWriteExt;
+ use tt_domain::errors::DomainError;
+ use tt_domain::models::character_card_materialization::{
+-    CharacterCardBinding, CharacterCardTransactionJournal, ExportRecord,
++    CharacterCardBinding, CharacterCardDraftRecord, CharacterCardTransactionJournal, ExportRecord,
+     StagedCharacterCardImport, UndoRecord,
+ };
+@@ -16,6 +16,7 @@ const SUBSYSTEM_DIR: &str = "character-card-materialization";
+ const BINDINGS_DIR: &str = "bindings";
++const DRAFTS_DIR: &str = "drafts";
+ const EXPORTS_DIR: &str = "exports";
+ const SNAPSHOTS_DIR: &str = "snapshots";
+@@ -42,6 +43,7 @@ impl CharacterCardMaterializationStore {
+         for directory in [
+             self.bindings_dir(),
++            self.drafts_dir(),
+             self.exports_dir(),
+             self.snapshots_dir(),
+@@ -68,6 +70,52 @@ impl CharacterCardMaterializationStore {
+         atomic_write_json(&path, binding).await
+     }
+ 
++    pub async fn read_draft(
++        &self,
++        draft_id: &str,
++    ) -> Result<Option<CharacterCardDraftRecord>, DomainError> {
++        let path = self.drafts_dir().join(json_file_name(draft_id)?);
++        read_optional_json(&path).await
++    }
++
++    pub async fn write_draft(&self, draft: &CharacterCardDraftRecord) -> Result<(), DomainError> {
++        draft.validate().map_err(DomainError::InvalidData)?;
++        let path = self
++            .drafts_dir()
++            .join(json_file_name(&draft.draft.draft_id)?);
++        atomic_write_json(&path, draft).await
++    }
++
++    pub async fn list_drafts(&self) -> Result<Vec<CharacterCardDraftRecord>, DomainError> {
++        let mut output = Vec::new();
++        let mut entries = match fs::read_dir(self.drafts_dir()).await {
++            Ok(entries) => entries,
++            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(output),
++            Err(error) => return Err(DomainError::InternalError(format!(
++                "Failed to list Character Card drafts: {error}"
++            ))),
++        };
++        while let Some(entry) = entries.next_entry().await.map_err(|error| {
++            DomainError::InternalError(format!("Failed to inspect Character Card draft directory: {error}"))
++        })? {
++            if !entry.file_type().await.map_err(|error| {
++                DomainError::InternalError(format!("Failed to inspect Character Card draft entry: {error}"))
++            })?.is_file() {
++                continue;
++            }
++            let file_name = entry.file_name();
++            let Some(file_name) = file_name.to_str() else { continue; };
++            if !file_name.ends_with(".json") {
++                continue;
++            }
++            output.push(read_json(entry.path()).await?);
++        }
++        output.sort_by(|left, right| left.draft.draft_id.cmp(&right.draft.draft_id));
++        Ok(output)
++    }
++
+     pub async fn read_export_record(
+         &self,
+         export_id: &str,
+@@ -197,6 +245,10 @@ impl CharacterCardMaterializationStore {
+         self.root.join(BINDINGS_DIR)
+     }
+ 
++    fn drafts_dir(&self) -> PathBuf {
++        self.root.join(DRAFTS_DIR)
++    }
++
+     fn exports_dir(&self) -> PathBuf {
+         self.root.join(EXPORTS_DIR)
+@@ -370,6 +422,22 @@ impl CharacterCardMaterializationRepository for CharacterCardMaterializationStore {
+         CharacterCardMaterializationStore::write_binding(self, binding).await
+     }
+ 
++    async fn read_draft(
++        &self,
++        draft_id: &str,
++    ) -> Result<Option<CharacterCardDraftRecord>, DomainError> {
++        CharacterCardMaterializationStore::read_draft(self, draft_id).await
++    }
++
++    async fn write_draft(&self, draft: &CharacterCardDraftRecord) -> Result<(), DomainError> {
++        CharacterCardMaterializationStore::write_draft(self, draft).await
++    }
++
++    async fn list_drafts(&self) -> Result<Vec<CharacterCardDraftRecord>, DomainError> {
++        CharacterCardMaterializationStore::list_drafts(self).await
++    }
++
+     async fn read_export_record(
+         &self,
+         export_id: &str,
