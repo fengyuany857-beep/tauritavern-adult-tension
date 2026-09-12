@@ -1,3 +1,18 @@
 # Diagnostic matches
+1:/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/control/vendor/continuity/adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip: OK
+9:4fbead4ed0deaa157f498a32ae6ee7ba077eaee0f046a1b71eb194c31a3d9201  adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip
 
 # Tail
+/Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/control/vendor/continuity/adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip: OK
+PASS narrative name=adult-tension-narrative version=0.3.1 sha256=52ce3f32d5d8cae4dec45382135c94aca37654dd9d32b75ce468e4d27a22a346 ownerProtocol=adult-tension-narrative-owner-matrix-v1
+PASS mode=baseline root=/tmp/adult-tension-package frozenSpanSHA256=3d00945b22ac887034980b337903a8cd748754f33e0c751156a440524bf7641b
+PASS mode=patched root=/tmp/adult-tension-package frozenSpanSHA256=3d00945b22ac887034980b337903a8cd748754f33e0c751156a440524bf7641b
+PASS narrative name=adult-tension-narrative version=0.3.1 sha256=52ce3f32d5d8cae4dec45382135c94aca37654dd9d32b75ce468e4d27a22a346 ownerProtocol=adult-tension-narrative-owner-matrix-v1
+PASS mode=patched root=/var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/tmp.fQKdI2hovR frozenSpanSHA256=3d00945b22ac887034980b337903a8cd748754f33e0c751156a440524bf7641b
+Packaged Adult Tension runtime Skills into /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/runtime-skills
+d0f73e80bdb79c32baa05df1346d9f0127904c457f6390ca6e62581e1f1ae736  adult-tension-cbfdc623.zip
+4fbead4ed0deaa157f498a32ae6ee7ba077eaee0f046a1b71eb194c31a3d9201  adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip
+39328b98469530fefbd4f0943affb4b84c0006d96347316236207e71801f3173  adult-tension-tauritavern-adapter-build14.zip
+52ce3f32d5d8cae4dec45382135c94aca37654dd9d32b75ce468e4d27a22a346  adult-tension-narrative-v0.3.1.zip
+f026f770676e4de87edeb3a83015aadb4e57a47c82b0e972bcee8729705e33ae  Adult-Tension-4-Skills.zip
+31c55ec8bc4e4b7724c7d1f374ad67a058240e4a82ae3371479dbb9e4b66ddd4  skills-manifest.json
