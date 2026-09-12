@@ -1,0 +1,35 @@
+diff --git a/src/types.d.ts b/src/types.d.ts
+--- a/src/types.d.ts
++++ b/src/types.d.ts
+@@ -967,6 +967,7 @@ type TauriTavernCharacterCardDraftPreview = {
+     cas: TauriTavernCharacterCardDraftCas;
+     scopeKind: 'session_character' | 'world_character';
+     warnings: string[];
++    persisted: boolean;
+ };
+@@ -1128,6 +1129,29 @@ type TauriTavernCharacterCardsApi = {
+     listMaterializationDraftCandidates: (input: {
+         stableChatId: string;
+     }) => Promise<TauriTavernCharacterCardDraftCandidateList>;
++    resumeMaterializationDraft: (input: {
++        stableChatId: string;
++        characterId: string;
++    }) => Promise<TauriTavernCharacterCardDraftPreview | null>;
++    saveMaterializationDraft: (input: {
++        cas: TauriTavernCharacterCardDraftCas;
++        draftId: string;
++        expectedDraftRevision: number;
++        definition: Record<string, unknown>;
++    }) => Promise<TauriTavernCharacterCardDraftPreview>;
++    regenerateMaterializationDraft: (input: {
++        stableChatId: string;
++        characterId: string;
++    }) => Promise<TauriTavernCharacterCardDraftPreview>;
++    archiveMaterializationDraft: (input: {
++        stableChatId: string;
++        characterId: string;
++        draftId: string;
++        expectedDraftRevision: number;
++    }) => Promise<TauriTavernCharacterCardDraftPreview>;
+     previewMaterializationDraft: (input: {
+         stableChatId: string;
