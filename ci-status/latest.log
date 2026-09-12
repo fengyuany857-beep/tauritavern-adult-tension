@@ -1,3 +1,47 @@
 # Diagnostic matches
 
 # Tail
+✔ four bundled archives preserve New, Same, and Different -> Skip behavior (1.149541ms)
+✔ Profile routes state -> plan -> stage -> render and keeps ordinary RP conditional (0.253667ms)
+✔ Owner Matrix keeps authority, voice, sexuality, POV, and aftermath facts on legacy Runtime (0.914875ms)
+✔ Readiness exposes Missing, Exact Bundled, and Different Custom states (0.336292ms)
+✔ Adult Tension profile uses bounded layered context and tool budgets (1.66225ms)
+✔ Adapter recommendations avoid routine duplicate World Info and full Skill reads (0.713083ms)
+✔ RP state bounds hot memory while recall indexes historical memory (0.475292ms)
+✔ Adult Tension distribution bootstraps once and exposes local readiness (0.207583ms)
+✔ api.agent.profiles forwards profile commands with camelCase DTOs (38.2175ms)
+✔ api.agent.profiles publishes profile change events after successful mutations (1.56325ms)
+✔ api.agent.profiles fails fast on invalid profile inputs (1.532375ms)
+✔ api.agent.tools lists canonical catalog items (0.495125ms)
+✔ api.agent.promptAssembly prepares backend broker requests (0.625333ms)
+✔ api.agent.promptAssembly normalizes current model connection through backend commands (0.7155ms)
+✔ api.agent.startRunWithPromptSnapshot refreshes Model Target LLM connection before starting run (6.594875ms)
+✔ api.agent.readEvents requests timeline projection only when asked (0.9585ms)
+✔ api.agent.submitGuidance forwards camelCase DTO and fails fast on invalid input (1.362584ms)
+✔ api.agent.listRuns forwards run history filters with camelCase DTOs (13.669541ms)
+✔ api.agent.listRuns fails fast on invalid history filters (1.588667ms)
+✔ api.agent.retention forwards settings and prune contracts (1.375542ms)
+✔ api.agent.retention fails fast on invalid retention inputs (1.244584ms)
+✔ api.agent.readModelTurn forwards camelCase DTO and fails fast on invalid input (0.656083ms)
+✔ api.agent.pruneChatPersistentStates forwards explicit candidate state ids (9.559125ms)
+✔ api.agent.pruneChatPersistentStates fails fast on invalid candidate state ids (1.765291ms)
+✔ agent chat commit bridge detaches on partial success terminal event (1.596ms)
+✔ agent chat commit bridge runs generated output cleanup before saving (1.744417ms)
+✔ agent chat commit bridge cleans append commits as one raw target message (2.067792ms)
+✔ agent prompt assembly bridge reads pending request by assembly id (6.245709ms)
+✔ shared agent run event subscription fans out over one backend poller (2.131ms)
+✔ Auto Acceptance is wired through production Settings and Host ABI (5.917791ms)
+✔ Auto Acceptance inline Vue expressions are syntactically parseable (1.015041ms)
+✔ Auto Acceptance uses isolated file storage and the production RP path (3.712ms)
+✔ Auto Acceptance remains quick, bounded, and offline by default (0.8415ms)
+✔ Acceptance report export reuses the existing safe export chain (0.581417ms)
+✔ Adult Tension self-sign distribution blocks upstream update drift (2.07ms)
+✔ Acceptance build identity includes fork and CI provenance fields (0.418459ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 36
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 288.186333
