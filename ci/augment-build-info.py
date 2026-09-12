@@ -50,7 +50,7 @@ def parse_skill_sums(path: Path) -> dict[str, str]:
             raise SystemExit(f"malformed Skill checksum line: {raw!r}")
         digest, filename = fields
         result[filename] = digest.lower()
-    if len([name for name in result if name.endswith(".zip")]) < 3:
+    if len([name for name in result if name.endswith(".zip")]) < 4:
         raise SystemExit("runtime Skill checksum set is incomplete")
     return result
 
@@ -88,6 +88,7 @@ data.update(
         "workflow_trigger_sha": os.environ.get("GITHUB_SHA", "unknown"),
         "upstream_tauritavern_sha": os.environ.get("UPSTREAM_SHA", "unknown"),
         "adult_tension_skill_sha": "cbfdc623fccc91247cbb37783757fc157406c2a5",
+        "adult_tension_narrative_skill_sha": "52ce3f32d5d8cae4dec45382135c94aca37654dd9d32b75ce468e4d27a22a346",
         "bootstrap_patch_identity": patch_identity(control / "bootstrap-post"),
         "agent_fix_identity": patch_identity(control / "agent-fix-post"),
         "data_continuity_identity": patch_identity(control / "continuity-post"),

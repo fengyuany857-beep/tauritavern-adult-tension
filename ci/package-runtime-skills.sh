@@ -12,6 +12,10 @@ CONTINUITY_SOURCE="$CONTROL_DIR/vendor/continuity/$CONTINUITY_NAME"
 ADULT_TENSION_REVISION="cbfdc623fccc91247cbb37783757fc157406c2a5"
 OVERLAY_PATH="$CONTROL_DIR/vendor/adult-tension-overlays/0001-narrative-compat.patch"
 COMPAT_VERIFIER="$CONTROL_DIR/ci/verify-adult-tension-narrative-compat.py"
+NARRATIVE_SOURCE_DIR="$CONTROL_DIR/extras/adult-tension-narrative"
+NARRATIVE_ARCHIVE_SOURCE="$CONTROL_DIR/extras/adult-tension-narrative-v0.3.1.zip"
+NARRATIVE_NAME="adult-tension-narrative-v0.3.1.zip"
+NARRATIVE_VERIFIER="$CONTROL_DIR/ci/verify-adult-tension-narrative-package.py"
 
 rm -rf "$OUT_DIR" /tmp/adult-tension-package /tmp/adapter-package
 mkdir -p "$OUT_DIR" /tmp/adult-tension-package /tmp/adapter-package
@@ -29,6 +33,10 @@ test -f /tmp/adapter-package/SKILL.md
 test "$(git -C "$ADULT_TENSION_SOURCE_DIR" rev-parse HEAD)" = "$ADULT_TENSION_REVISION"
 test -f "$OVERLAY_PATH"
 test -f "$COMPAT_VERIFIER"
+test -d "$NARRATIVE_SOURCE_DIR"
+test -f "$NARRATIVE_ARCHIVE_SOURCE"
+test -f "$NARRATIVE_VERIFIER"
+python3 "$NARRATIVE_VERIFIER" --source "$NARRATIVE_SOURCE_DIR" --archive "$NARRATIVE_ARCHIVE_SOURCE"
 python3 "$COMPAT_VERIFIER" --root /tmp/adult-tension-package --mode baseline
 git -c core.autocrlf=false -C /tmp/adult-tension-package apply --check --unidiff-zero --whitespace=error "$OVERLAY_PATH"
 git -c core.autocrlf=false -C /tmp/adult-tension-package apply --unidiff-zero --whitespace=error "$OVERLAY_PATH"
@@ -39,16 +47,20 @@ grep -q '^name: adult-tension-tauritavern-adapter$' /tmp/adapter-package/SKILL.m
 (cd /tmp/adapter-package && zip -qr "$OUT_DIR/adult-tension-tauritavern-adapter-build14.zip" .)
 unzip -t "$OUT_DIR/adult-tension-cbfdc623.zip" >/dev/null
 unzip -t "$OUT_DIR/adult-tension-tauritavern-adapter-build14.zip" >/dev/null
+cp "$NARRATIVE_ARCHIVE_SOURCE" "$OUT_DIR/$NARRATIVE_NAME"
+unzip -t "$OUT_DIR/$NARRATIVE_NAME" >/dev/null
+python3 "$NARRATIVE_VERIFIER" --source "$NARRATIVE_SOURCE_DIR" --archive "$OUT_DIR/$NARRATIVE_NAME"
+NARRATIVE_SHA256="$(sha256sum "$OUT_DIR/$NARRATIVE_NAME" | awk '{print $1}')"
 
 (
   cd "$OUT_DIR"
-  sha256sum adult-tension-cbfdc623.zip "$CONTINUITY_NAME" adult-tension-tauritavern-adapter-build14.zip > SKILL-SHA256SUMS.txt
+  sha256sum adult-tension-cbfdc623.zip "$CONTINUITY_NAME" adult-tension-tauritavern-adapter-build14.zip "$NARRATIVE_NAME" > SKILL-SHA256SUMS.txt
 )
 
-python3 - "$OUT_DIR/skills-manifest.json" "$CONTINUITY_SHA256" "$OVERLAY_PATH" <<'PY'
+python3 - "$OUT_DIR/skills-manifest.json" "$CONTINUITY_SHA256" "$OVERLAY_PATH" "$NARRATIVE_SHA256" <<'PY'
 import json, os, sys
 import hashlib
-path, continuity_sha, overlay_path = sys.argv[1:]
+path, continuity_sha, overlay_path, narrative_sha = sys.argv[1:]
 with open(overlay_path, "rb") as f:
     overlay_sha = hashlib.sha256(f.read()).hexdigest()
 data = {
@@ -70,6 +82,15 @@ data = {
             }
         ]
     },
+    "narrativeSource": {
+        "type": "control-repo",
+        "path": "extras/adult-tension-narrative",
+        "package": "adult-tension-narrative-v0.3.1.zip",
+        "version": "0.3.1",
+        "ownerProtocol": "adult-tension-narrative-owner-matrix-v1",
+        "expectedLegacyOverlayId": "narrative-compat-v1",
+        "sha256": narrative_sha
+    },
     "continuitySource": {
         "type": "vendored-binary",
         "path": "vendor/continuity/adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip",
@@ -80,7 +101,8 @@ data = {
     "installOrder": [
         "adult-tension-cbfdc623.zip",
         "adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip",
-        "adult-tension-tauritavern-adapter-build14.zip"
+        "adult-tension-tauritavern-adapter-build14.zip",
+        "adult-tension-narrative-v0.3.1.zip"
     ]
 }
 with open(path, "w", encoding="utf-8") as f:
@@ -90,14 +112,20 @@ PY
 
 (
   cd "$OUT_DIR"
-  zip -q Adult-Tension-3-Skills.zip \
+  zip -q Adult-Tension-4-Skills.zip \
     adult-tension-cbfdc623.zip \
     "$CONTINUITY_NAME" \
     adult-tension-tauritavern-adapter-build14.zip \
+    "$NARRATIVE_NAME" \
     skills-manifest.json \
     SKILL-SHA256SUMS.txt
-  sha256sum adult-tension-cbfdc623.zip "$CONTINUITY_NAME" adult-tension-tauritavern-adapter-build14.zip Adult-Tension-3-Skills.zip skills-manifest.json > SHA256SUMS.txt
+  sha256sum adult-tension-cbfdc623.zip "$CONTINUITY_NAME" adult-tension-tauritavern-adapter-build14.zip "$NARRATIVE_NAME" Adult-Tension-4-Skills.zip skills-manifest.json > SHA256SUMS.txt
 )
+
+PACKAGED_LEGACY_CHECK_DIR="$(mktemp -d)"
+trap 'rm -rf "$PACKAGED_LEGACY_CHECK_DIR"' EXIT
+unzip -q "$OUT_DIR/adult-tension-cbfdc623.zip" SKILL.md PROGRESS.md -d "$PACKAGED_LEGACY_CHECK_DIR"
+python3 "$COMPAT_VERIFIER" --root "$PACKAGED_LEGACY_CHECK_DIR" --mode patched
 
 printf 'Packaged Adult Tension runtime Skills into %s\n' "$OUT_DIR"
 cat "$OUT_DIR/SHA256SUMS.txt"

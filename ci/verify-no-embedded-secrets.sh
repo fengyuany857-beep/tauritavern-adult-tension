@@ -33,12 +33,15 @@ if find "$tmp/Payload/TauriTavern.app" -type d -name '.git' -print -quit | grep 
   exit 73
 fi
 
-while IFS= read -r skill_zip; do
-  [[ -n "$skill_zip" ]] || continue
-  if unzip -Z1 "$skill_zip" | grep -Eqi '(^|/)(secrets\.json|\.env|[^/]+\.(pem|p12|pfx|mobileprovision|key))$'; then
-    echo "RELEASE_BLOCKED: secret/private file path embedded inside Runtime Skill archive $(basename "$skill_zip")" >&2
-    exit 74
-  fi
-done < <(find "$tmp/Payload/TauriTavern.app/AdultTensionRuntimeSkills" -type f -name '*.zip' 2>/dev/null | sort)
+for skill_root in "$tmp/Payload/TauriTavern.app/assets/AdultTensionRuntimeSkills" "$tmp/Payload/TauriTavern.app/AdultTensionRuntimeSkills"; do
+  [[ -d "$skill_root" ]] || continue
+  while IFS= read -r skill_zip; do
+    [[ -n "$skill_zip" ]] || continue
+    if unzip -Z1 "$skill_zip" | grep -Eqi '(^|/)(secrets\.json|\.env|[^/]+\.(pem|p12|pfx|mobileprovision|key))$'; then
+      echo "RELEASE_BLOCKED: secret/private file path embedded inside Runtime Skill archive $(basename "$skill_zip")" >&2
+      exit 74
+    fi
+  done < <(find "$skill_root" -type f -name '*.zip' 2>/dev/null | sort)
+done
 
 echo "[SECRET-ABSENCE] PASS final IPA contains no forbidden secret/private file paths"

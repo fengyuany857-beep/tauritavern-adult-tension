@@ -13,6 +13,7 @@ required_files=(
   "adult-tension-cbfdc623.zip"
   "adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip"
   "adult-tension-tauritavern-adapter-build14.zip"
+  "adult-tension-narrative-v0.3.1.zip"
   "skills-manifest.json"
   "SKILL-SHA256SUMS.txt"
 )
@@ -67,6 +68,7 @@ expected = [
     "adult-tension-cbfdc623.zip",
     "adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip",
     "adult-tension-tauritavern-adapter-build14.zip",
+    "adult-tension-narrative-v0.3.1.zip",
 ]
 assert data.get("schemaVersion") == 1, data.get("schemaVersion")
 assert data.get("suite") == "adult-tension-runtime-skills", data.get("suite")
@@ -81,6 +83,14 @@ assert overlay.get("id") == "narrative-compat-v1", overlay
 assert overlay.get("path") == "vendor/adult-tension-overlays/0001-narrative-compat.patch", overlay
 assert isinstance(overlay.get("sha256"), str) and len(overlay["sha256"]) == 64 and all(c in "0123456789abcdef" for c in overlay["sha256"]), overlay
 assert overlay.get("frozenSpanSha256") == "3d00945b22ac887034980b337903a8cd748754f33e0c751156a440524bf7641b", overlay
+narrative = data.get("narrativeSource")
+assert narrative and narrative.get("type") == "control-repo", narrative
+assert narrative.get("path") == "extras/adult-tension-narrative", narrative
+assert narrative.get("package") == "adult-tension-narrative-v0.3.1.zip", narrative
+assert narrative.get("version") == "0.3.1", narrative
+assert narrative.get("ownerProtocol") == "adult-tension-narrative-owner-matrix-v1", narrative
+assert narrative.get("expectedLegacyOverlayId") == "narrative-compat-v1", narrative
+assert isinstance(narrative.get("sha256"), str) and len(narrative["sha256"]) == 64 and all(c in "0123456789abcdef" for c in narrative["sha256"]), narrative
 PY
 
 unzip -t "$BUNDLE_DIR/adult-tension-cbfdc623.zip" >/dev/null
@@ -89,9 +99,14 @@ ZIP_SKILL_DIR="$TMP_DIR/adult-tension-cbfdc623"
 mkdir -p "$ZIP_SKILL_DIR"
 unzip -q "$BUNDLE_DIR/adult-tension-cbfdc623.zip" SKILL.md PROGRESS.md -d "$ZIP_SKILL_DIR"
 python3 "$COMPAT_VERIFIER" --root "$ZIP_SKILL_DIR" --mode patched
+unzip -t "$BUNDLE_DIR/adult-tension-narrative-v0.3.1.zip" >/dev/null
+unzip -p "$BUNDLE_DIR/adult-tension-narrative-v0.3.1.zip" adult-tension-narrative/SKILL.md | grep -q '^name: adult-tension-narrative$'
+unzip -p "$BUNDLE_DIR/adult-tension-narrative-v0.3.1.zip" adult-tension-narrative/SKILL.md | grep -q '^  version: "0.3.1"$'
+unzip -p "$BUNDLE_DIR/adult-tension-narrative-v0.3.1.zip" adult-tension-narrative/contracts/cross-skill-owner-map.json | grep -q 'adult-tension-narrative-owner-matrix-v1'
+unzip -p "$BUNDLE_DIR/adult-tension-narrative-v0.3.1.zip" adult-tension-narrative/contracts/cross-skill-owner-map.json | grep -q 'narrative-compat-v1'
 unzip -t "$BUNDLE_DIR/adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip" >/dev/null
 unzip -p "$BUNDLE_DIR/adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip" SKILL.md | grep -q '^name: adult-tension-continuity$'
 unzip -t "$BUNDLE_DIR/adult-tension-tauritavern-adapter-build14.zip" >/dev/null
 unzip -p "$BUNDLE_DIR/adult-tension-tauritavern-adapter-build14.zip" SKILL.md | grep -q '^name: adult-tension-tauritavern-adapter$'
 
-printf 'VERIFIED: final IPA exposes the exact three Adult Tension Runtime Skills at the iOS Tauri resource path %s/assets/%s\n' "$(basename "$APP_DIR")" "$BUNDLE_DIR_NAME"
+printf 'VERIFIED: final IPA exposes the exact four Adult Tension Runtime Skills at the iOS Tauri resource path %s/assets/%s\n' "$(basename "$APP_DIR")" "$BUNDLE_DIR_NAME"

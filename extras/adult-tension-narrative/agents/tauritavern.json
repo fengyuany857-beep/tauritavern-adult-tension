@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "displayName": "Adult Tension Narrative",
+  "sourceKind": "project-bundled",
+  "allowImplicitInvocation": true,
+  "recommendedTools": [
+    "rp.state",
+    "rp.recall",
+    "rp.stage_turn"
+  ],
+  "tags": [
+    "roleplay",
+    "adult-only",
+    "narrative-policy",
+    "conditional"
+  ],
+  "notes": "Conditional narrative policy only. Derive activation from current RP authority; no persistent state ownership."
+}

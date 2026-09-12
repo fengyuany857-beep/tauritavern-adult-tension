@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "name": "adult-tension-narrative",
+  "version": "0.3.1",
+  "builtFor": {
+    "controlRepo": "fengyuany857-beep/tauritavern-adult-tension",
+    "branch": "repair/ios-agent-continuity-20260910",
+    "observedHead": "e733eb45d575f86df9dd36f8429c34013ae8dd40",
+    "upstream": "Darkatse/TauriTavern@3a8c5401c859ac15ac11f3339846360615232896",
+    "adultTensionVendor": "daha1216/dsh-adult-tension@cbfdc623fccc91247cbb37783757fc157406c2a5"
+  },
+  "runtimeOwner": false,
+  "persistentState": false,
+  "status": "a3-cross-skill-bounded-converged-candidate",
+  "repairFrom": "0.3.0",
+  "repairScope": [
+    "field-level cross-skill ownership",
+    "directness composition",
+    "voice-vs-narrator separation",
+    "scene-local-vs-persistent development",
+    "sensory focal ownership",
+    "aftermath fact-vs-timing split"
+  ],
+  "crossSkillOwnerProtocol": "adult-tension-narrative-owner-matrix-v1",
+  "expectedLegacyCompatibilityOverlayId": "narrative-compat-v1"
+}

@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "protocol": "adult-tension-narrative-owner-matrix-v1",
+  "narrativeSkillVersion": "0.3.1",
+  "expectedLegacyCompatibilityOverlayId": "narrative-compat-v1",
+  "domains": {
+    "adultEligibility": {
+      "owner": "native-rp/adult-tension",
+      "mode": "exclusive"
+    },
+    "safetyState": {
+      "owner": "native-rp/adult-tension",
+      "mode": "exclusive"
+    },
+    "grantsAndBoundaries": {
+      "owner": "native-rp/adult-tension",
+      "mode": "exclusive"
+    },
+    "playerSovereignty": {
+      "owner": "native-rp/adult-tension",
+      "mode": "exclusive"
+    },
+    "canonAndContinuity": {
+      "owner": "native-rp/adult-tension",
+      "mode": "exclusive"
+    },
+    "npcKnowledgeProvenance": {
+      "owner": "native-rp/adult-tension",
+      "mode": "exclusive"
+    },
+    "relationshipAndEventTruth": {
+      "owner": "native-rp/adult-tension",
+      "mode": "exclusive"
+    },
+    "sexualityProfile": {
+      "owner": "adult-tension",
+      "mode": "exclusive"
+    },
+    "sexualityDevelopment": {
+      "owner": "adult-tension",
+      "mode": "exclusive"
+    },
+    "activeVoiceMode": {
+      "owner": "adult-tension",
+      "mode": "exclusive"
+    },
+    "povMode": {
+      "owner": "native-rp/adult-tension",
+      "mode": "exclusive"
+    },
+    "transactionSemantics": {
+      "owner": "native-rp",
+      "mode": "exclusive"
+    },
+    "defaultAdultDirectnessBaseline": {
+      "owner": "adult-tension",
+      "mode": "baseline"
+    },
+    "beatPhysicalSpatialPlanning": {
+      "owner": "adult-tension-narrative",
+      "mode": "exclusive"
+    },
+    "sceneLocalPsychophysicalContinuity": {
+      "owner": "adult-tension-narrative",
+      "mode": "exclusive"
+    },
+    "interactivePacing": {
+      "owner": "adult-tension-narrative",
+      "mode": "exclusive"
+    },
+    "sensoryFocalSelection": {
+      "owner": "adult-tension-narrative",
+      "mode": "exclusive"
+    },
+    "proseRhythm": {
+      "owner": "adult-tension-narrative",
+      "mode": "exclusive"
+    },
+    "antiSlop": {
+      "owner": "adult-tension-narrative",
+      "mode": "exclusive"
+    },
+    "aftermathFacts": {
+      "owner": "native-rp/adult-tension",
+      "mode": "exclusive"
+    },
+    "aftermathPresentationTiming": {
+      "owner": "adult-tension-narrative",
+      "mode": "exclusive"
+    },
+    "directnessPresentation": {
+      "owner": "composed",
+      "mode": "composed",
+      "components": [
+        "adult-tension:defaultAdultDirectnessBaseline",
+        "adult-tension-narrative:antiSanitization",
+        "current-user:presentationScope"
+      ]
+    }
+  },
+  "fallbackRule": "If a domain is not mapped, preserve existing Adult Tension / Native RP behavior and flag an ownership gap.",
+  "integrationCompleteOnlyIf": [
+    "adult-tension-narrative is visible to the adult-tension-rp Agent Profile",
+    "the Agent Profile has the routing hook",
+    "the Agent Profile binds this owner matrix",
+    "the packaged legacy adult-tension copy has narrative-compat-v1 or an equivalent explicit binding",
+    "version/readiness observability does not falsely report a custom/different installed copy as the exact audited bundled copy"
+  ]
+}

@@ -13,6 +13,7 @@ required_files=(
   "adult-tension-cbfdc623.zip"
   "adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip"
   "adult-tension-tauritavern-adapter-build14.zip"
+  "adult-tension-narrative-v0.3.1.zip"
   "skills-manifest.json"
   "SKILL-SHA256SUMS.txt"
 )
@@ -68,9 +69,15 @@ expected = [
     "adult-tension-cbfdc623.zip",
     "adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip",
     "adult-tension-tauritavern-adapter-build14.zip",
+    "adult-tension-narrative-v0.3.1.zip",
 ]
 assert data.get("suite") == "adult-tension-runtime-skills", data
 assert data.get("installOrder") == expected, data.get("installOrder")
+narrative = data.get("narrativeSource")
+assert narrative and narrative.get("version") == "0.3.1", narrative
+assert narrative.get("ownerProtocol") == "adult-tension-narrative-owner-matrix-v1", narrative
+assert narrative.get("expectedLegacyOverlayId") == "narrative-compat-v1", narrative
+assert isinstance(narrative.get("sha256"), str) and len(narrative["sha256"]) == 64, narrative
 PY
 
 (
@@ -97,7 +104,7 @@ mv "$TMP_DIR/TauriTavern.app.zip" "$APP_ZIP"
   sha256sum TauriTavern-unsigned.ipa TauriTavern.app.zip build-info.json > SHA256SUMS.txt
 )
 
-printf 'Embedded Adult Tension Runtime Skills into iOS resource path %s/assets/%s\n' "$(basename "$APP_DIR")" "$BUNDLE_DIR_NAME"
+printf 'Embedded four Adult Tension Runtime Skills into iOS resource path %s/assets/%s\n' "$(basename "$APP_DIR")" "$BUNDLE_DIR_NAME"
 printf 'Repacked IPA: %s\n' "$IPA"
 printf 'Repacked app archive: %s\n' "$APP_ZIP"
 cat "$IOS_DIR/SHA256SUMS.txt"

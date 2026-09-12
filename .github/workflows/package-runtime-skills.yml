@@ -83,7 +83,7 @@ jobs:
           git diff --check
           test -f extras/adult-tension-tauritavern-adapter/SKILL.md
 
-      - name: Create and verify all three Skill packages
+      - name: Create and verify all four Skill packages
         shell: bash
         run: |
           set -euo pipefail
@@ -95,15 +95,16 @@ jobs:
           test -f out/adult-tension-cbfdc623.zip
           test -f out/adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip
           test -f out/adult-tension-tauritavern-adapter-build14.zip
-          test -f out/Adult-Tension-3-Skills.zip
+          test -f out/adult-tension-narrative-v0.3.1.zip
+          test -f out/Adult-Tension-4-Skills.zip
           test -f out/skills-manifest.json
           test -f out/SKILL-SHA256SUMS.txt
           (cd out && sha256sum -c SKILL-SHA256SUMS.txt)
 
-      - name: Upload three-Skill packages
+      - name: Upload four-Skill packages
         uses: actions/upload-artifact@v4
         with:
-          name: Adult-Tension-Runtime-3-Skills-Build14
+          name: Adult-Tension-Runtime-4-Skills-v0.3.1
           path: out/
           if-no-files-found: error
           retention-days: 30
