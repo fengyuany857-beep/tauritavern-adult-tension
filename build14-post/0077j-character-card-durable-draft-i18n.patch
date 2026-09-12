@@ -1,0 +1,63 @@
+diff --git a/src/scripts/extensions/agent-system/src/i18n.js b/src/scripts/extensions/agent-system/src/i18n.js
+--- a/src/scripts/extensions/agent-system/src/i18n.js
++++ b/src/scripts/extensions/agent-system/src/i18n.js
+@@ -59,6 +59,19 @@ const DEFAULT_MESSAGES = Object.freeze({
+     draftAvailable: 'Draft Available',
+     draftSource: 'Source',
+     draftWarnings: 'Draft Warnings',
++    archiveDraft: 'Archive Draft',
++    archiveDraftConfirm: 'Archive this saved Character Card draft?',
++    draftArchived: 'Draft archived.',
++    draftPersistence: 'Persistence',
++    draftRevision: 'Draft Revision',
++    draftSaved: 'Draft saved.',
++    draftState: 'Draft State',
++    durableDraft: 'Saved on device',
++    regenerateDraft: 'Regenerate Draft',
++    regenerateDraftConfirm: 'Regenerate from the current durable RP state? Unsaved edits will be replaced.',
++    saveDraft: 'Save Draft',
++    sourceAdvancedDraft: 'The RP source has advanced. Regenerate this draft before saving or materializing it.',
++    unsavedDraft: 'Not saved yet',
+     charRangeComplete: '{chars}/{totalChars} chars, complete',
+diff --git a/src/scripts/extensions/agent-system/i18n/zh-cn.json b/src/scripts/extensions/agent-system/i18n/zh-cn.json
+--- a/src/scripts/extensions/agent-system/i18n/zh-cn.json
++++ b/src/scripts/extensions/agent-system/i18n/zh-cn.json
+@@ -56,6 +56,19 @@
+     "agent_system.scope": "作用域",
+     "agent_system.stableTraits": "稳定特征",
+     "agent_system.unknownCharacter": "未知人物",
++    "agent_system.archiveDraft": "归档草稿",
++    "agent_system.archiveDraftConfirm": "归档这份已保存的角色卡草稿？",
++    "agent_system.draftArchived": "草稿已归档。",
++    "agent_system.draftPersistence": "持久状态",
++    "agent_system.draftRevision": "草稿修订",
++    "agent_system.draftSaved": "草稿已保存。",
++    "agent_system.draftState": "草稿状态",
++    "agent_system.durableDraft": "已保存到设备",
++    "agent_system.regenerateDraft": "重新生成草稿",
++    "agent_system.regenerateDraftConfirm": "从当前持久 RP 状态重新生成？未保存的编辑将被替换。",
++    "agent_system.saveDraft": "保存草稿",
++    "agent_system.sourceAdvancedDraft": "RP 来源已经变化，请先重新生成草稿，再保存或制作角色卡。",
++    "agent_system.unsavedDraft": "尚未保存",
+     "agent_system.background": "后台",
+diff --git a/src/scripts/extensions/agent-system/i18n/zh-tw.json b/src/scripts/extensions/agent-system/i18n/zh-tw.json
+--- a/src/scripts/extensions/agent-system/i18n/zh-tw.json
++++ b/src/scripts/extensions/agent-system/i18n/zh-tw.json
+@@ -56,6 +56,19 @@
+     "agent_system.scope": "作用域",
+     "agent_system.stableTraits": "穩定特徵",
+     "agent_system.unknownCharacter": "未知人物",
++    "agent_system.archiveDraft": "封存草稿",
++    "agent_system.archiveDraftConfirm": "封存這份已儲存的角色卡草稿？",
++    "agent_system.draftArchived": "草稿已封存。",
++    "agent_system.draftPersistence": "持久狀態",
++    "agent_system.draftRevision": "草稿修訂",
++    "agent_system.draftSaved": "草稿已儲存。",
++    "agent_system.draftState": "草稿狀態",
++    "agent_system.durableDraft": "已儲存到裝置",
++    "agent_system.regenerateDraft": "重新生成草稿",
++    "agent_system.regenerateDraftConfirm": "從目前持久 RP 狀態重新生成？未儲存的編輯將被取代。",
++    "agent_system.saveDraft": "儲存草稿",
++    "agent_system.sourceAdvancedDraft": "RP 來源已經變更，請先重新生成草稿，再儲存或製作角色卡。",
++    "agent_system.unsavedDraft": "尚未儲存",
+     "agent_system.background": "背景",
