@@ -1,0 +1,10 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+@@ -319,7 +319,7 @@ impl CharacterCardDraftMaterializationService {
+                 "character_card_draft.invalid_expected_revision".to_string(),
+             ));
+         }
+-        let _ = create_character_dto(&request.definition)?;
++        create_character_dto(&request.definition)?;
+         let _guard = self.commit_guard.lock().await;
