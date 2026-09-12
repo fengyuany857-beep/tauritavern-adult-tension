@@ -1,0 +1,149 @@
+diff --git a/src/tauri/main/api/character-cards.js b/src/tauri/main/api/character-cards.js
+--- a/src/tauri/main/api/character-cards.js
++++ b/src/tauri/main/api/character-cards.js
+@@ -128,6 +128,37 @@ function createCharacterCardsApi({
+         return pickDesktopFiles(options);
+     }
+ 
++    /**
++     * @param {{ stableChatId: string; characterId: string }} input
++     * @returns {Promise<TauriTavernCharacterCardDraftPreview>}
++     */
++    async function previewMaterializationDraft({ stableChatId, characterId }) {
++        return safeInvoke('preview_character_card_draft', {
++            stable_chat_id: requireNonEmptyString(stableChatId, 'Character Card draft stable chat id'),
++            character_id: requireNonEmptyString(characterId, 'Character Card draft character id'),
++        });
++    }
++
++    /**
++     * @param {{ cas: TauriTavernCharacterCardDraftCas; definition: Record<string, unknown> }} input
++     * @returns {Promise<TauriTavernCharacterCardDraftCommitResult>}
++     */
++    async function commitMaterializationDraft({ cas, definition }) {
++        if (!cas || typeof cas !== 'object' || Array.isArray(cas)) {
++            throw new Error('Character Card draft CAS is required');
++        }
++        if (!definition || typeof definition !== 'object' || Array.isArray(definition)) {
++            throw new Error('Character Card draft definition is required');
++        }
++        return safeInvoke('commit_character_card_draft', {
++            request: {
++                cas,
++                definition,
++            },
++        });
++    }
++
+     async function returnBytes(file) {
+         if (!file || typeof file.arrayBuffer !== 'function') {
+             throw new Error('Character Card Return requires a readable File');
+@@ -199,6 +230,8 @@ function createCharacterCardsApi({
+     return {
+         isNativePickerAvailable,
+         pickFiles,
++        previewMaterializationDraft,
++        commitMaterializationDraft,
+         previewReturnImport,
+         planReturnImport,
+         commitReturnImport,
+diff --git a/src/tauri/main/kernel/invokes/tauri-commands.js b/src/tauri/main/kernel/invokes/tauri-commands.js
+--- a/src/tauri/main/kernel/invokes/tauri-commands.js
++++ b/src/tauri/main/kernel/invokes/tauri-commands.js
+@@ -14,6 +14,7 @@ export {};
+  *   | 'cancel_data_archive_job'
+  *   | 'cleanup_export_data_archive'
+  *   | 'cleanup_user_backup_archive'
++ *   | 'commit_character_card_draft'
+  *   | 'commit_character_card_return'
+@@ -118,6 +119,7 @@ export {};
+  *   | 'preview_skill_import'
++ *   | 'preview_character_card_draft'
+  *   | 'preview_character_card_return'
+  *   | 'prepare_data_archive_import_target_path'
+diff --git a/src/types.d.ts b/src/types.d.ts
+--- a/src/types.d.ts
++++ b/src/types.d.ts
+@@ -920,6 +920,78 @@ type TauriTavernCharacterCardsPickOptions = {
+     title?: string;
+ };
+ 
++type TauriTavernCharacterCardDraftCas = {
++    stableChatId: string;
++    stateId: string;
++    worldId: string;
++    sessionId: string;
++    activeBranchId: string;
++    characterId: string;
++    sourceProfileRevision: number;
++    proposedBindingId: string;
++};
++
++type TauriTavernCharacterCardDraft = {
++    draftId: string;
++    characterId: string;
++    sourceProfileRevision: number;
++    sourceCardRevision: number | null;
++    draftRevision: number;
++    generatedBaseHash: string;
++    userEdited: boolean;
++    state: 'generated' | 'user_edited' | 'source_advanced' | 'ready_to_materialize' | 'archived';
++    fieldProvenance: Record<string, string[]>;
++    definition: Record<string, unknown>;
++    updatedAt: string;
++};
++
++type TauriTavernCharacterCardDraftPreview = {
++    draft: TauriTavernCharacterCardDraft;
++    cas: TauriTavernCharacterCardDraftCas;
++    scopeKind: 'session_character' | 'world_character';
++    warnings: string[];
++};
++
++type TauriTavernCharacterCardBinding = {
++    schemaVersion: number;
++    bindingId: string;
++    target: {
++        scopeKind: 'session_character' | 'world_character';
++        worldId: string;
++        characterId: string;
++        sourceSessionId?: string | null;
++    };
++    contexts: Array<{
++        sessionId: string;
++        branchId: string;
++        lastSeenProfileRevision?: number | null;
++    }>;
++    cardStorageIdentity: string;
++    cardRevision: number;
++    profileRevisionAtLastSync?: number | null;
++    generation: number;
++    status: string;
++    createdAt: string;
++    updatedAt: string;
++};
++
++type TauriTavernCharacterCardDraftCommitResult = {
++    character: {
++        name: string;
++        avatar: string;
++        [key: string]: unknown;
++    };
++    binding: TauriTavernCharacterCardBinding;
++};
++
+ type TauriTavernCharacterCardReturnChoice = 'KEEP_LOCAL' | 'USE_IMPORTED';
+@@ -981,6 +1053,14 @@ type TauriTavernCharacterCardsApi = {
+     isNativePickerAvailable: () => boolean;
+     pickFiles: (options?: TauriTavernCharacterCardsPickOptions) => Promise<File[] | null>;
++    previewMaterializationDraft: (input: {
++        stableChatId: string;
++        characterId: string;
++    }) => Promise<TauriTavernCharacterCardDraftPreview>;
++    commitMaterializationDraft: (input: {
++        cas: TauriTavernCharacterCardDraftCas;
++        definition: Record<string, unknown>;
++    }) => Promise<TauriTavernCharacterCardDraftCommitResult>;
+     previewReturnImport: (
+         file: File,
+         options?: { userIndicatedReturn?: boolean },
