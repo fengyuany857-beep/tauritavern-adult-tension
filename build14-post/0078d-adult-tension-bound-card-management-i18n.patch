@@ -1,0 +1,48 @@
+diff --git a/src/scripts/extensions/agent-system/src/i18n.js b/src/scripts/extensions/agent-system/src/i18n.js
+--- a/src/scripts/extensions/agent-system/src/i18n.js
++++ b/src/scripts/extensions/agent-system/src/i18n.js
+@@ -72,6 +72,14 @@ const DEFAULT_MESSAGES = Object.freeze({
+     saveDraft: 'Save Draft',
+     sourceAdvancedDraft: 'The RP source has advanced. Regenerate this draft before saving or materializing it.',
+     unsavedDraft: 'Not saved yet',
++    bindingGeneration: 'Binding Generation',
++    bindingId: 'Binding ID',
++    bindingStatus: 'Binding Status',
++    boundCardNotFound: 'The bound Character Card could not be found in Character Library.',
++    cardRevision: 'Card Revision',
++    notYetSynced: 'Not yet synced',
++    openCharacterCard: 'Open Character Card',
++    profileRevisionAtLastSync: 'Profile Revision at Last Sync',
+     charRangeComplete: '{chars}/{totalChars} chars, complete',
+diff --git a/src/scripts/extensions/agent-system/i18n/zh-cn.json b/src/scripts/extensions/agent-system/i18n/zh-cn.json
+--- a/src/scripts/extensions/agent-system/i18n/zh-cn.json
++++ b/src/scripts/extensions/agent-system/i18n/zh-cn.json
+@@ -69,6 +69,14 @@
+     "agent_system.saveDraft": "保存草稿",
+     "agent_system.sourceAdvancedDraft": "RP 来源已经变化，请先重新生成草稿，再保存或制作角色卡。",
+     "agent_system.unsavedDraft": "尚未保存",
++    "agent_system.bindingGeneration": "绑定代次",
++    "agent_system.bindingId": "绑定 ID",
++    "agent_system.bindingStatus": "绑定状态",
++    "agent_system.boundCardNotFound": "在角色库中找不到这张已绑定角色卡。",
++    "agent_system.cardRevision": "角色卡修订",
++    "agent_system.notYetSynced": "尚未同步",
++    "agent_system.openCharacterCard": "查看角色卡",
++    "agent_system.profileRevisionAtLastSync": "上次同步的资料修订",
+     "agent_system.background": "后台",
+diff --git a/src/scripts/extensions/agent-system/i18n/zh-tw.json b/src/scripts/extensions/agent-system/i18n/zh-tw.json
+--- a/src/scripts/extensions/agent-system/i18n/zh-tw.json
++++ b/src/scripts/extensions/agent-system/i18n/zh-tw.json
+@@ -69,6 +69,14 @@
+     "agent_system.saveDraft": "儲存草稿",
+     "agent_system.sourceAdvancedDraft": "RP 來源已經變更，請先重新生成草稿，再儲存或製作角色卡。",
+     "agent_system.unsavedDraft": "尚未儲存",
++    "agent_system.bindingGeneration": "綁定代次",
++    "agent_system.bindingId": "綁定 ID",
++    "agent_system.bindingStatus": "綁定狀態",
++    "agent_system.boundCardNotFound": "在角色庫中找不到這張已綁定角色卡。",
++    "agent_system.cardRevision": "角色卡修訂",
++    "agent_system.notYetSynced": "尚未同步",
++    "agent_system.openCharacterCard": "查看角色卡",
++    "agent_system.profileRevisionAtLastSync": "上次同步的資料修訂",
+     "agent_system.background": "背景",
