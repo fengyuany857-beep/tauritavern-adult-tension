@@ -1,0 +1,37 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+@@ -239,11 +239,11 @@ fn apply_author_canon(profile: &mut CharacterProfile, author: &BTreeMap<String,
+     if let Some(value) = object_field(author, &["appearance"]) {
+-        profile.appearance = value.clone();
++        profile.appearance = value;
+     }
+     if let Some(value) = object_field(author, &["speechVoice", "speech_voice"]) {
+-        profile.speech_voice = value.clone();
++        profile.speech_voice = value;
+     }
+@@ -258,16 +258,13 @@ fn apply_author_canon(profile: &mut CharacterProfile, author: &BTreeMap<String,
+     profile.backstory = string_list_field(author, &["backstory"]);
+ }
+ 
+-fn object_field<'a>(
+-    values: &'a BTreeMap<String, Value>,
++fn object_field(
++    values: &BTreeMap<String, Value>,
+     keys: &[&str],
+-) -> Option<&'a BTreeMap<String, Value>> {
++) -> Option<BTreeMap<String, Value>> {
+     keys.iter()
+         .filter_map(|key| values.get(*key))
+         .find_map(|value| value.as_object())
+         .map(|object| object.iter().map(|(k, v)| (k.clone(), v.clone())).collect::<BTreeMap<_, _>>())
+-        .map(Box::new)
+-        .map(Box::leak)
+-        .map(|value| &*value)
+ }
+@@ -357,7 +354,7 @@ fn deterministic_binding_id(character: &CharacterEntity, session: &SessionIdenti
+-    let scope = match character.origin.kind {
++    let scope = match &character.origin.kind {
+         CharacterOriginKind::SessionCreated => "session",
+         CharacterOriginKind::WorldCanon => "world",
+     };
