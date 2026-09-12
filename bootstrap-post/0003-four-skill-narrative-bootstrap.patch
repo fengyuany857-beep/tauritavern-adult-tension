@@ -1,27 +1,24 @@
 diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/bundled_skills.rs b/src-tauri/crates/tauritavern/src/app/composition/services/bundled_skills.rs
+index b43c5ce..7edf11b 100644
 --- a/src-tauri/crates/tauritavern/src/app/composition/services/bundled_skills.rs
 +++ b/src-tauri/crates/tauritavern/src/app/composition/services/bundled_skills.rs
-@@ -24,4 +24,5 @@
- struct ExpectedBundledSkill {
-     archive: &'static str,
+@@ -26,2 +26,3 @@ struct ExpectedBundledSkill {
      skill_name: &'static str,
 +    expected_version: Option<&'static str>,
  }
-@@ -29,14 +30,22 @@
+@@ -29,2 +30,2 @@
 -const EXPECTED_SKILLS: [ExpectedBundledSkill; 3] = [
 +const EXPECTED_SKILLS: [ExpectedBundledSkill; 4] = [
      ExpectedBundledSkill {
-         archive: "adult-tension-cbfdc623.zip",
+@@ -32,2 +33,3 @@ const EXPECTED_SKILLS: [ExpectedBundledSkill; 3] = [
          skill_name: "adult-tension",
 +        expected_version: None,
      },
-     ExpectedBundledSkill {
-         archive: "adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip",
+@@ -36,2 +38,3 @@ const EXPECTED_SKILLS: [ExpectedBundledSkill; 3] = [
          skill_name: "adult-tension-continuity",
 +        expected_version: None,
      },
-     ExpectedBundledSkill {
-         archive: "adult-tension-tauritavern-adapter-build14.zip",
+@@ -40,2 +43,8 @@ const EXPECTED_SKILLS: [ExpectedBundledSkill; 3] = [
          skill_name: "adult-tension-tauritavern-adapter",
 +        expected_version: None,
 +    },
@@ -30,12 +27,7 @@ diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/bundled_s
 +        skill_name: "adult-tension-narrative",
 +        expected_version: Some("0.3.1"),
      },
- ];
-diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/bundled_skills.rs b/src-tauri/crates/tauritavern/src/app/composition/services/bundled_skills.rs
---- a/src-tauri/crates/tauritavern/src/app/composition/services/bundled_skills.rs
-+++ b/src-tauri/crates/tauritavern/src/app/composition/services/bundled_skills.rs
-@@ -82,2 +82,8 @@
-     let mut prepared = Vec::with_capacity(EXPECTED_SKILLS.len());
+@@ -79,2 +88,7 @@ pub(super) async fn bootstrap(
      for expected in EXPECTED_SKILLS {
 +        let source_id = if expected.skill_name == "adult-tension-narrative" {
 +            "adult-tension-runtime-skills/adult-tension-narrative-v0.3.1.zip"
@@ -43,22 +35,12 @@ diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/bundled_s
 +            BUNDLE_SUITE
 +        };
          let expected_sha256 = checksums.get(expected.archive).ok_or_else(|| {
-@@ -94,9 +99,9 @@
-         let bytes = assets::read_resource_bytes(app_handle, &bundle_path(expected.archive))?;
-         let input = SkillImportInput::ArchiveBase64 {
-             file_name: expected.archive.to_string(),
-             content_base64: BASE64_STANDARD.encode(bytes),
-             sha256: Some(expected_sha256.clone()),
-             source: json!({
+@@ -92,3 +106,3 @@ pub(super) async fn bootstrap(
                  "kind": "bundled",
 -                "id": BUNDLE_SUITE,
 +                "id": source_id,
-@@ -111,7 +111,15 @@
-         if preview.skill.name != expected.skill_name {
-             return Err(DomainError::InvalidData(format!(
-                 "Bundled Skill '{}' declares unexpected name '{}'; expected '{}'",
-                 expected.archive, preview.skill.name, expected.skill_name
-             )));
+                 "label": "Bundled Adult Tension Runtime Skills"
+@@ -107,2 +121,10 @@ pub(super) async fn bootstrap(
          }
 +        if let Some(expected_version) = expected.expected_version
 +            && preview.skill.version.as_deref() != Some(expected_version)
@@ -69,18 +51,21 @@ diff --git a/src-tauri/crates/tauritavern/src/app/composition/services/bundled_s
 +            )));
 +        }
          if matches!(preview.conflict.kind, SkillImportConflictKind::Different) {
-@@ -196,1 +196,1 @@
+@@ -178,3 +200,3 @@ fn validate_manifest(manifest: &BundledSkillManifest) -> Result<(), DomainError>
+         return Err(DomainError::InvalidData(
 -            "Bundled Adult Tension Skill installOrder does not match the frozen three-Skill suite"
 +            "Bundled Adult Tension Skill installOrder does not match the frozen four-Skill suite"
-@@ -248,8 +248,9 @@
+                 .to_string(),
+@@ -230,3 +252,3 @@ mod tests {
+     #[test]
 -    fn checksum_parser_accepts_three_skill_sha256_file() {
 +    fn checksum_parser_accepts_four_skill_sha256_file() {
          let input = concat!(
-             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa  adult-tension-cbfdc623.zip\n",
-             "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb  adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip\n",
+@@ -235,5 +257,6 @@ mod tests {
              "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc  adult-tension-tauritavern-adapter-build14.zip\n",
 +            "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd  adult-tension-narrative-v0.3.1.zip\n",
          );
          let parsed = parse_checksums(input).expect("parse bundled skill checksums");
 -        assert_eq!(parsed.len(), 3);
 +        assert_eq!(parsed.len(), 4);
+         assert_eq!(parsed["adult-tension-cbfdc623.zip"], "a".repeat(64));
