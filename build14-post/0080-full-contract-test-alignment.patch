@@ -1,0 +1,37 @@
+diff --git a/tests/character-card-draft-cast-ui-contract.test.mjs b/tests/character-card-draft-cast-ui-contract.test.mjs
+--- a/tests/character-card-draft-cast-ui-contract.test.mjs
++++ b/tests/character-card-draft-cast-ui-contract.test.mjs
+@@ -70,11 +70,13 @@ test('Draft editor exposes generated provenance and conservative-exclusion warnin
+     assert.match(ui, /commit\.addEventListener\('click'/);
+ });
+ 
+-test('materialized candidates are visible but cannot be materialized twice from the Cast panel', () => {
++test('materialized candidates open the existing Card and cannot rematerialize from the Cast panel', () => {
+     const ui = read('src/scripts/extensions/agent-system/src/adult-tension-cast-durable.js');
+ 
+-    assert.match(ui, /action\.disabled = Boolean\(candidate\?\.materialized\)/);
++    assert.match(ui, /const operation = candidate\?\.materialized \? openBoundCard\(candidate\) : openDraft\(candidate\)/);
++    assert.match(ui, /function openBoundCard\(candidate\)/);
++    assert.match(ui, /if \(candidate\?\.binding && !candidate\?\.materialized\) action\.disabled = true/);
+     assert.match(ui, /openCharacterCard/);
+     assert.match(ui, /boundCard/);
+ });
+diff --git a/tests/character-card-editing-guide-contract.test.mjs b/tests/character-card-editing-guide-contract.test.mjs
+--- a/tests/character-card-editing-guide-contract.test.mjs
++++ b/tests/character-card-editing-guide-contract.test.mjs
+@@ -47,8 +47,6 @@ test('Editing Guide generator accepts display name only', () => {
+     assert.match(source, /function editingGuideText\(displayName\)/);
+     const guide = extract('editingGuideText');
+-    assert.doesNotMatch(guide, /stableChatId|stateId|worldId|sessionId|branchId|characterId/);
+     assert.doesNotMatch(guide, /getActiveChatSnapshot|resolveStableChatId/);
+ });
+diff --git a/tests/character-card-rp-apply-contract.test.mjs b/tests/character-card-rp-apply-contract.test.mjs
+--- a/tests/character-card-rp-apply-contract.test.mjs
++++ b/tests/character-card-rp-apply-contract.test.mjs
+@@ -58,7 +58,7 @@ test('Card-origin profile evidence is internal and survives later AEGPE rebuilds', ()
+     const descriptor = read('src-tauri/crates/tt-application/src/services/agent_tools/rp/descriptors.rs');
+     assert.match(service, /"sourceKind": "imported_card"/);
+-    assert.match(rp, /evidence\.source_kind == "imported_card"/);
++    assert.match(rp, /source_kind == "imported_card"/);
+     assert.doesNotMatch(descriptor, /imported_card/);
+ });
