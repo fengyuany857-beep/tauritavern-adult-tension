@@ -1,0 +1,157 @@
+diff --git a/src/scripts/tauri/character-card-return-ui.js b/src/scripts/tauri/character-card-return-ui.js
+--- a/src/scripts/tauri/character-card-return-ui.js
++++ b/src/scripts/tauri/character-card-return-ui.js
+@@ -1,6 +1,7 @@
+ // @ts-check
+ 
+ import { t } from '../i18n.js';
++import { downloadBlobWithRuntime } from '../file-export.js';
+ import { POPUP_RESULT, POPUP_TYPE, Popup } from '../popup.js';
+ import { SURFACE, applySurface } from '../tauritavern/layout-kit.js';
+ import {
+@@ -10,6 +11,7 @@ import {
+ import { resolveStableChatId } from '../../tauri/main/api/agent-chat-identity.js';
+ 
+ const BUTTON_ID = 'tt_character_card_return_button';
++const GUIDE_BUTTON_ID = 'tt_character_card_editing_guide_button';
+ const COMMIT_ELIGIBLE_STATE = 'KNOWN_EXACT_RETURN';
+ 
+ function characterCardApi() {
+@@ -300,6 +302,81 @@ async function runCharacterCardReturn() {
+     }
+ }
+ 
++function currentCharacterDisplayName() {
++    const input = document.getElementById('character_name_pole');
++    if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) {
++        const value = input.value.trim();
++        if (value) return value;
++    }
++    return 'character';
++}
++
++function editingGuideText(displayName) {
++    const exportedAt = new Date().toISOString();
++    return `------------------------------------------------------------
++TauriTavern Character Card Editing Guide
++------------------------------------------------------------
++
++Character:
++${displayName}
++
++Format:
++PNG / JSON
++
++Exported at:
++${exportedAt}
++
++这是一张标准角色卡，可以在兼容角色卡编辑器中继续完善。
++
++推荐编辑：
++- description
++- personality
++- scenario
++- first_mes
++- mes_example
++- tags
++- alternate_greetings
++- creator_notes
++- character_book（确认你理解其作用时）
++
++未知资料可以继续留空。不要为了“完整”强行补全未确认设定。
++
++如果你希望重新导入 TauriTavern 后自动识别为原人物，请保留：
++data.extensions.tauritavern.characterCardLink.returnMetadata
++
++不要修改 Return Metadata 中的：
++- bindingId
++- exportId
++- bindingGeneration
++- baseCardRevision
++- baseCardHash
++- originProof
++
++删除 Return Metadata 是允许的。角色卡仍可作为普通标准角色卡导入，但自动回流识别会失效，需要手动关联。
++第三方编辑器也可能删除未知 extensions，请在保存后检查 metadata 是否仍存在。
++
++请不要手工向角色卡加入：
++- character_id
++- worldId / sessionId / branchId
++- iOS sandbox path 或 chat JSONL path
++- API key / token / cookie
++- Agent workspace state
++- Skill internal state
++- raw Memory database
++- internal control / authority state
++
++JSON 文件不支持 // 或 /* */ 注释。个人备注请使用标准字段 creator_notes，或保留本说明文件。
++
++修改完成后，可以在 TauriTavern 的角色详情中使用 Return Character Card，通过 Return Import Diff 审阅变化后再提交。
++`;
++}
++
++async function exportEditingGuide() {
++    const displayName = currentCharacterDisplayName();
++    const blob = new Blob([editingGuideText(displayName)], { type: 'text/plain;charset=utf-8' });
++    await downloadBlobWithRuntime(blob, `${displayName}.tauritavern-edit-guide.txt`, {
++        fallbackName: 'character.tauritavern-edit-guide.txt',
++    });
++}
++
+ function mountReturnButton() {
+     if (!window.__TAURITAVERN__ || document.getElementById(BUTTON_ID)) return;
+     const bar = document.querySelector('#avatar_controls .form_create_bottom_buttons_block');
+@@ -331,6 +408,43 @@ function mountReturnButton() {
+     sync();
+ }
+ 
++function mountEditingGuideButton() {
++    if (!window.__TAURITAVERN__ || document.getElementById(GUIDE_BUTTON_ID)) return;
++    const bar = document.querySelector('#avatar_controls .form_create_bottom_buttons_block');
++    const form = document.getElementById('form_create');
++    if (!(bar instanceof HTMLElement) || !(form instanceof HTMLElement)) return;
++
++    const button = document.createElement('button');
++    button.id = GUIDE_BUTTON_ID;
++    button.type = 'button';
++    button.className = 'menu_button menu_button_icon';
++    button.title = t`Export Editing Guide`;
++    button.setAttribute('aria-label', t`Export Editing Guide`);
++    button.innerHTML = '<i class="fa-solid fa-file-lines"></i>';
++    const returnButton = document.getElementById(BUTTON_ID);
++    if (returnButton?.parentElement === bar) returnButton.after(button);
++    else bar.insertBefore(button, document.getElementById('export_button'));
++
++    const sync = () => {
++        const visible = form.getAttribute('actiontype') === 'editcharacter';
++        button.classList.toggle('displayNone', !visible);
++        button.disabled = !visible;
++    };
++    new MutationObserver(sync).observe(form, { attributes: true, attributeFilter: ['actiontype'] });
++    button.addEventListener('click', async (event) => {
++        event.preventDefault();
++        if (button.disabled) return;
++        button.disabled = true;
++        try {
++            await exportEditingGuide();
++        } catch (error) {
++            console.error('[CharacterCardEditingGuide]', error);
++            window.toastr?.error?.(error instanceof Error ? error.message : String(error));
++        } finally {
++            sync();
++        }
++    });
++    sync();
++}
++
+ async function installCharacterCardReturnUi() {
+     try {
+         await (window.__TAURITAVERN__?.ready ?? window.__TAURITAVERN_MAIN_READY__);
+@@ -339,7 +453,9 @@ async function installCharacterCardReturnUi() {
+         console.warn('[CharacterCardReturn] Host readiness failed', error);
+     }
+     mountReturnButton();
++    mountEditingGuideButton();
+     if (!document.getElementById(BUTTON_ID)) setTimeout(mountReturnButton, 0);
++    if (!document.getElementById(GUIDE_BUTTON_ID)) setTimeout(mountEditingGuideButton, 0);
+ }
