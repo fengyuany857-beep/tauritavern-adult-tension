@@ -9,18 +9,3 @@ diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_m
 +use crate::dto::character_dto::{CharacterDto, CreateCharacterDto, DeleteCharacterDto};
 +use crate::errors::ApplicationError;
  use tt_domain::errors::DomainError;
- use tt_domain::models::agent::WorkspacePath;
- use tt_domain::models::character_card_materialization::{
-@@ -12,6 +15,11 @@ use tt_domain::models::character_card_materialization::{
-     BindingScopeKind, CharacterCardDraft, DraftSourceKind,
- };
-+use tt_domain::models::character_card_materialization::{
-+    BindingStatus, CharacterCardBinding, CharacterCardBindingContext,
-+    CharacterCardBindingTarget, CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
-+};
- use tt_domain::models::rp_architecture::{
-     CharacterEntity, CharacterId, CharacterIdentity, CharacterOrigin, CharacterOriginKind,
-     CharacterProfile, ControlOwner, ControlPolicy, LifecycleStatus, NarrativeRole,
-     RP_ARCHITECTURE_SCHEMA_VERSION, SessionIdentity,
- };
-+use tt_domain::models::rp_architecture::{BranchId, SessionId, WorldId};
