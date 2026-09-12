@@ -1,0 +1,93 @@
+diff --git a/src/types.d.ts b/src/types.d.ts
+--- a/src/types.d.ts
++++ b/src/types.d.ts
+@@ -920,9 +920,85 @@ type TauriTavernCharacterCardsPickOptions = {
+     title?: string;
+ };
+ 
++type TauriTavernCharacterCardReturnChoice = 'KEEP_LOCAL' | 'USE_IMPORTED';
++
++type TauriTavernCharacterCardReturnDecision = {
++    fieldPath: string;
++    state: string;
++    base?: unknown;
++    local?: unknown;
++    imported?: unknown;
++    importedPresence?: string;
++    localPresence?: string;
++    requiresUserConfirmation?: boolean;
++};
++
++type TauriTavernCharacterCardReturnPreview = {
++    recognitionState: string;
++    warnings?: unknown[];
++    decisions?: TauriTavernCharacterCardReturnDecision[];
++    stagedImport: {
++        logicalRef: string;
++    };
++    avatarMayReplace?: boolean;
++};
++
++type TauriTavernCharacterCardReturnContext = {
++    sessionId: string;
++    branchId: string;
++};
++
++type TauriTavernCharacterCardReturnPlan = {
++    targetBindingId: string;
++    expectedCardRevision: number;
++    expectedBindingGeneration: number;
++    expectedFinalCardHash: string;
++    replaceAvatar: boolean;
++    [key: string]: unknown;
++};
++
++type TauriTavernCharacterCardReturnPlanResult = {
++    plan: TauriTavernCharacterCardReturnPlan;
++    resolvedDefinition?: unknown;
++    avatarMayReplace?: boolean;
++};
++
++type TauriTavernCharacterCardReturnCommitResult = {
++    transactionId: string;
++    bindingId: string;
++    cardRevision: number;
++    bindingGeneration: number;
++    cardHash: string;
++    avatarReplaced: boolean;
++    idempotentReplay: boolean;
++};
++
++type TauriTavernCharacterCardReturnMutationInput = {
++    stagedRef: string;
++    format: 'png' | 'json';
++    replaceAvatar: boolean;
++    sessionId: string;
++    branchId: string;
++    choices: Record<string, TauriTavernCharacterCardReturnChoice>;
++};
++
+ type TauriTavernCharacterCardsApi = {
+     isNativePickerAvailable: () => boolean;
+     pickFiles: (options?: TauriTavernCharacterCardsPickOptions) => Promise<File[] | null>;
++    previewReturnImport: (
++        file: File,
++        options?: { userIndicatedReturn?: boolean },
++    ) => Promise<TauriTavernCharacterCardReturnPreview>;
++    resolveReturnContext: (input: {
++        stagedRef: string;
++        format: 'png' | 'json';
++        stableChatId: string;
++    }) => Promise<TauriTavernCharacterCardReturnContext>;
++    planReturnImport: (
++        input: TauriTavernCharacterCardReturnMutationInput,
++    ) => Promise<TauriTavernCharacterCardReturnPlanResult>;
++    commitReturnImport: (
++        input: TauriTavernCharacterCardReturnMutationInput & {
++            suppliedPlan: TauriTavernCharacterCardReturnPlan;
++        },
++    ) => Promise<TauriTavernCharacterCardReturnCommitResult>;
++    discardReturnPreview: (stagedRef: string) => Promise<void>;
+ };
+ 
+ type TauriTavernChatSurfaceDisposable = (() => void) | { dispose: () => void };
