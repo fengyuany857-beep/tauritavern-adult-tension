@@ -1,0 +1,129 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+@@ -55,6 +55,45 @@ pub struct CharacterCardDraftCommitResult {
+     pub binding: tt_domain::models::character_card_materialization::CharacterCardBinding,
+ }
+ 
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardDraftStableTraitSummary {
++    pub key: String,
++    pub statement: String,
++    pub status: String,
++}
++
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardDraftCandidate {
++    pub character_id: String,
++    pub display_name: String,
++    pub narrative_role: String,
++    pub control_owner: String,
++    pub lifecycle_status: String,
++    pub origin: String,
++    pub profile_revision: u64,
++    pub scope_kind: BindingScopeKind,
++    pub proposed_binding_id: String,
++    pub card_state: String,
++    pub materialized: bool,
++    pub stable_traits: Vec<CharacterCardDraftStableTraitSummary>,
++    pub author_canon_fields: Vec<String>,
++    pub inferred_field_count: usize,
++}
++
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CharacterCardDraftCandidateList {
++    pub stable_chat_id: String,
++    pub state_id: String,
++    pub world_id: String,
++    pub session_id: String,
++    pub active_branch_id: String,
++    pub candidates: Vec<CharacterCardDraftCandidate>,
++}
++
+ pub struct CharacterCardDraftMaterializationService {
+     selected: CharacterCardReturnSelectedStateResolver,
+     persistent: Arc<dyn CharacterCardReturnPersistentStateRepository>,
+@@ -164,6 +203,72 @@ impl CharacterCardDraftMaterializationService {
+         })
+     }
+ 
++    pub async fn list_candidates(
++        &self,
++        stable_chat_id: &str,
++    ) -> Result<CharacterCardDraftCandidateList, DomainError> {
++        let stable_chat_id = stable_chat_id.trim();
++        if stable_chat_id.is_empty() {
++            return Err(DomainError::InvalidData(
++                "character_card_draft.stable_chat_id_required".to_string(),
++            ));
++        }
++
++        let selected = self.selected.resolve_stable_chat_id(stable_chat_id).await?;
++        let durable = self.read_selected_state(&selected).await?;
++        let state = parse_durable_state(&durable.text)?;
++        let session = state.session.as_ref().ok_or_else(|| {
++            DomainError::NotFound("character_card_draft.session_missing".to_string())
++        })?;
++
++        let mut candidates = Vec::with_capacity(state.cast_registry.len());
++        for source in state.cast_registry.values() {
++            let (character, scope_kind, _) = project_character(source, session)?;
++            let proposed_binding_id = deterministic_binding_id(&character, session);
++            let materialized = self
++                .materialization
++                .read_binding(&proposed_binding_id)
++                .await?
++                .is_some();
++            let stable_traits = source
++                .stable_profile
++                .iter()
++                .map(|(key, value)| CharacterCardDraftStableTraitSummary {
++                    key: key.clone(),
++                    statement: value.statement.clone(),
++                    status: value.status.clone(),
++                })
++                .collect();
++
++            candidates.push(CharacterCardDraftCandidate {
++                character_id: source.character_id.clone(),
++                display_name: source.display_name.clone(),
++                narrative_role: source.narrative_role.clone(),
++                control_owner: source.control_owner.clone(),
++                lifecycle_status: source.lifecycle_status.clone(),
++                origin: source.origin.clone(),
++                profile_revision: source.profile_revision,
++                scope_kind,
++                proposed_binding_id,
++                card_state: if materialized {
++                    "bound_card".to_string()
++                } else {
++                    "draft_available".to_string()
++                },
++                materialized,
++                stable_traits,
++                author_canon_fields: source.author_canon.keys().cloned().collect(),
++                inferred_field_count: source.inferred_profile.len(),
++            });
++        }
++        candidates.sort_by(|left, right| {
++            left.display_name
++                .cmp(&right.display_name)
++                .then_with(|| left.character_id.cmp(&right.character_id))
++        });
++
++        Ok(CharacterCardDraftCandidateList {
++            stable_chat_id: selected.stable_chat_id,
++            state_id: selected.state_id,
++            world_id: session.world_id.0.clone(),
++            session_id: session.session_id.0.clone(),
++            active_branch_id: session.active_branch_id.0.clone(),
++            candidates,
++        })
++    }
++
+     pub async fn commit(
+         &self,
+         request: CharacterCardDraftCommitRequest,
