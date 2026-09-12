@@ -1,0 +1,16 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_draft_materialization_service.rs
+@@ -582,7 +582,11 @@ fn deterministic_binding_id(character: &CharacterEntity, session: &SessionIdentity) -> String {
+         session.world_id.0, character.character_id.0
+     );
+     let digest = Sha256::digest(seed.as_bytes());
+-    format!("materialized-{digest:x}")
++    let digest_hex = digest
++        .iter()
++        .map(|byte| format!("{byte:02x}"))
++        .collect::<String>();
++    format!("materialized-{digest_hex}")
+ }
+ 
+ fn parse_narrative_role(value: &str) -> Result<NarrativeRole, DomainError> {
