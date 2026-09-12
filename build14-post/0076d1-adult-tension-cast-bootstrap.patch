@@ -5,7 +5,7 @@ diff --git a/src/scripts/extensions/agent-system/src/index.js b/src/scripts/exte
  import { subscribeAgentProfilesChanged } from '../../../tauritavern/agent/agent-profile-events.js';
  import { DEFAULT_AGENT_PROFILE_ID } from '../../../tauritavern/agent/agent-system-settings.js';
  import { applyAdultTensionBootstrap, checkAdultTensionReadiness } from './adult-tension-readiness.js';
-+import { mountAdultTensionCastEntry } from './adult-tension-cast.js';
++import { mountAdultTensionCastEntry } from './adult-tension-cast-durable.js';
  
  function createAgentSystemEntryApp() {
      return createApp({
