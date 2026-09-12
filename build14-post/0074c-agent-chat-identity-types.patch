@@ -1,0 +1,13 @@
+diff --git a/src/tauri/main/api/agent-chat-identity.js b/src/tauri/main/api/agent-chat-identity.js
+--- a/src/tauri/main/api/agent-chat-identity.js
++++ b/src/tauri/main/api/agent-chat-identity.js
+@@ -1,5 +1,9 @@
+ // @ts-check
+ 
++/**
++ * @param {TauriTavernChatRef} chatRef
++ * @returns {Promise<string>}
++ */
+ export async function resolveStableChatId(chatRef) {
+     const chatApi = window.__TAURITAVERN__?.api?.chat;
+     if (!chatApi || typeof chatApi.open !== 'function') {
