@@ -1,3 +1,42 @@
 # Diagnostic matches
+1:[BUILD-INFO] augmented /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/build-info.json
+2:[BUILD-INFO] final_ipa_sha256=c75d62c6e4f0c40389c8a8c99eac48976030919d54b8fb1b1f15342965b06314
+3:[BUILD-INFO] SHA256SUMS refreshed at /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/SHA256SUMS.txt
+11:  "sourceRevision": "3a8c5401c859ac15ac11f3339846360615232896+ios-agent-continuity",
+12:  "sourceBranch": "repair/ios-agent-continuity-20260910",
+14:  "codeSigningAllowed": false,
+21:  "data_continuity_identity": "092113601fc09fdb413afec512d90c5c3ddaa7cc6b1d2f0ba54f826755af996a",
+22:  "data_continuity_schema": 1,
+26:    "adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip": "4fbead4ed0deaa157f498a32ae6ee7ba077eaee0f046a1b71eb194c31a3d9201",
 
 # Tail
+[BUILD-INFO] augmented /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/build-info.json
+[BUILD-INFO] final_ipa_sha256=c75d62c6e4f0c40389c8a8c99eac48976030919d54b8fb1b1f15342965b06314
+[BUILD-INFO] SHA256SUMS refreshed at /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source/dist/ios-unsigned/SHA256SUMS.txt
+{
+  "formatVersion": 1,
+  "kind": "unsigned-ios-build",
+  "productName": "TauriTavern",
+  "bundleId": "com.tauritavern.client",
+  "shortVersion": "2.2.0",
+  "buildVersion": "2.2.0",
+  "sourceRevision": "3a8c5401c859ac15ac11f3339846360615232896+ios-agent-continuity",
+  "sourceBranch": "repair/ios-agent-continuity-20260910",
+  "iosPolicyProfile": "full",
+  "codeSigningAllowed": false,
+  "control_repo_source_sha": "b05dfeb3370909f9d286447a8545867533455b43",
+  "workflow_trigger_sha": "b05dfeb3370909f9d286447a8545867533455b43",
+  "upstream_tauritavern_sha": "3a8c5401c859ac15ac11f3339846360615232896",
+  "adult_tension_skill_sha": "cbfdc623fccc91247cbb37783757fc157406c2a5",
+  "bootstrap_patch_identity": "8de4ffd386114eea933bf992018be73cdebadc0a2c1c67b2ce0c3e19e28ad61c",
+  "agent_fix_identity": "e83cdec7eb56d1d0463544592c431820c08c2173045ab4cfd772d4693dcd8411",
+  "data_continuity_identity": "092113601fc09fdb413afec512d90c5c3ddaa7cc6b1d2f0ba54f826755af996a",
+  "data_continuity_schema": 1,
+  "bundle_identifier": "com.tauritavern.client",
+  "runtime_skill_suite_hashes": {
+    "adult-tension-cbfdc623.zip": "ec1c1304df3f7d40ed803a5d7aa401daa8b4070229fe5bd6ab0a61df90fe74f3",
+    "adult-tension-continuity-graduation-final-v2-tauritavern-fixed.zip": "4fbead4ed0deaa157f498a32ae6ee7ba077eaee0f046a1b71eb194c31a3d9201",
+    "adult-tension-tauritavern-adapter-build14.zip": "3261382f18526ce3ceaf2ec6a23b82c8b2255d0638e60e06658a3c4e151509bc"
+  },
+  "final_ipa_sha256": "c75d62c6e4f0c40389c8a8c99eac48976030919d54b8fb1b1f15342965b06314"
+}
