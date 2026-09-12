@@ -1,0 +1,26 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs b/src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_rp_apply_service.rs
+@@ -496,8 +496,8 @@
+         let text = self
+             .persistent
+             .read_persistent_text(&selected.workspace_id, &selected.state_id, &path)
+             .await?;
+-        serde_json::from_str(&text).map_err(|error| ApplicationError::ValidationError(format!(
++        serde_json::from_str(&text.text).map_err(|error| ApplicationError::ValidationError(format!(
+             "CARD_RP_STATE_INVALID: selected RP state is not valid JSON: {error}"
+         )))
+     }
+@@ -369,6 +369,10 @@
+         let journal = CharacterCardTransactionJournal {
+             schema_version: CHARACTER_CARD_MATERIALIZATION_SCHEMA_VERSION,
+             transaction_id: transaction_id.clone(),
+             plan_token: request.plan_token,
+             binding_id: request.binding_id,
++            export_id: None,
++            expected_after_card_hash: None,
++            expected_after_png_hash: None,
++            expected_after_binding_hash: None,
+             state: CharacterCardTransactionState::RpProfileWritten,
+             before_card_ref: None,
+             before_binding_ref: None,
