@@ -1,0 +1,24 @@
+diff --git a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+--- a/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
++++ b/src-tauri/crates/tt-application/src/services/agent_tools/rp/state.rs
+@@ -1433,6 +1433,18 @@ fn rebuild_character_profile(state: &mut RpState, character_id: &str) {
+         let refs = positive.iter().map(|e| e.id.clone()).collect::<Vec<_>>();
+         let contradictions = negative.iter().map(|e| e.id.clone()).collect::<Vec<_>>();
+         let confidence = ((positive.len() * 22 + contexts.len() * 12).saturating_sub(negative.len() * 25)).min(100) as u8;
+         let statement = positive.last().map(|e| e.statement.clone()).unwrap_or_default();
++        // `imported_card` is written only by the explicit Character Card -> RP
++        // application service. It is deliberately not accepted by the RP tool
++        // input schema, so a model run cannot manufacture this provenance.
++        if let Some(imported) = positive
++            .iter()
++            .rev()
++            .find(|e| e.source_kind == "imported_card")
++        {
++            character.stable_profile.insert(key.clone(), RpStableTrait {
++                statement: imported.statement.clone(), evidence_refs: refs, status: "imported_card".to_string(), updated_turn: imported.turn,
++            });
++            continue;
++        }
+         let stable = positive.len() >= 3 && contexts.len() >= 2 && max_turn.saturating_sub(min_turn) >= 2 && negative.len() * 2 < positive.len();
+         if stable {
+             character.stable_profile.insert(key.clone(), RpStableTrait { statement, evidence_refs: refs, status: "stable".to_string(), updated_turn: max_turn });
