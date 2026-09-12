@@ -1,0 +1,25 @@
+diff --git a/src-tauri/crates/tt-application/src/services/character_card_return_selected_state.rs b/src-tauri/crates/tt-application/src/services/character_card_return_selected_state.rs
+--- a/src-tauri/crates/tt-application/src/services/character_card_return_selected_state.rs
++++ b/src-tauri/crates/tt-application/src/services/character_card_return_selected_state.rs
+@@ -42,13 +42,22 @@ impl CharacterCardReturnSelectedStateResolver {
+     pub async fn resolve(
+         &self,
+         context: &CharacterCardBindingContext,
+     ) -> Result<CharacterCardReturnSelectedState, DomainError> {
+-        let stable_chat_id = context.branch_id.0.trim();
++        self.resolve_stable_chat_id(&context.branch_id.0).await
++    }
++
++    /// Resolve the durable state currently selected by a host chat without
++    /// requiring a pre-existing Character Card binding. Draft materialization
++    /// uses this path before a card/binding exists.
++    pub async fn resolve_stable_chat_id(
++        &self,
++        stable_chat_id: &str,
++    ) -> Result<CharacterCardReturnSelectedState, DomainError> {
++        let stable_chat_id = stable_chat_id.trim();
+         if stable_chat_id.is_empty() {
+             return Err(DomainError::InvalidData(
+                 "character_card_return.branch_id_empty".to_string(),
+             ));
+         }
