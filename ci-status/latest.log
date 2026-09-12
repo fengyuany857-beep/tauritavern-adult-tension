@@ -1,3 +1,11 @@
 # Diagnostic matches
+5:src/scripts/tauri/character-card-return-ui.js(355,27): error TS7006: Parameter 'displayName' implicitly has an 'any' type.
+6: ELIFECYCLE  Command failed with exit code 2.
 
 # Tail
+
+> tauritavern@2.2.0 check:types /Users/runner/work/tauritavern-adult-tension/tauritavern-adult-tension/source
+> tsc -p tsconfig.host.json
+
+src/scripts/tauri/character-card-return-ui.js(355,27): error TS7006: Parameter 'displayName' implicitly has an 'any' type.
+ ELIFECYCLE  Command failed with exit code 2.
