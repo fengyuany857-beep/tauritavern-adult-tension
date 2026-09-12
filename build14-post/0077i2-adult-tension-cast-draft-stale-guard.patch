@@ -1,0 +1,12 @@
+diff --git a/src/scripts/extensions/agent-system/src/adult-tension-cast.js b/src/scripts/extensions/agent-system/src/adult-tension-cast.js
+--- a/src/scripts/extensions/agent-system/src/adult-tension-cast.js
++++ b/src/scripts/extensions/agent-system/src/adult-tension-cast.js
+@@ -270,7 +270,7 @@ function renderDraft(root, candidate, chatId, preview, renderList) {
+             window.toastr?.error?.(message);
+             if (message.includes('DRAFT_STALE')) await renderList();
+         } finally {
+-            commit.disabled = false;
++            commit.disabled = sourceAdvanced;
+             back.disabled = false;
+         }
+     });
